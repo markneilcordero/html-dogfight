@@ -262,6 +262,8 @@ const player = {
   height: 60,
   speed: 3,
   angle: 0, // New: For rotation
+  health: 100, // ✅ Add player health
+  maxHealth: 100, // ✅ Add player max health
 };
 
 const opponent = {
@@ -279,6 +281,8 @@ const opponent = {
 
   fireCooldown: 0,
   missileCooldown: 0,
+  health: 100, // ✅ Add opponent health
+  maxHealth: 100, // ✅ Add opponent max health
 };
 
 const opponentBullets = [];
@@ -646,17 +650,46 @@ function update() {
   // === Update Machine Gun Bullets ===
   for (let i = machineGunBullets.length - 1; i >= 0; i--) {
     const b = machineGunBullets[i];
+
+    // ✈️ Move the bullet
     b.x += Math.cos(b.angle) * b.speed;
     b.y += Math.sin(b.angle) * b.speed;
+
     b.life--;
-    if (b.life <= 0) machineGunBullets.splice(i, 1);
+
+    // ✈️ Check collision with opponent
+    const dx = opponent.x - b.x;
+    const dy = opponent.y - b.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 30) {
+      opponent.health -= 10;
+      machineGunBullets.splice(i, 1);
+      continue;
+    }
+
+    // ✈️ Add bullet trail
+    bulletTrails.push({
+      x: b.x - Math.cos(b.angle) * 10,
+      y: b.y - Math.sin(b.angle) * 10,
+      radius: 2 + Math.random() * 2,
+      alpha: 1,
+      color: "yellow",
+    });
+
+    if (b.life <= 0) {
+      machineGunBullets.splice(i, 1);
+    }
   }
 
   for (let i = machineGunBullets.length - 1; i >= 0; i--) {
     const b = machineGunBullets[i];
-    b.x += Math.cos(b.angle) * b.speed;
-    b.y += Math.sin(b.angle) * b.speed;
-    b.life--;
+    const dx = opponent.x - b.x;
+    const dy = opponent.y - b.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 30) {
+      opponent.health -= 10; // 💥 Opponent takes 10 damage
+      machineGunBullets.splice(i, 1);
+    }
 
     // === 🔥 Add trail particle
     bulletTrails.push({
@@ -667,7 +700,10 @@ function update() {
       color: "yellow",
     });
 
-    if (b.life <= 0) machineGunBullets.splice(i, 1);
+    // ✈️ Remove if life runs out
+    if (b.life <= 0) {
+      machineGunBullets.splice(i, 1);
+    }
   }
 
   for (let i = bulletTrails.length - 1; i >= 0; i--) {
@@ -676,22 +712,38 @@ function update() {
     if (t.alpha <= 0) bulletTrails.splice(i, 1);
   }
 
+  // === Update Player Missiles ===
   for (let i = missiles.length - 1; i >= 0; i--) {
     const m = missiles[i];
+
+    // 🚀 Move the missile
     m.x += Math.cos(m.angle) * m.speed;
     m.y += Math.sin(m.angle) * m.speed;
+
     m.life--;
 
-    // === 🚀 Missile Trail Particle
+    // 🚀 Check collision with opponent
+    const dx = opponent.x - m.x;
+    const dy = opponent.y - m.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 40) {
+      opponent.health -= 25;
+      missiles.splice(i, 1);
+      continue;
+    }
+
+    // 🚀 Missile Trail
     missileTrails.push({
-      x: m.x - Math.cos(m.angle) * 35, // Behind the missile
+      x: m.x - Math.cos(m.angle) * 35,
       y: m.y - Math.sin(m.angle) * 35,
-      radius: 3 + Math.random() * 2, // Random size
+      radius: 3 + Math.random() * 2,
       alpha: 1,
-      color: "lightgray", // Can be "gray", "white", "yellow", "red"
+      color: "lightgray",
     });
 
-    if (m.life <= 0) missiles.splice(i, 1);
+    if (m.life <= 0) {
+      missiles.splice(i, 1);
+    }
   }
 
   for (let i = missileTrails.length - 1; i >= 0; i--) {
@@ -700,23 +752,38 @@ function update() {
     if (t.alpha <= 0) missileTrails.splice(i, 1);
   }
 
-  // === Opponent Bullets
+  // === Update Opponent Bullets ===
   for (let i = opponentBullets.length - 1; i >= 0; i--) {
     const b = opponentBullets[i];
+
+    // ✈️ Move the bullet
     b.x += Math.cos(b.angle) * b.speed;
     b.y += Math.sin(b.angle) * b.speed;
+
     b.life--;
 
-    // 💥 Add bullet trail particle
+    // ✈️ Check collision with player
+    const dx = player.x - b.x;
+    const dy = player.y - b.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 30) {
+      player.health -= 10;
+      opponentBullets.splice(i, 1);
+      continue;
+    }
+
+    // ✈️ Bullet Trail
     opponentBulletTrails.push({
       x: b.x - Math.cos(b.angle) * 10,
       y: b.y - Math.sin(b.angle) * 10,
       radius: 2 + Math.random() * 2,
       alpha: 1,
-      color: "red", // Or "orange", "white" — your choice!
+      color: "red",
     });
 
-    if (b.life <= 0) opponentBullets.splice(i, 1);
+    if (b.life <= 0) {
+      opponentBullets.splice(i, 1);
+    }
   }
 
   for (let i = opponentBulletTrails.length - 1; i >= 0; i--) {
@@ -725,24 +792,40 @@ function update() {
     if (t.alpha <= 0) opponentBulletTrails.splice(i, 1);
   }
 
-  // === Opponent Missiles
+  // === Update Opponent Missiles ===
   for (let i = opponentMissiles.length - 1; i >= 0; i--) {
     const m = opponentMissiles[i];
+
+    // 🚀 Move the missile
     m.x += Math.cos(m.angle) * m.speed;
     m.y += Math.sin(m.angle) * m.speed;
+
     m.life--;
 
-    // 🚀 Add trail behind opponent missile
+    // 🚀 Check collision with player
+    const dx = player.x - m.x;
+    const dy = player.y - m.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 40) {
+      player.health -= 25;
+      opponentMissiles.splice(i, 1);
+      continue;
+    }
+
+    // 🚀 Missile Trail
     opponentMissileTrails.push({
       x: m.x - Math.cos(m.angle) * 35,
       y: m.y - Math.sin(m.angle) * 35,
       radius: 3 + Math.random() * 2,
       alpha: 1,
-      color: "orange", // You can use "lightgray", "red", etc.
+      color: "orange",
     });
 
-    if (m.life <= 0) opponentMissiles.splice(i, 1);
+    if (m.life <= 0) {
+      opponentMissiles.splice(i, 1);
+    }
   }
+
   for (let i = opponentMissileTrails.length - 1; i >= 0; i--) {
     const t = opponentMissileTrails[i];
     t.alpha -= 0.02;
@@ -797,6 +880,31 @@ function draw() {
     ctx.lineTo(canvas.width, y);
     ctx.stroke();
   }
+
+  // === Player Health Bar ===
+  const playerBarWidth = 100;
+  const playerBarHeight = 10;
+  const playerHealthPercent = player.health / player.maxHealth;
+  ctx.fillStyle = "red"; // Background
+  ctx.fillRect(20, 20, playerBarWidth, playerBarHeight);
+  ctx.fillStyle = "lime"; // Health
+  ctx.fillRect(20, 20, playerBarWidth * playerHealthPercent, playerBarHeight);
+  ctx.strokeStyle = "white"; // Border
+  ctx.strokeRect(20, 20, playerBarWidth, playerBarHeight);
+
+  // === Opponent Health Bar (above opponent) ===
+  const opponentHealthPercent = opponent.health / opponent.maxHealth;
+  ctx.fillStyle = "red";
+  ctx.fillRect(opponent.x - 30 - camera.x, opponent.y - 50 - camera.y, 60, 6);
+  ctx.fillStyle = "lime";
+  ctx.fillRect(
+    opponent.x - 30 - camera.x,
+    opponent.y - 50 - camera.y,
+    60 * opponentHealthPercent,
+    6
+  );
+  ctx.strokeStyle = "white";
+  ctx.strokeRect(opponent.x - 30 - camera.x, opponent.y - 50 - camera.y, 60, 6);
 
   // === Draw Player Plane ===
   const IMAGE_ROTATION_OFFSET = Math.PI / 4; // -45 degrees
