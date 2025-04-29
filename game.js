@@ -234,8 +234,26 @@ function setupWeaponControls() {
   
 }
 
+function setupPlayerAIButton() {
+    const btnAI = document.getElementById("btnAI");
+  
+    btnAI.addEventListener("click", () => {
+      playerAIEnabled = !playerAIEnabled;
+      createFloatingText(playerAIEnabled ? "🧠 AI ON" : "🧠 AI OFF", player.x, player.y - 80, "cyan", 20);
+    });
+  
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "p") { // Press 'P' key to toggle AI too
+        playerAIEnabled = !playerAIEnabled;
+        createFloatingText(playerAIEnabled ? "🧠 AI ON" : "🧠 AI OFF", player.x, player.y - 80, "cyan", 20);
+      }
+    });
+  }
+  
+
 setupThrottleControls();
 setupWeaponControls();
+setupPlayerAIButton();
 
 // ====================
 // [3] Entity Definitions
@@ -276,6 +294,8 @@ let missileLockAnnounced = false;
 
 let playerRespawnCooldown = 0;
 let playerDead = false;
+
+let playerAIEnabled = false; // 🧠 Whether player AI is on
 
 // === Lock Variables ===
 const PLAYER_LOCK_TIME = 300; // Player needs 1.5 seconds to lock (adjust this!)
@@ -780,39 +800,51 @@ function update() {
 
 function updatePlayer() {
     if (player.health <= 0) {
-        if (!playerDead) {
-          playerDead = true;
-          playerRespawnCooldown = 180;
-        } else {
-          playerRespawnCooldown--;
-          if (playerRespawnCooldown === 0) {
-            respawnPlane(player, false);
-            createFloatingText("🛬 Player Respawned!", player.x, player.y - 60, "cyan", 18);
-            updateCamera();
-            playerDead = false; // ✅ Reset dead status
-          }
+      if (!playerDead) {
+        playerDead = true;
+        playerRespawnCooldown = 180;
+      } else {
+        playerRespawnCooldown--;
+        if (playerRespawnCooldown === 0) {
+          respawnPlane(player, false);
+          createFloatingText("🛬 Player Respawned!", player.x, player.y - 60, "cyan", 18);
+          updateCamera();
+          playerDead = false;
         }
-        return;
       }
-
-      if (player.flareCooldown > 0) player.flareCooldown--;
+      return;
+    }
   
-    // Existing movement, thrust, and camera logic
-    if (joystickActive) {
-      player.angle = joystickAngle;
+    if (player.flareCooldown > 0) player.flareCooldown--;
+  
+    if (playerAIEnabled) {
+      const { target } = findNearestEnemy(player.x, player.y);
+      if (target) {
+        const dx = target.x - player.x;
+        const dy = target.y - player.y;
+        const offset = Math.PI / 3;
+        maybeDodge(player);
+        const targetAngle = Math.atan2(dy, dx) + offset * player.orbitDirection + player.dodgeOffset;
+        rotateToward(player, targetAngle, 0.05);
+        player.thrust = 5;
+      }
     } else {
-      if (keys["ArrowLeft"] || keys["a"]) player.angle -= 0.05;
-      if (keys["ArrowRight"] || keys["d"]) player.angle += 0.05;
-    }
+      if (joystickActive) {
+        player.angle = joystickAngle;
+      } else {
+        if (keys["ArrowLeft"] || keys["a"]) player.angle -= 0.05;
+        if (keys["ArrowRight"] || keys["d"]) player.angle += 0.05;
+      }
   
-    if (keys["w"] || keys["ArrowUp"]) {
-      player.thrust += 0.1;
-      if (player.thrust > 5) player.thrust = 5;
-    }
+      if (keys["w"] || keys["ArrowUp"]) {
+        player.thrust += 0.1;
+        if (player.thrust > 5) player.thrust = 5;
+      }
   
-    if (keys["s"] || keys["ArrowDown"]) {
-      player.thrust -= 0.05;
-      if (player.thrust < 1.0) player.thrust = 1.0;
+      if (keys["s"] || keys["ArrowDown"]) {
+        player.thrust -= 0.05;
+        if (player.thrust < 1.0) player.thrust = 1.0;
+      }
     }
   
     moveForward(player);
@@ -824,6 +856,7 @@ function updatePlayer() {
   
     updateCamera();
   }
+  
   
 
 function createEngineParticles(entity) {
