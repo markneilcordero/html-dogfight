@@ -343,6 +343,17 @@ function fireMachineGun() {
   });
 }
 
+function fireAllyMachineGun(ally) {
+    machineGunBullets.push({
+      x: ally.x,
+      y: ally.y,
+      angle: ally.angle,
+      speed: 16,
+      life: 60,
+    });
+  }
+  
+
 function fireMissile() {
   if (!playerMissileLockReady) {
     createFloatingText("LOCKING... 🔒", player.x, player.y - 80, "yellow", 18);
@@ -447,20 +458,34 @@ function updateOpponents() {
 
 function updateAllies() {
     for (const ally of allies) {
-      // Allies follow the player
-      const dx = player.x - ally.x;
-      const dy = player.y - ally.y;
-      const dist = Math.hypot(dx, dy);
-  
-      const followDistance = 200; // How far allies should stay from you
-  
-      if (dist > followDistance) {
-        const targetAngle = Math.atan2(dy, dx);
-        rotateToward(ally, targetAngle, 0.03);
-        moveForward(ally);
+      // === 1. Find nearest opponent ===
+      let nearestOpponent = null;
+      let nearestDist = Infinity;
+      for (const opp of opponents) {
+        const dx = opp.x - ally.x;
+        const dy = opp.y - ally.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestOpponent = opp;
+        }
       }
   
-      // Allies avoid stacking on each other
+      // === 2. Move toward nearest opponent ===
+      if (nearestOpponent) {
+        const dx = nearestOpponent.x - ally.x;
+        const dy = nearestOpponent.y - ally.y;
+        const targetAngle = Math.atan2(dy, dx);
+        rotateToward(ally, targetAngle, 0.05);
+        moveForward(ally);
+  
+        // === 3. Shoot at opponent if close enough ===
+        if (nearestDist < 600 && Math.random() < 0.05) {
+          fireAllyMachineGun(ally);
+        }
+      }
+  
+      // === 4. Avoid stacking with other allies ===
       for (const other of allies) {
         if (ally === other) continue;
         const dx2 = ally.x - other.x;
@@ -474,6 +499,8 @@ function updateAllies() {
       }
     }
   }
+  
+  
   
 
 function updateOpponentBullets() {
