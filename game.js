@@ -306,8 +306,22 @@ function createPlane(x, y) {
   }
 
   function respawnPlane(plane, isOpponent = false) {
-    plane.x = Math.random() * WORLD_WIDTH;
-    plane.y = Math.random() * WORLD_HEIGHT;
+    let safe = false;
+    let attempt = 0;
+  
+    while (!safe && attempt < 10) {
+      plane.x = Math.random() * WORLD_WIDTH;
+      plane.y = Math.random() * WORLD_HEIGHT;
+  
+      // ✅ Stay away from player spawn (if not the player)
+      const dx = plane.x - player.x;
+      const dy = plane.y - player.y;
+      const dist = Math.hypot(dx, dy);
+  
+      safe = dist > 300;
+      attempt++;
+    }
+  
     plane.angle = Math.random() * Math.PI * 2;
     plane.health = plane.maxHealth;
     plane.thrust = 1.0;
@@ -317,12 +331,15 @@ function createPlane(x, y) {
     plane.dodgeCooldown = 0;
     plane.dodgeOffset = 0;
   
-    if (isOpponent) {
-      createFloatingText("✈️ Respawned!", plane.x, plane.y - 40, "red", 16);
-    } else {
-      createFloatingText("✈️ Respawned!", plane.x, plane.y - 40, "cyan", 16);
-    }
+    createFloatingText(
+      "✈️ Respawned!",
+      plane.x,
+      plane.y - 40,
+      isOpponent ? "red" : "cyan",
+      16
+    );
   }
+  
   
   
 
@@ -564,11 +581,16 @@ const targetAngle = Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodge
     if (distance < 800 && Math.random() < 0.05) {
       fireOpponentMachineGun(opp);
     }
-    if (opponentMissileLockReady && Math.random() < 0.02) {
-      fireOpponentMissile(opp, target);
-      opponentMissileLockReady = false;
-      opponentMissileLockTimer = 0;
-    }
+    if (distance < 1000) {
+        opp.lockTimer = (opp.lockTimer || 0) + 1;
+        if (opp.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
+          fireOpponentMissile(opp, target);
+          opp.lockTimer = 0;
+        }
+      } else {
+        opp.lockTimer = 0;
+      }
+      
   }
 }
 
