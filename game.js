@@ -7,7 +7,12 @@ const ctx = canvas.getContext("2d");
 const WORLD_WIDTH = 4000;
 const WORLD_HEIGHT = 4000;
 
-const camera = { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };
+const camera = {
+  x: 0,
+  y: 0,
+  width: window.innerWidth,
+  height: window.innerHeight,
+};
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -26,12 +31,12 @@ const images = {
   bullet: loadImage("images/bullet.png"),
   missile: loadImage("images/missile.png"),
   flare: loadImage("images/flare.png"),
-  explosion: loadImage("images/explosion.png")
+  explosion: loadImage("images/explosion.png"),
 };
 
 function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
-  }
+  return Math.max(min, Math.min(max, value));
+}
 
 function loadImage(src) {
   const img = new Image();
@@ -48,164 +53,183 @@ let joystickAngle = 0;
 let joystickActive = false;
 
 function setupJoystickControls() {
-    const container = document.getElementById("joystickContainer");
-    const joystick = document.getElementById("joystick");
-  
-    container.addEventListener("touchstart", (e) => {
+  const container = document.getElementById("joystickContainer");
+  const joystick = document.getElementById("joystick");
+
+  container.addEventListener(
+    "touchstart",
+    (e) => {
       joystickActive = true;
-    }, { passive: false });
-  
-    container.addEventListener("touchmove", (e) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const rect = container.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      const dx = touch.clientX - centerX;
-      const dy = touch.clientY - centerY;
-      joystickAngle = Math.atan2(dy, dx);
-  
-      const distance = Math.min(Math.sqrt(dx * dx + dy * dy), 40);
-      const angle = Math.atan2(dy, dx);
-      const knobX = Math.cos(angle) * distance;
-      const knobY = Math.sin(angle) * distance;
-  
-      joystick.style.left = `50%`;
-      joystick.style.top = `50%`;
-      joystick.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
-    });
-  
-    container.addEventListener("touchend", () => {
-      joystickActive = false;
-      joystick.style.transform = `translate(-50%, -50%)`;
-    });
-  }
-  
+    },
+    { passive: false }
+  );
+
+  container.addEventListener("touchmove", (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = container.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = touch.clientX - centerX;
+    const dy = touch.clientY - centerY;
+    joystickAngle = Math.atan2(dy, dx);
+
+    const distance = Math.min(Math.sqrt(dx * dx + dy * dy), 40);
+    const angle = Math.atan2(dy, dx);
+    const knobX = Math.cos(angle) * distance;
+    const knobY = Math.sin(angle) * distance;
+
+    joystick.style.left = `50%`;
+    joystick.style.top = `50%`;
+    joystick.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+  });
+
+  container.addEventListener("touchend", () => {
+    joystickActive = false;
+    joystick.style.transform = `translate(-50%, -50%)`;
+  });
+}
 
 setupJoystickControls();
 
 const keys = {};
-window.addEventListener("keydown", e => keys[e.key] = true);
-window.addEventListener("keyup", e => keys[e.key] = false);
+window.addEventListener("keydown", (e) => (keys[e.key] = true));
+window.addEventListener("keyup", (e) => (keys[e.key] = false));
 
 function setupThrottleControls() {
-    const btnThrottleUp = document.getElementById("btnThrottleUp");
-    const btnThrottleDown = document.getElementById("btnThrottleDown");
-  
-    let throttleIntervalUp = null;
-    let throttleIntervalDown = null;
-  
-    // === Throttle Up Button ===
-    btnThrottleUp.addEventListener("touchstart", () => {
+  const btnThrottleUp = document.getElementById("btnThrottleUp");
+  const btnThrottleDown = document.getElementById("btnThrottleDown");
+
+  let throttleIntervalUp = null;
+  let throttleIntervalDown = null;
+
+  // === Throttle Up Button ===
+  btnThrottleUp.addEventListener(
+    "touchstart",
+    () => {
       if (throttleIntervalUp) return;
       throttleIntervalUp = setInterval(() => {
         player.thrust += 0.1;
         if (player.thrust > 5) player.thrust = 5;
       }, 100);
-    }, { passive: true });
-  
-    btnThrottleUp.addEventListener("touchend", () => {
-      clearInterval(throttleIntervalUp);
-      throttleIntervalUp = null;
-    });
-  
-    btnThrottleUp.addEventListener("touchcancel", () => {
-      clearInterval(throttleIntervalUp);
-      throttleIntervalUp = null;
-    });
-  
-    // === Throttle Down Button ===
-    btnThrottleDown.addEventListener("touchstart", () => {
+    },
+    { passive: true }
+  );
+
+  btnThrottleUp.addEventListener("touchend", () => {
+    clearInterval(throttleIntervalUp);
+    throttleIntervalUp = null;
+  });
+
+  btnThrottleUp.addEventListener("touchcancel", () => {
+    clearInterval(throttleIntervalUp);
+    throttleIntervalUp = null;
+  });
+
+  // === Throttle Down Button ===
+  btnThrottleDown.addEventListener(
+    "touchstart",
+    () => {
       if (throttleIntervalDown) return;
       throttleIntervalDown = setInterval(() => {
         player.thrust -= 0.05;
         if (player.thrust < 1.0) player.thrust = 1.0;
       }, 100);
-    }, { passive: true });
-  
-    btnThrottleDown.addEventListener("touchend", () => {
-      clearInterval(throttleIntervalDown);
-      throttleIntervalDown = null;
-    });
-  
-    btnThrottleDown.addEventListener("touchcancel", () => {
-      clearInterval(throttleIntervalDown);
-      throttleIntervalDown = null;
-    });
-  }
-  
-  function setupWeaponControls() {
-    const btnMachineGun = document.getElementById("btnMachineGun");
-    const btnMissile = document.getElementById("btnMissile");
-    const btnFlare = document.getElementById("btnFlare");
-  
-    let machineGunInterval = null;
-    let missileTouchHandled = false;
-  
-    // === Machine Gun Button (touch) ===
-    btnMachineGun.addEventListener("touchstart", () => {
+    },
+    { passive: true }
+  );
+
+  btnThrottleDown.addEventListener("touchend", () => {
+    clearInterval(throttleIntervalDown);
+    throttleIntervalDown = null;
+  });
+
+  btnThrottleDown.addEventListener("touchcancel", () => {
+    clearInterval(throttleIntervalDown);
+    throttleIntervalDown = null;
+  });
+}
+
+function setupWeaponControls() {
+  const btnMachineGun = document.getElementById("btnMachineGun");
+  const btnMissile = document.getElementById("btnMissile");
+  const btnFlare = document.getElementById("btnFlare");
+
+  let machineGunInterval = null;
+  let missileTouchHandled = false;
+
+  // === Machine Gun Button (touch) ===
+  btnMachineGun.addEventListener(
+    "touchstart",
+    () => {
       if (machineGunInterval) return;
       machineGunInterval = setInterval(fireMachineGun, 100);
-    }, { passive: true });
-  
-    btnMachineGun.addEventListener("touchend", () => {
+    },
+    { passive: true }
+  );
+
+  btnMachineGun.addEventListener("touchend", () => {
+    clearInterval(machineGunInterval);
+    machineGunInterval = null;
+  });
+
+  btnMachineGun.addEventListener("touchcancel", () => {
+    clearInterval(machineGunInterval);
+    machineGunInterval = null;
+  });
+
+  // === Machine Gun Key (keyboard) ===
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "f" && !machineGunInterval) {
+      machineGunInterval = setInterval(fireMachineGun, 100);
+    }
+  });
+
+  window.addEventListener("keyup", (e) => {
+    if (e.key === "f") {
       clearInterval(machineGunInterval);
       machineGunInterval = null;
-    });
-  
-    btnMachineGun.addEventListener("touchcancel", () => {
-      clearInterval(machineGunInterval);
-      machineGunInterval = null;
-    });
-  
-    // === Machine Gun Key (keyboard) ===
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "f" && !machineGunInterval) {
-        machineGunInterval = setInterval(fireMachineGun, 100);
-      }
-    });
-  
-    window.addEventListener("keyup", (e) => {
-      if (e.key === "f") {
-        clearInterval(machineGunInterval);
-        machineGunInterval = null;
-      }
-    });
-  
-    // === Missile Button (touch and click) ===
-    btnMissile.addEventListener("touchstart", () => {
+    }
+  });
+
+  // === Missile Button (touch and click) ===
+  btnMissile.addEventListener(
+    "touchstart",
+    () => {
       missileTouchHandled = true;
       fireMissile();
-    }, { passive: true });
-  
-    btnMissile.addEventListener("click", () => {
-      if (missileTouchHandled) {
-        missileTouchHandled = false; // skip accidental double fire
-        return;
-      }
+    },
+    { passive: true }
+  );
+
+  btnMissile.addEventListener("click", () => {
+    if (missileTouchHandled) {
+      missileTouchHandled = false; // skip accidental double fire
+      return;
+    }
+    fireMissile();
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "g") {
       fireMissile();
-    });
-  
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "g") {
-        fireMissile();
-      }
-    });
-  
-    // === Flare Button (click) ===
-    btnFlare.addEventListener("click", () => {
-      if (flares.length < 1) { // simple cooldown check
-        releaseFlares();
-      }
-    });
-  
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "h") {
-        releaseFlares();
-      }
-    });
-  }
-  
+    }
+  });
+
+  // === Flare Button (click) ===
+  btnFlare.addEventListener("click", () => {
+    if (flares.length < 1) {
+      // simple cooldown check
+      releaseFlares();
+    }
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "h") {
+      releaseFlares();
+    }
+  });
+}
 
 setupThrottleControls();
 setupWeaponControls();
@@ -216,17 +240,23 @@ setupWeaponControls();
 const player = createPlane(WORLD_WIDTH / 2, WORLD_HEIGHT / 2);
 const opponent = createPlane(500, 500);
 
-let machineGunBullets = [], missiles = [], flares = [], explosions = [];
-let opponentBullets = [], opponentMissiles = [];
-let particles = [], wingTrails = [], floatingTexts = [];
+let machineGunBullets = [],
+  missiles = [],
+  flares = [],
+  explosions = [];
+let opponentBullets = [],
+  opponentMissiles = [];
+let particles = [],
+  wingTrails = [],
+  floatingTexts = [];
 
 let isMissileLockedOn = false;
 let lockOnAlertCooldown = 0;
 let missileLockAnnounced = false;
 
 // === Lock Variables ===
-const PLAYER_LOCK_TIME = 90;    // Player needs 1.5 seconds to lock (adjust this!)
-const OPPONENT_LOCK_TIME = 90;  // Opponent needs 1.5 seconds to lock (adjust this!)
+const PLAYER_LOCK_TIME = 90; // Player needs 1.5 seconds to lock (adjust this!)
+const OPPONENT_LOCK_TIME = 90; // Opponent needs 1.5 seconds to lock (adjust this!)
 
 let playerMissileLockTimer = 0; // how long player has been locking onto opponent
 let playerMissileLockReady = false;
@@ -234,9 +264,18 @@ let playerMissileLockReady = false;
 let opponentMissileLockTimer = 0; // how long opponent has been locking onto player
 let opponentMissileLockReady = false;
 
-
 function createPlane(x, y) {
-  return { x, y, width: 60, height: 60, speed: 3, angle: 0, thrust: 1.0, health: 100, maxHealth: 100 };
+  return {
+    x,
+    y,
+    width: 60,
+    height: 60,
+    speed: 3,
+    angle: 0,
+    thrust: 1.0,
+    health: 100,
+    maxHealth: 100,
+  };
 }
 
 // ====================
@@ -247,7 +286,14 @@ function createFloatingText(text, x, y, color = "white", size = 20) {
 }
 
 function createParticle(x, y, angle, color) {
-  particles.push({ x, y, angle, color, radius: 3 + Math.random() * 2, alpha: 1 });
+  particles.push({
+    x,
+    y,
+    angle,
+    color,
+    radius: 3 + Math.random() * 2,
+    alpha: 1,
+  });
 }
 
 function createTrail(x, y, color) {
@@ -256,73 +302,82 @@ function createTrail(x, y, color) {
 }
 
 function findNearestFlare(x, y) {
-    let nearest = null;
-    let nearestDist = Infinity;
-  
-    for (const flare of flares) {
-      const dx = flare.x - x;
-      const dy = flare.y - y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < nearestDist) {
-        nearest = flare;
-        nearestDist = dist;
-      }
+  let nearest = null;
+  let nearestDist = Infinity;
+
+  for (const flare of flares) {
+    const dx = flare.x - x;
+    const dy = flare.y - y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < nearestDist) {
+      nearest = flare;
+      nearestDist = dist;
     }
-  
-    return nearest;
   }
-  
+
+  return nearest;
+}
 
 // ====================
 // [5] Player Actions
 // ====================
 function fireMachineGun() {
-  machineGunBullets.push({ x: player.x, y: player.y, angle: player.angle, speed: 16, life: 60 });
+  machineGunBullets.push({
+    x: player.x,
+    y: player.y,
+    angle: player.angle,
+    speed: 16,
+    life: 60,
+  });
 }
 
 function fireMissile() {
-    if (!playerMissileLockReady) {
-      createFloatingText("LOCKING... 🔒", player.x, player.y - 80, "yellow", 18);
-      return;
-    }
-  
-    // Fire missile
-    missiles.push({ x: player.x, y: player.y, angle: player.angle, speed: 4, life: 180 });
-    
-    playerMissileLockReady = false;
-    playerMissileLockTimer = 0;
+  if (!playerMissileLockReady) {
+    createFloatingText("LOCKING... 🔒", player.x, player.y - 80, "yellow", 18);
+    return;
   }
-  
+
+  // Fire missile
+  missiles.push({
+    x: player.x,
+    y: player.y,
+    angle: player.angle,
+    speed: 4,
+    life: 180,
+  });
+
+  playerMissileLockReady = false;
+  playerMissileLockTimer = 0;
+}
 
 function releaseFlares() {
-    for (let i = 0; i < 8; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      flares.push({
-        x: player.x,
-        y: player.y,
-        angle: angle,
-        speed: 1 + Math.random(),
-        life: 180,
-        size: 12 + Math.random() * 6 // ✅ Add this!
-      });
-    }
+  for (let i = 0; i < 8; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    flares.push({
+      x: player.x,
+      y: player.y,
+      angle: angle,
+      speed: 1 + Math.random(),
+      life: 180,
+      size: 12 + Math.random() * 6, // ✅ Add this!
+    });
   }
-  
+}
 
 // ====================
 // [6] Opponent AI
 // ====================
 function updateOpponent() {
-    const dx = player.x - opponent.x;
-    const dy = player.y - opponent.y;
-    const dist = Math.hypot(dx, dy);
-    const targetAngle = Math.atan2(dy, dx);
-  
-    rotateToward(opponent, targetAngle, 0.03);
-    moveForward(opponent);
-  
-    // === Inside updateOpponent() ===
-if (dist < 1000) {
+  const dx = player.x - opponent.x;
+  const dy = player.y - opponent.y;
+  const dist = Math.hypot(dx, dy);
+  const targetAngle = Math.atan2(dy, dx);
+
+  rotateToward(opponent, targetAngle, 0.03);
+  moveForward(opponent);
+
+  // === Inside updateOpponent() ===
+  if (dist < 1000) {
     opponentMissileLockTimer += 1;
     if (opponentMissileLockTimer > OPPONENT_LOCK_TIME) {
       opponentMissileLockReady = true;
@@ -331,60 +386,69 @@ if (dist < 1000) {
     opponentMissileLockTimer = 0;
     opponentMissileLockReady = false;
   }
-  
-  
-    if (dist < 800 && Math.random() < 0.05) {
-      fireOpponentMachineGun();
-    }
-    
-    if (opponentMissileLockReady && Math.random() < 0.02) {
-      fireOpponentMissile();
-      opponentMissileLockReady = false;
-      opponentMissileLockTimer = 0;
-    }
+
+  if (dist < 800 && Math.random() < 0.05) {
+    fireOpponentMachineGun();
   }
-  
+
+  if (opponentMissileLockReady && Math.random() < 0.02) {
+    fireOpponentMissile();
+    opponentMissileLockReady = false;
+    opponentMissileLockTimer = 0;
+  }
+}
 
 function updateOpponentBullets() {
-    for (let i = opponentBullets.length - 1; i >= 0; i--) {
-      const b = opponentBullets[i];
-      b.x += Math.cos(b.angle) * b.speed;
-      b.y += Math.sin(b.angle) * b.speed;
-      b.life--;
-  
-      // Check collision with player
-      const dx = player.x - b.x;
-      const dy = player.y - b.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < 30) {
-        player.health -= 10;
-        createExplosion(player.x, player.y);
-        opponentBullets.splice(i, 1);
-        continue;
-      }
-  
-      if (b.life <= 0) {
-        opponentBullets.splice(i, 1);
-      }
+  for (let i = opponentBullets.length - 1; i >= 0; i--) {
+    const b = opponentBullets[i];
+    b.x += Math.cos(b.angle) * b.speed;
+    b.y += Math.sin(b.angle) * b.speed;
+    b.life--;
+
+    // Check collision with player
+    const dx = player.x - b.x;
+    const dy = player.y - b.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 30) {
+      player.health -= 10;
+      createExplosion(player.x, player.y);
+      opponentBullets.splice(i, 1);
+      continue;
+    }
+
+    if (b.life <= 0) {
+      opponentBullets.splice(i, 1);
     }
   }
-  
+}
 
 function fireOpponentMachineGun() {
-  opponentBullets.push({ x: opponent.x, y: opponent.y, angle: opponent.angle, speed: 12, life: 60 });
+  opponentBullets.push({
+    x: opponent.x,
+    y: opponent.y,
+    angle: opponent.angle,
+    speed: 12,
+    life: 60,
+  });
 }
 
 function fireOpponentMissile() {
-  opponentMissiles.push({ x: opponent.x, y: opponent.y, angle: opponent.angle, speed: 4, life: 180 });
+  opponentMissiles.push({
+    x: opponent.x,
+    y: opponent.y,
+    angle: opponent.angle,
+    speed: 4,
+    life: 180,
+  });
 }
 
 function updatePlayerMissileLock() {
-    const dx = opponent.x - player.x;
-    const dy = opponent.y - player.y;
-    const dist = Math.hypot(dx, dy);
-  
-    // === Inside updatePlayerMissileLock() ===
-if (dist < 1000) {
+  const dx = opponent.x - player.x;
+  const dy = opponent.y - player.y;
+  const dist = Math.hypot(dx, dy);
+
+  // === Inside updatePlayerMissileLock() ===
+  if (dist < 1000) {
     playerMissileLockTimer += 1;
     if (playerMissileLockTimer > PLAYER_LOCK_TIME) {
       playerMissileLockReady = true;
@@ -393,9 +457,7 @@ if (dist < 1000) {
     playerMissileLockTimer = 0;
     playerMissileLockReady = false;
   }
-  
-  }
-  
+}
 
 // ====================
 // [7] Update Functions
@@ -422,7 +484,6 @@ function updatePlayer() {
     if (keys["ArrowRight"] || keys["d"]) player.angle += 0.05;
   }
 
-
   if (keys["w"] || keys["ArrowUp"]) {
     player.thrust += 0.1;
     if (player.thrust > 5) player.thrust = 5;
@@ -441,84 +502,98 @@ function updatePlayer() {
   updateCamera();
 
   createAfterburnerParticle();
-createWingTrails();
+  createWingTrails();
 }
 
 function createAfterburnerParticle() {
-    if (player.thrust / 5 < 0.7) return; // thrust < 70% of max speed
-  
-    const backOffset = 32;
-    const sideOffset = 5;
-  
-    particles.push({
-      x: player.x - Math.cos(player.angle) * backOffset + Math.cos(player.angle + Math.PI / 2) * sideOffset,
-      y: player.y - Math.sin(player.angle) * backOffset + Math.sin(player.angle + Math.PI / 2) * sideOffset,
-      alpha: 1,
-      radius: 3 + Math.random() * 2,
-      angle: player.angle + (Math.random() * 0.3 - 0.15),
-      color: "lightgray"
-    });
-  
-    particles.push({
-      x: player.x - Math.cos(player.angle) * backOffset + Math.cos(player.angle - Math.PI / 2) * sideOffset,
-      y: player.y - Math.sin(player.angle) * backOffset + Math.sin(player.angle - Math.PI / 2) * sideOffset,
-      alpha: 1,
-      radius: 3 + Math.random() * 2,
-      angle: player.angle + (Math.random() * 0.3 - 0.15),
-      color: "lightgray"
-    });
-  }
-  
-  function createWingTrails() {
-    if (player.thrust < 0.5 * 5) return; // only create when fast
-  
-    const offset = 20;
-    wingTrails.push({
-      x: player.x + Math.cos(player.angle + Math.PI / 2) * offset,
-      y: player.y + Math.sin(player.angle + Math.PI / 2) * offset,
-      alpha: 0.6
-    });
-  
-    wingTrails.push({
-      x: player.x + Math.cos(player.angle - Math.PI / 2) * offset,
-      y: player.y + Math.sin(player.angle - Math.PI / 2) * offset,
-      alpha: 0.6
-    });
-  
-    if (wingTrails.length > 60) wingTrails.splice(0, wingTrails.length - 60);
-  }
+  if (player.thrust / 5 < 0.7) return; // thrust < 70% of max speed
 
-  function updateWingTrails() {
-    for (let i = wingTrails.length - 1; i >= 0; i--) {
-      const t = wingTrails[i];
-      t.alpha -= 0.02; // fade each frame
-      if (t.alpha <= 0) {
-        wingTrails.splice(i, 1); // remove faded trails
-      }
+  const backOffset = 32;
+  const sideOffset = 5;
+
+  particles.push({
+    x:
+      player.x -
+      Math.cos(player.angle) * backOffset +
+      Math.cos(player.angle + Math.PI / 2) * sideOffset,
+    y:
+      player.y -
+      Math.sin(player.angle) * backOffset +
+      Math.sin(player.angle + Math.PI / 2) * sideOffset,
+    alpha: 1,
+    radius: 3 + Math.random() * 2,
+    angle: player.angle + (Math.random() * 0.3 - 0.15),
+    color: "lightgray",
+  });
+
+  particles.push({
+    x:
+      player.x -
+      Math.cos(player.angle) * backOffset +
+      Math.cos(player.angle - Math.PI / 2) * sideOffset,
+    y:
+      player.y -
+      Math.sin(player.angle) * backOffset +
+      Math.sin(player.angle - Math.PI / 2) * sideOffset,
+    alpha: 1,
+    radius: 3 + Math.random() * 2,
+    angle: player.angle + (Math.random() * 0.3 - 0.15),
+    color: "lightgray",
+  });
+}
+
+function createWingTrails() {
+  if (player.thrust < 0.5 * 5) return; // only create when fast
+
+  const offset = 20;
+  wingTrails.push({
+    x: player.x + Math.cos(player.angle + Math.PI / 2) * offset,
+    y: player.y + Math.sin(player.angle + Math.PI / 2) * offset,
+    alpha: 0.6,
+  });
+
+  wingTrails.push({
+    x: player.x + Math.cos(player.angle - Math.PI / 2) * offset,
+    y: player.y + Math.sin(player.angle - Math.PI / 2) * offset,
+    alpha: 0.6,
+  });
+
+  if (wingTrails.length > 60) wingTrails.splice(0, wingTrails.length - 60);
+}
+
+function updateWingTrails() {
+  for (let i = wingTrails.length - 1; i >= 0; i--) {
+    const t = wingTrails[i];
+    t.alpha -= 0.02; // fade each frame
+    if (t.alpha <= 0) {
+      wingTrails.splice(i, 1); // remove faded trails
     }
   }
-  
-  
+}
 
 function updateCamera() {
   camera.x = clamp(player.x - camera.width / 2, 0, WORLD_WIDTH - camera.width);
-  camera.y = clamp(player.y - camera.height / 2, 0, WORLD_HEIGHT - camera.height);
+  camera.y = clamp(
+    player.y - camera.height / 2,
+    0,
+    WORLD_HEIGHT - camera.height
+  );
 }
 
 function moveForward(entity) {
-    entity.x += Math.cos(entity.angle) * entity.thrust;
-    entity.y += Math.sin(entity.angle) * entity.thrust;
-  }  
+  entity.x += Math.cos(entity.angle) * entity.thrust;
+  entity.y += Math.sin(entity.angle) * entity.thrust;
+}
 
-  function rotateToward(entity, targetAngle, speed, wiggle = 0) {
-    let angleDiff = ((targetAngle - entity.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
-    
-    // === Add random wiggle (optional)
-    angleDiff += (Math.random() - 0.5) * wiggle;
-  
-    entity.angle += Math.max(-speed, Math.min(speed, angleDiff));
-  }
-  
+function rotateToward(entity, targetAngle, speed, wiggle = 0) {
+  let angleDiff =
+    ((targetAngle - entity.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+
+  // === Add random wiggle (optional)
+  angleDiff += (Math.random() - 0.5) * wiggle;
+
+  entity.angle += Math.max(-speed, Math.min(speed, angleDiff));
+}
 
 function updateBullets() {
   for (let i = machineGunBullets.length - 1; i >= 0; i--) {
@@ -545,131 +620,136 @@ function updateBullets() {
 }
 
 function updateMissiles() {
-    let anyMissileLockedOn = false;
-  
-    for (const m of opponentMissiles) {
-      const dx = player.x - m.x;
-      const dy = player.y - m.y;
-      const dist = Math.hypot(dx, dy);
-  
-      if (dist < 300) {
-        anyMissileLockedOn = true;
-        break;
-      }
-    }
-  
-    if (anyMissileLockedOn) {
-      if (!missileLockAnnounced) {
-        createFloatingText("🚨 MISSILE LOCKED!", player.x, player.y - 60, "red", 22, true, true);
-        missileLockAnnounced = true;
-      }
-      lockOnAlertCooldown = 60;
-    } else {
-      if (lockOnAlertCooldown > 0) {
-        lockOnAlertCooldown--;
-      }
-      if (lockOnAlertCooldown === 0) {
-        missileLockAnnounced = false;
-      }
-    }
-  
-    // === Update player missiles ===
-    for (let i = missiles.length - 1; i >= 0; i--) {
-      const m = missiles[i];
-      const dx = opponent.x - m.x;
-      const dy = opponent.y - m.y;
-      const targetAngle = Math.atan2(dy, dx);
-  
-      rotateToward(m, targetAngle, 0.05);
-  
-      m.x += Math.cos(m.angle) * m.speed;
-      m.y += Math.sin(m.angle) * m.speed;
-      m.life--;
+  let anyMissileLockedOn = false;
 
-      // === Create player missile trail ===
-particles.push({
-    x: m.x,
-    y: m.y,
-    alpha: 0.5,
-    radius: 2 + Math.random() * 2,
-    angle: m.angle + (Math.random() * 0.2 - 0.1), // slight random angle
-    color: "white"
-  });
-  
-  
-      if (Math.hypot(dx, dy) < 40) {
-        opponent.health -= 25;
-        createExplosion(opponent.x, opponent.y);
-        missiles.splice(i, 1);
+  for (const m of opponentMissiles) {
+    const dx = player.x - m.x;
+    const dy = player.y - m.y;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist < 300) {
+      anyMissileLockedOn = true;
+      break;
+    }
+  }
+
+  if (anyMissileLockedOn) {
+    if (!missileLockAnnounced) {
+      createFloatingText(
+        "🚨 MISSILE LOCKED!",
+        player.x,
+        player.y - 60,
+        "red",
+        22,
+        true,
+        true
+      );
+      missileLockAnnounced = true;
+    }
+    lockOnAlertCooldown = 60;
+  } else {
+    if (lockOnAlertCooldown > 0) {
+      lockOnAlertCooldown--;
+    }
+    if (lockOnAlertCooldown === 0) {
+      missileLockAnnounced = false;
+    }
+  }
+
+  // === Update player missiles ===
+  for (let i = missiles.length - 1; i >= 0; i--) {
+    const m = missiles[i];
+    const dx = opponent.x - m.x;
+    const dy = opponent.y - m.y;
+    const targetAngle = Math.atan2(dy, dx);
+
+    rotateToward(m, targetAngle, 0.05);
+
+    m.x += Math.cos(m.angle) * m.speed;
+    m.y += Math.sin(m.angle) * m.speed;
+    m.life--;
+
+    // === Create player missile trail ===
+    particles.push({
+      x: m.x,
+      y: m.y,
+      alpha: 0.5,
+      radius: 2 + Math.random() * 2,
+      angle: m.angle + (Math.random() * 0.2 - 0.1), // slight random angle
+      color: "white",
+    });
+
+    if (Math.hypot(dx, dy) < 40) {
+      opponent.health -= 25;
+      createExplosion(opponent.x, opponent.y);
+      missiles.splice(i, 1);
+      continue;
+    }
+
+    if (m.life <= 0) {
+      missiles.splice(i, 1);
+    }
+  }
+
+  // === Update opponent missiles ===
+  for (let i = opponentMissiles.length - 1; i >= 0; i--) {
+    const m = opponentMissiles[i];
+
+    let targetX, targetY;
+
+    // === If there are flares, prefer chasing the nearest flare
+    const nearestFlare = findNearestFlare(m.x, m.y);
+    if (nearestFlare) {
+      targetX = nearestFlare.x;
+      targetY = nearestFlare.y;
+    } else {
+      targetX = player.x;
+      targetY = player.y;
+    }
+
+    const dx = targetX - m.x;
+    const dy = targetY - m.y;
+    const targetAngle = Math.atan2(dy, dx);
+
+    rotateToward(m, targetAngle, 0.05);
+
+    m.x += Math.cos(m.angle) * m.speed;
+    m.y += Math.sin(m.angle) * m.speed;
+    m.life--;
+
+    // === Missile trail (opponent)
+    particles.push({
+      x: m.x,
+      y: m.y,
+      alpha: 0.5,
+      radius: 2 + Math.random() * 2,
+      angle: m.angle + (Math.random() * 0.2 - 0.1),
+      color: "white",
+    });
+
+    if (nearestFlare) {
+      // === Hit flare
+      if (Math.hypot(dx, dy) < 20) {
+        createExplosion(nearestFlare.x, nearestFlare.y);
+        opponentMissiles.splice(i, 1);
+        flares.splice(flares.indexOf(nearestFlare), 1); // Remove the flare
         continue;
       }
-  
-      if (m.life <= 0) {
-        missiles.splice(i, 1);
+    } else {
+      // === Hit player
+      if (Math.hypot(dx, dy) < 40) {
+        player.health -= 25;
+        createExplosion(player.x, player.y);
+        opponentMissiles.splice(i, 1);
+        continue;
       }
     }
-  
-    // === Update opponent missiles ===
-    for (let i = opponentMissiles.length - 1; i >= 0; i--) {
-        const m = opponentMissiles[i];
-      
-        let targetX, targetY;
-      
-        // === If there are flares, prefer chasing the nearest flare
-        const nearestFlare = findNearestFlare(m.x, m.y);
-        if (nearestFlare) {
-          targetX = nearestFlare.x;
-          targetY = nearestFlare.y;
-        } else {
-          targetX = player.x;
-          targetY = player.y;
-        }
-      
-        const dx = targetX - m.x;
-        const dy = targetY - m.y;
-        const targetAngle = Math.atan2(dy, dx);
-      
-        rotateToward(m, targetAngle, 0.05);
-      
-        m.x += Math.cos(m.angle) * m.speed;
-        m.y += Math.sin(m.angle) * m.speed;
-        m.life--;
-      
-        // === Missile trail (opponent)
-        particles.push({
-          x: m.x,
-          y: m.y,
-          alpha: 0.5,
-          radius: 2 + Math.random() * 2,
-          angle: m.angle + (Math.random() * 0.2 - 0.1),
-          color: "white"
-        });
-      
-        if (nearestFlare) {
-          // === Hit flare
-          if (Math.hypot(dx, dy) < 20) {
-            createExplosion(nearestFlare.x, nearestFlare.y);
-            opponentMissiles.splice(i, 1);
-            flares.splice(flares.indexOf(nearestFlare), 1); // Remove the flare
-            continue;
-          }
-        } else {
-          // === Hit player
-          if (Math.hypot(dx, dy) < 40) {
-            player.health -= 25;
-            createExplosion(player.x, player.y);
-            opponentMissiles.splice(i, 1);
-            continue;
-          }
-        }
-      
-        if (m.life <= 0) {
-          opponentMissiles.splice(i, 1);
-        }
-      }
-      
+
+    if (m.life <= 0) {
+      opponentMissiles.splice(i, 1);
+    }
   }
-  
+}
 
 function updateFlares() {
   for (let i = flares.length - 1; i >= 0; i--) {
@@ -712,15 +792,14 @@ function createExplosion(x, y) {
 }
 
 function updateExplosions() {
-    for (let i = explosions.length - 1; i >= 0; i--) {
-      const exp = explosions[i];
-      exp.life--;
-      if (exp.life <= 0) {
-        explosions.splice(i, 1);
-      }
+  for (let i = explosions.length - 1; i >= 0; i--) {
+    const exp = explosions[i];
+    exp.life--;
+    if (exp.life <= 0) {
+      explosions.splice(i, 1);
     }
   }
-  
+}
 
 // ====================
 // [8] Draw Functions
@@ -752,7 +831,13 @@ function drawEntity(entity, img) {
   ctx.save();
   ctx.translate(entity.x - camera.x, entity.y - camera.y);
   ctx.rotate(entity.angle + Math.PI / 4);
-  ctx.drawImage(img, -entity.width / 2, -entity.height / 2, entity.width, entity.height);
+  ctx.drawImage(
+    img,
+    -entity.width / 2,
+    -entity.height / 2,
+    entity.width,
+    entity.height
+  );
   ctx.restore();
 }
 
@@ -828,25 +913,30 @@ function drawParticles() {
 }
 
 function drawWingTrails() {
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 1.5;
-    for (const t of wingTrails) {
-      ctx.save();
-      ctx.globalAlpha = t.alpha;
-      ctx.beginPath();
-      ctx.moveTo(t.x - camera.x, t.y - camera.y);
-      ctx.lineTo(t.x - camera.x, t.y - camera.y + 1); // tiny trail
-      ctx.stroke();
-      ctx.restore();
-    }
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 1.5;
+  for (const t of wingTrails) {
+    ctx.save();
+    ctx.globalAlpha = t.alpha;
+    ctx.beginPath();
+    ctx.moveTo(t.x - camera.x, t.y - camera.y);
+    ctx.lineTo(t.x - camera.x, t.y - camera.y + 1); // tiny trail
+    ctx.stroke();
+    ctx.restore();
   }
-  
+}
 
 function drawExplosions() {
   for (const exp of explosions) {
     ctx.save();
     ctx.globalAlpha = exp.life / 30; // fade out over 30 frames
-    ctx.drawImage(images.explosion, exp.x - 40 - camera.x, exp.y - 40 - camera.y, 80, 80);
+    ctx.drawImage(
+      images.explosion,
+      exp.x - 40 - camera.x,
+      exp.y - 40 - camera.y,
+      80,
+      80
+    );
     ctx.restore();
   }
 }
@@ -869,7 +959,12 @@ function drawHealthBars() {
   ctx.fillStyle = "red";
   ctx.fillRect(opponent.x - 30 - camera.x, opponent.y - 50 - camera.y, 60, 6);
   ctx.fillStyle = "lime";
-  ctx.fillRect(opponent.x - 30 - camera.x, opponent.y - 50 - camera.y, 60 * oppHealthPercent, 6);
+  ctx.fillRect(
+    opponent.x - 30 - camera.x,
+    opponent.y - 50 - camera.y,
+    60 * oppHealthPercent,
+    6
+  );
   ctx.strokeStyle = "white";
   ctx.strokeRect(opponent.x - 30 - camera.x, opponent.y - 50 - camera.y, 60, 6);
 }
