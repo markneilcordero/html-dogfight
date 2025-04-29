@@ -269,60 +269,74 @@ const opponent = {
     y: 500,
     width: 60,
     height: 60,
-    speed: 2,
     angle: 0,
+  
+    // Thrust-based movement
+    thrust: 1.0,
+    maxSpeed: 5,
+    acceleration: 0.03,  // Slower than player
+    deceleration: 0.02,
+  
     fireCooldown: 0,
     missileCooldown: 0,
   };
+  
 
-  const opponentBullets = [];
+const opponentBullets = [];
 const opponentMissiles = [];
+const opponentMissileTrails = [];
+const opponentBulletTrails = [];
 
 function updateOpponentAI() {
-    // === Step 1: Calculate angle to player
-    const dx = player.x - opponent.x;
-    const dy = player.y - opponent.y;
-    const targetAngle = Math.atan2(dy, dx);
-  
-    // === Step 2: Smoothly rotate toward the player (limited turning speed)
-    const angleDiff = ((targetAngle - opponent.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
-    const turnRate = 0.03; // Lower is slower turning
-    opponent.angle += Math.max(-turnRate, Math.min(turnRate, angleDiff));
-  
-    // === Step 3: Move forward constantly like a real plane
-    opponent.x += Math.cos(opponent.angle) * opponent.speed;
-    opponent.y += Math.sin(opponent.angle) * opponent.speed;
-  
-    // === Step 4: Fire machine gun if in range
-    const dist = Math.hypot(dx, dy);
-    if (opponent.fireCooldown <= 0 && dist < 800) {
-      opponentBullets.push({
-        x: opponent.x + Math.cos(opponent.angle) * 30,
-        y: opponent.y + Math.sin(opponent.angle) * 30,
-        angle: opponent.angle,
-        speed: 12,
-        life: 60,
-      });
-      opponent.fireCooldown = 15;
-    }
-  
-    // === Step 5: Fire missile if in range
-    if (opponent.missileCooldown <= 0 && dist < 1000) {
-      opponentMissiles.push({
-        x: opponent.x + Math.cos(opponent.angle) * 40,
-        y: opponent.y + Math.sin(opponent.angle) * 40,
-        angle: opponent.angle,
-        speed: 4,
-        life: 180,
-      });
-      opponent.missileCooldown = 180;
-    }
-  
-    opponent.fireCooldown--;
-    opponent.missileCooldown--;
+  // === Step 1: Calculate angle to player
+  const dx = player.x - opponent.x;
+  const dy = player.y - opponent.y;
+  const targetAngle = Math.atan2(dy, dx);
+
+  // === Step 2: Smoothly rotate toward the player (limited turning speed)
+  const angleDiff =
+    ((targetAngle - opponent.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+  const turnRate = 0.03; // Lower is slower turning
+  opponent.angle += Math.max(-turnRate, Math.min(turnRate, angleDiff));
+
+  // === Step 3: Move forward constantly like a real plane
+  // === Maintain forward motion like player (thrust-based)
+opponent.thrust += opponent.acceleration;
+if (opponent.thrust > opponent.maxSpeed) opponent.thrust = opponent.maxSpeed;
+if (opponent.thrust < 1.0) opponent.thrust = 1.0; // ✅ maintain minimum speed
+
+opponent.x += Math.cos(opponent.angle) * opponent.thrust;
+opponent.y += Math.sin(opponent.angle) * opponent.thrust;
+
+
+  // === Step 4: Fire machine gun if in range
+  const dist = Math.hypot(dx, dy);
+  if (opponent.fireCooldown <= 0 && dist < 800) {
+    opponentBullets.push({
+      x: opponent.x + Math.cos(opponent.angle) * 30,
+      y: opponent.y + Math.sin(opponent.angle) * 30,
+      angle: opponent.angle,
+      speed: 12,
+      life: 60,
+    });
+    opponent.fireCooldown = 15;
   }
-  
-  
+
+  // === Step 5: Fire missile if in range
+  if (opponent.missileCooldown <= 0 && dist < 1000) {
+    opponentMissiles.push({
+      x: opponent.x + Math.cos(opponent.angle) * 40,
+      y: opponent.y + Math.sin(opponent.angle) * 40,
+      angle: opponent.angle,
+      speed: 4,
+      life: 180,
+    });
+    opponent.missileCooldown = 180;
+  }
+
+  opponent.fireCooldown--;
+  opponent.missileCooldown--;
+}
 
 function drawSpeedometer() {
   const speedText = `Speed: ${thrust.toFixed(1)} / ${maxSpeed}`;
@@ -577,23 +591,53 @@ function update() {
   }
 
   // === Opponent Bullets
-for (let i = opponentBullets.length - 1; i >= 0; i--) {
+  for (let i = opponentBullets.length - 1; i >= 0; i--) {
     const b = opponentBullets[i];
     b.x += Math.cos(b.angle) * b.speed;
     b.y += Math.sin(b.angle) * b.speed;
     b.life--;
+
+    // 💥 Add bullet trail particle
+    opponentBulletTrails.push({
+      x: b.x - Math.cos(b.angle) * 10,
+      y: b.y - Math.sin(b.angle) * 10,
+      radius: 2 + Math.random() * 2,
+      alpha: 1,
+      color: "red", // Or "orange", "white" — your choice!
+    });
+
     if (b.life <= 0) opponentBullets.splice(i, 1);
   }
-  
+
+  for (let i = opponentBulletTrails.length - 1; i >= 0; i--) {
+    const t = opponentBulletTrails[i];
+    t.alpha -= 0.05;
+    if (t.alpha <= 0) opponentBulletTrails.splice(i, 1);
+  }
+
   // === Opponent Missiles
   for (let i = opponentMissiles.length - 1; i >= 0; i--) {
     const m = opponentMissiles[i];
     m.x += Math.cos(m.angle) * m.speed;
     m.y += Math.sin(m.angle) * m.speed;
     m.life--;
+
+    // 🚀 Add trail behind opponent missile
+    opponentMissileTrails.push({
+      x: m.x - Math.cos(m.angle) * 35,
+      y: m.y - Math.sin(m.angle) * 35,
+      radius: 3 + Math.random() * 2,
+      alpha: 1,
+      color: "orange", // You can use "lightgray", "red", etc.
+    });
+
     if (m.life <= 0) opponentMissiles.splice(i, 1);
   }
-  
+  for (let i = opponentMissileTrails.length - 1; i >= 0; i--) {
+    const t = opponentMissileTrails[i];
+    t.alpha -= 0.02;
+    if (t.alpha <= 0) opponentMissileTrails.splice(i, 1);
+  }
 
   createAfterburnerParticle();
   updateParticles();
@@ -695,30 +739,57 @@ function draw() {
   }
 
   // === Draw Opponent
-ctx.save();
-ctx.translate(opponent.x - camera.x, opponent.y - camera.y);
-ctx.rotate(opponent.angle + Math.PI / 4);
-ctx.drawImage(opponentImg, -opponent.width / 2, -opponent.height / 2, opponent.width, opponent.height);
-ctx.restore();
-
-// === Draw Opponent Bullets
-for (const b of opponentBullets) {
   ctx.save();
-  ctx.translate(b.x - camera.x, b.y - camera.y);
-  ctx.rotate(b.angle);
-  ctx.drawImage(machineGunBulletImg, -10, -5, 20, 10);
+  ctx.translate(opponent.x - camera.x, opponent.y - camera.y);
+  ctx.rotate(opponent.angle + Math.PI / 4);
+  ctx.drawImage(
+    opponentImg,
+    -opponent.width / 2,
+    -opponent.height / 2,
+    opponent.width,
+    opponent.height
+  );
   ctx.restore();
-}
 
-// === Draw Opponent Missiles
-for (const m of opponentMissiles) {
-  ctx.save();
-  ctx.translate(m.x - camera.x, m.y - camera.y);
-  ctx.rotate(m.angle);
-  ctx.drawImage(missileImg, -40, -20, 40, 40);
-  ctx.restore();
-}
+  // === Draw Opponent Bullet Trails
+  for (const t of opponentBulletTrails) {
+    ctx.save();
+    ctx.globalAlpha = t.alpha;
+    ctx.fillStyle = t.color;
+    ctx.beginPath();
+    ctx.arc(t.x - camera.x, t.y - camera.y, t.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 
+  // === Draw Opponent Bullets
+  for (const b of opponentBullets) {
+    ctx.save();
+    ctx.translate(b.x - camera.x, b.y - camera.y);
+    ctx.rotate(b.angle);
+    ctx.drawImage(machineGunBulletImg, -10, -5, 20, 10);
+    ctx.restore();
+  }
+
+  // === Draw Opponent Missile Trails
+  for (const t of opponentMissileTrails) {
+    ctx.save();
+    ctx.globalAlpha = t.alpha;
+    ctx.fillStyle = t.color;
+    ctx.beginPath();
+    ctx.arc(t.x - camera.x, t.y - camera.y, t.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // === Draw Opponent Missiles
+  for (const m of opponentMissiles) {
+    ctx.save();
+    ctx.translate(m.x - camera.x, m.y - camera.y);
+    ctx.rotate(m.angle);
+    ctx.drawImage(missileImg, -40, -20, 40, 40);
+    ctx.restore();
+  }
 
   // === Draw Speedometer ===
   drawSpeedometer();
