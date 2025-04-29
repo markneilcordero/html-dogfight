@@ -1001,16 +1001,22 @@ function drawPlayer() {
 
 function drawAllies() {
     for (const ally of allies) {
-      drawEntity(ally, images.player); // reuse player image for now
+      drawWingTrails(ally.wingTrails);
+      drawEngineParticles(ally.engineParticles);
+      drawEntity(ally, images.player);
     }
   }
   
+  
 
-function drawOpponents() {
-  for (const opp of opponents) {
-    drawEntity(opp, images.opponent);
+  function drawOpponents() {
+    for (const opp of opponents) {
+      drawWingTrails(opp.wingTrails);
+      drawEngineParticles(opp.engineParticles);
+      drawEntity(opp, images.opponent);
+    }
   }
-}
+  
 
 function drawEntity(entity, img) {
   ctx.save();
