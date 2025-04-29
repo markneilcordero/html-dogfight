@@ -239,12 +239,11 @@ setupWeaponControls();
 // ====================
 const player = createPlane(WORLD_WIDTH / 2, WORLD_HEIGHT / 2);
 const opponents = [
-    createPlane(500, 500),
-    createPlane(1000, 300),
-    createPlane(800, 800),
-    createPlane(300, 1200),
-  ];
-  
+  createPlane(500, 500),
+  createPlane(1000, 300),
+  createPlane(800, 800),
+  createPlane(300, 1200),
+];
 
 let machineGunBullets = [],
   missiles = [],
@@ -338,38 +337,41 @@ function fireMachineGun() {
 }
 
 function fireMissile() {
-    if (!playerMissileLockReady) {
-      createFloatingText("LOCKING... 🔒", player.x, player.y - 80, "yellow", 18);
-      return;
-    }
-  
-    // Find nearest opponent
-    let nearestOpponent = null;
-    let nearestDist = Infinity;
-    for (const opp of opponents) {
-      const dx = opp.x - player.x;
-      const dy = opp.y - player.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < nearestDist) {
-        nearestDist = dist;
-        nearestOpponent = opp;
-      }
-    }
-  
-    if (nearestOpponent) {
-      missiles.push({
-        x: player.x,
-        y: player.y,
-        angle: Math.atan2(nearestOpponent.y - player.y, nearestOpponent.x - player.x),
-        speed: 4,
-        life: 180,
-        target: nearestOpponent, // Track this opponent
-      });
-    }
-  
-    playerMissileLockReady = false;
-    playerMissileLockTimer = 0;
+  if (!playerMissileLockReady) {
+    createFloatingText("LOCKING... 🔒", player.x, player.y - 80, "yellow", 18);
+    return;
   }
+
+  // Find nearest opponent
+  let nearestOpponent = null;
+  let nearestDist = Infinity;
+  for (const opp of opponents) {
+    const dx = opp.x - player.x;
+    const dy = opp.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearestOpponent = opp;
+    }
+  }
+
+  if (nearestOpponent) {
+    missiles.push({
+      x: player.x,
+      y: player.y,
+      angle: Math.atan2(
+        nearestOpponent.y - player.y,
+        nearestOpponent.x - player.x
+      ),
+      speed: 4,
+      life: 180,
+      target: nearestOpponent, // Track this opponent
+    });
+  }
+
+  playerMissileLockReady = false;
+  playerMissileLockTimer = 0;
+}
 
 function releaseFlares() {
   for (let i = 0; i < 8; i++) {
@@ -389,37 +391,52 @@ function releaseFlares() {
 // [6] Opponent AI
 // ====================
 function updateOpponents() {
-    for (const opp of opponents) {
-      const dx = player.x - opp.x;
-      const dy = player.y - opp.y;
-      const dist = Math.hypot(dx, dy);
-      const targetAngle = Math.atan2(dy, dx);
-  
-      rotateToward(opp, targetAngle, 0.03);
-      moveForward(opp);
-  
-      if (dist < 1000) {
-        opponentMissileLockTimer += 1;
-        if (opponentMissileLockTimer > OPPONENT_LOCK_TIME) {
-          opponentMissileLockReady = true;
-        }
-      } else {
-        opponentMissileLockTimer = 0;
-        opponentMissileLockReady = false;
-      }
-  
-      if (dist < 800 && Math.random() < 0.05) {
-        fireOpponentMachineGun(opp);
-      }
-  
-      if (opponentMissileLockReady && Math.random() < 0.02) {
-        fireOpponentMissile(opp);
-        opponentMissileLockReady = false;
-        opponentMissileLockTimer = 0;
+  for (const opp of opponents) {
+    const dx = player.x - opp.x;
+    const dy = player.y - opp.y;
+    const dist = Math.hypot(dx, dy);
+    const targetAngle = Math.atan2(dy, dx);
+
+    rotateToward(opp, targetAngle, 0.03);
+    moveForward(opp);
+
+    // === Opponent vs Opponent repulsion (anti-stacking)
+    for (const other of opponents) {
+      if (opp === other) continue; // Don't repel self
+
+      const dx2 = opp.x - other.x;
+      const dy2 = opp.y - other.y;
+      const dist2 = Math.hypot(dx2, dy2);
+
+      if (dist2 < 80) {
+        // If too close
+        const repelStrength = (80 - dist2) * 0.02; // Adjust strength
+        opp.x += (dx2 / dist2) * repelStrength;
+        opp.y += (dy2 / dist2) * repelStrength;
       }
     }
+
+    if (dist < 1000) {
+      opponentMissileLockTimer += 1;
+      if (opponentMissileLockTimer > OPPONENT_LOCK_TIME) {
+        opponentMissileLockReady = true;
+      }
+    } else {
+      opponentMissileLockTimer = 0;
+      opponentMissileLockReady = false;
+    }
+
+    if (dist < 800 && Math.random() < 0.05) {
+      fireOpponentMachineGun(opp);
+    }
+
+    if (opponentMissileLockReady && Math.random() < 0.02) {
+      fireOpponentMissile(opp);
+      opponentMissileLockReady = false;
+      opponentMissileLockTimer = 0;
+    }
   }
-  
+}
 
 function updateOpponentBullets() {
   for (let i = opponentBullets.length - 1; i >= 0; i--) {
@@ -446,49 +463,48 @@ function updateOpponentBullets() {
 }
 
 function fireOpponentMachineGun(opp) {
-    opponentBullets.push({
-      x: opp.x,
-      y: opp.y,
-      angle: opp.angle,
-      speed: 12,
-      life: 60,
-    });
-  }  
+  opponentBullets.push({
+    x: opp.x,
+    y: opp.y,
+    angle: opp.angle,
+    speed: 12,
+    life: 60,
+  });
+}
 
-  function fireOpponentMissile(opp) {
-    opponentMissiles.push({
-      x: opp.x,
-      y: opp.y,
-      angle: opp.angle,
-      speed: 4,
-      life: 180,
-    });
-  }
-  
+function fireOpponentMissile(opp) {
+  opponentMissiles.push({
+    x: opp.x,
+    y: opp.y,
+    angle: opp.angle,
+    speed: 4,
+    life: 180,
+  });
+}
 
 function updatePlayerMissileLock() {
-    let nearestOpponent = null;
-    let nearestDist = Infinity;
-    for (const opp of opponents) {
-      const dx = opp.x - player.x;
-      const dy = opp.y - player.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < nearestDist) {
-        nearestDist = dist;
-        nearestOpponent = opp;
-      }
-    }
-  
-    if (nearestOpponent && nearestDist < 1000) {
-      playerMissileLockTimer += 1;
-      if (playerMissileLockTimer > PLAYER_LOCK_TIME) {
-        playerMissileLockReady = true;
-      }
-    } else {
-      playerMissileLockTimer = 0;
-      playerMissileLockReady = false;
+  let nearestOpponent = null;
+  let nearestDist = Infinity;
+  for (const opp of opponents) {
+    const dx = opp.x - player.x;
+    const dy = opp.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearestOpponent = opp;
     }
   }
+
+  if (nearestOpponent && nearestDist < 1000) {
+    playerMissileLockTimer += 1;
+    if (playerMissileLockTimer > PLAYER_LOCK_TIME) {
+      playerMissileLockReady = true;
+    }
+  } else {
+    playerMissileLockTimer = 0;
+    playerMissileLockReady = false;
+  }
+}
 
 // ====================
 // [7] Update Functions
@@ -690,7 +706,7 @@ function updateMissiles() {
   // === Update player missiles ===
   for (let i = missiles.length - 1; i >= 0; i--) {
     const m = missiles[i];
-  
+
     // Find nearest opponent
     let nearestOpponent = null;
     let nearestDist = Infinity;
@@ -703,18 +719,18 @@ function updateMissiles() {
         nearestOpponent = opp;
       }
     }
-  
+
     if (nearestOpponent) {
       const dx = nearestOpponent.x - m.x;
       const dy = nearestOpponent.y - m.y;
       const targetAngle = Math.atan2(dy, dx);
-  
+
       rotateToward(m, targetAngle, 0.05, 0.2);
-  
+
       m.x += Math.cos(m.angle) * m.speed;
       m.y += Math.sin(m.angle) * m.speed;
       m.life--;
-  
+
       // Missile trail
       particles.push({
         x: m.x,
@@ -724,7 +740,7 @@ function updateMissiles() {
         angle: m.angle + (Math.random() * 0.2 - 0.1),
         color: "white",
       });
-  
+
       // Check hit
       if (Math.hypot(dx, dy) < 40) {
         nearestOpponent.health -= 25;
@@ -732,13 +748,12 @@ function updateMissiles() {
         missiles.splice(i, 1);
         continue;
       }
-  
+
       if (m.life <= 0) {
         missiles.splice(i, 1);
       }
     }
   }
-  
 
   // === Update opponent missiles ===
   for (let i = opponentMissiles.length - 1; i >= 0; i--) {
@@ -873,11 +888,10 @@ function drawPlayer() {
 }
 
 function drawOpponents() {
-    for (const opp of opponents) {
-      drawEntity(opp, images.opponent);
-    }
+  for (const opp of opponents) {
+    drawEntity(opp, images.opponent);
   }
-  
+}
 
 function drawEntity(entity, img) {
   ctx.save();
@@ -994,30 +1008,34 @@ function drawExplosions() {
 }
 
 function drawHealthBars() {
-    // Player Health Bar (fixed position)
-    const barWidth = 100;
-    const barHeight = 10;
-    const healthPercent = player.health / player.maxHealth;
-  
+  // Player Health Bar (fixed position)
+  const barWidth = 100;
+  const barHeight = 10;
+  const healthPercent = player.health / player.maxHealth;
+
+  ctx.fillStyle = "red";
+  ctx.fillRect(20, 20, barWidth, barHeight);
+  ctx.fillStyle = "lime";
+  ctx.fillRect(20, 20, barWidth * healthPercent, barHeight);
+  ctx.strokeStyle = "white";
+  ctx.strokeRect(20, 20, barWidth, barHeight);
+
+  // Opponents' Health Bars (above each opponent)
+  for (const opp of opponents) {
+    const oppHealthPercent = opp.health / opp.maxHealth;
     ctx.fillStyle = "red";
-    ctx.fillRect(20, 20, barWidth, barHeight);
+    ctx.fillRect(opp.x - 30 - camera.x, opp.y - 50 - camera.y, 60, 6);
     ctx.fillStyle = "lime";
-    ctx.fillRect(20, 20, barWidth * healthPercent, barHeight);
+    ctx.fillRect(
+      opp.x - 30 - camera.x,
+      opp.y - 50 - camera.y,
+      60 * oppHealthPercent,
+      6
+    );
     ctx.strokeStyle = "white";
-    ctx.strokeRect(20, 20, barWidth, barHeight);
-  
-    // Opponents' Health Bars (above each opponent)
-    for (const opp of opponents) {
-      const oppHealthPercent = opp.health / opp.maxHealth;
-      ctx.fillStyle = "red";
-      ctx.fillRect(opp.x - 30 - camera.x, opp.y - 50 - camera.y, 60, 6);
-      ctx.fillStyle = "lime";
-      ctx.fillRect(opp.x - 30 - camera.x, opp.y - 50 - camera.y, 60 * oppHealthPercent, 6);
-      ctx.strokeStyle = "white";
-      ctx.strokeRect(opp.x - 30 - camera.x, opp.y - 50 - camera.y, 60, 6);
-    }
+    ctx.strokeRect(opp.x - 30 - camera.x, opp.y - 50 - camera.y, 60, 6);
   }
-  
+}
 
 function drawSpeedometer() {
   const barX = 20;
