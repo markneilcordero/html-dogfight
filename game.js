@@ -50,45 +50,30 @@ const joystick = document.getElementById("joystick");
 const container = document.getElementById("joystickContainer");
 
 const missiles = [];
-
+let lastMissileSide = "right"; // Start with right, so the first missile is from the left
 function fireMissile() {
-  const innerOffset = 18; // Closer to the center
-  const outerOffset = 12; // Farther from the center
-  const forwardOffset = 20; // How far in front of the ship
+  const sideOffset = 10; // Distance from center to wing
+  const forwardOffset = 30; // In front of the ship
 
-  const offsets = [innerOffset, outerOffset];
+  // Determine which side to fire from
+  const angleOffset = lastMissileSide === "left" ? Math.PI / 2 : -Math.PI / 2;
 
-  for (const offset of offsets) {
-    // Left side missiles
-    missiles.push({
-      x:
-        player.x +
-        Math.cos(player.angle) * forwardOffset +
-        Math.cos(player.angle + Math.PI / 2) * offset,
-      y:
-        player.y +
-        Math.sin(player.angle) * forwardOffset +
-        Math.sin(player.angle + Math.PI / 2) * offset,
-      angle: player.angle,
-      speed: 8,
-      life: 180,
-    });
+  missiles.push({
+    x:
+      player.x +
+      Math.cos(player.angle) * forwardOffset +
+      Math.cos(player.angle + angleOffset) * sideOffset,
+    y:
+      player.y +
+      Math.sin(player.angle) * forwardOffset +
+      Math.sin(player.angle + angleOffset) * sideOffset,
+    angle: player.angle,
+    speed: 1,
+    life: 180,
+  });
 
-    // Right side missiles
-    missiles.push({
-      x:
-        player.x +
-        Math.cos(player.angle) * forwardOffset +
-        Math.cos(player.angle - Math.PI / 2) * offset,
-      y:
-        player.y +
-        Math.sin(player.angle) * forwardOffset +
-        Math.sin(player.angle - Math.PI / 2) * offset,
-      angle: player.angle,
-      speed: 8,
-      life: 180,
-    });
-  }
+  // Toggle for next shot
+  lastMissileSide = lastMissileSide === "left" ? "right" : "left";
 }
 
 const machineGunBullets = [];
@@ -139,8 +124,23 @@ window.addEventListener("keydown", (e) => {
 });
 
 const btnMissile = document.getElementById("btnMissile");
-btnMissile.addEventListener("touchstart", fireMissile, { passive: true });
-btnMissile.addEventListener("click", fireMissile); // for mouse/tap support too
+let missileTouchHandled = false;
+btnMissile.addEventListener(
+  "touchstart",
+  (e) => {
+    missileTouchHandled = true;
+    fireMissile();
+  },
+  { passive: true }
+);
+
+btnMissile.addEventListener("click", (e) => {
+  if (missileTouchHandled) {
+    missileTouchHandled = false; // Reset flag
+    return; // Skip the click after touch
+  }
+  fireMissile();
+});
 
 window.addEventListener("keyup", (e) => {
   if (e.key === "f") {
@@ -413,6 +413,7 @@ window.addEventListener("keydown", (e) => (keys[e.key] = true));
 window.addEventListener("keyup", (e) => (keys[e.key] = false));
 
 const bulletTrails = [];
+const missileTrails = [];
 function update() {
   // Rotate left/right
   if (joystickActive) {
@@ -493,7 +494,23 @@ function update() {
     m.x += Math.cos(m.angle) * m.speed;
     m.y += Math.sin(m.angle) * m.speed;
     m.life--;
+
+    // === 🚀 Missile Trail Particle
+    missileTrails.push({
+      x: m.x - Math.cos(m.angle) * 35, // Behind the missile
+      y: m.y - Math.sin(m.angle) * 35,
+      radius: 3 + Math.random() * 2, // Random size
+      alpha: 1,
+      color: "lightgray", // Can be "gray", "white", "yellow", "red"
+    });
+
     if (m.life <= 0) missiles.splice(i, 1);
+  }
+
+  for (let i = missileTrails.length - 1; i >= 0; i--) {
+    const t = missileTrails[i];
+    t.alpha -= 0.02; // Fade out slowly
+    if (t.alpha <= 0) missileTrails.splice(i, 1);
   }
 
   createAfterburnerParticle();
@@ -575,11 +592,22 @@ function draw() {
     ctx.restore();
   }
 
+  // === 🚀 Draw Missile Trails
+  for (const t of missileTrails) {
+    ctx.save();
+    ctx.globalAlpha = t.alpha;
+    ctx.fillStyle = t.color;
+    ctx.beginPath();
+    ctx.arc(t.x - camera.x, t.y - camera.y, t.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   for (const m of missiles) {
     ctx.save();
     ctx.translate(m.x - camera.x, m.y - camera.y);
     ctx.rotate(m.angle);
-    ctx.drawImage(missileImg, -40, -18, 35, 35); // Missile is now 60x24 pixels
+    ctx.drawImage(missileImg, -40, -20, 40, 40); // Missile is now 60x24 pixels
     ctx.restore();
   }
 
