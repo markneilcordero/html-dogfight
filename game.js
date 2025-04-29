@@ -503,13 +503,7 @@ const targetAngle = Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodge
     rotateToward(opp, targetAngle, 0.04);
 
     // === Thrust Control ===
-    if (distance > 800) {
-      opp.thrust += 0.05;
-      if (opp.thrust > 5) opp.thrust = 5;
-    } else if (distance < 400) {
-      opp.thrust -= 0.05;
-      if (opp.thrust < 1.0) opp.thrust = 1.0;
-    }
+    opp.thrust = 5;
 
     moveForward(opp);
     createEntityWingTrails(opp);
@@ -530,7 +524,7 @@ const targetAngle = Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodge
 
     // === Shooting ===
     if (distance < 800 && Math.random() < 0.05) {
-      fireOpponentMachineGun(opp, target);
+      fireOpponentMachineGun(opp);
     }
     if (opponentMissileLockReady && Math.random() < 0.02) {
       fireOpponentMissile(opp, target);
@@ -565,13 +559,7 @@ const targetAngle = Math.atan2(dy, dx) + offset * ally.orbitDirection + ally.dod
       rotateToward(ally, targetAngle, 0.06);
 
       // === Add smart thrust control ===
-      if (nearestDist > 800) {
-        ally.thrust += 0.05; // speed up
-        if (ally.thrust > 5) ally.thrust = 5;
-      } else if (nearestDist < 400) {
-        ally.thrust -= 0.05; // slow down
-        if (ally.thrust < 1.0) ally.thrust = 1.0;
-      }
+      ally.thrust = 5;
 
       moveForward(ally);
       createEntityWingTrails(ally);
@@ -632,17 +620,16 @@ function updateOpponentBullets() {
   }
 }
 
-function fireOpponentMachineGun(opp, target) {
-  const angle = Math.atan2(target.y - opp.y, target.x - opp.x);
-  opponentBullets.push({
-    x: opp.x,
-    y: opp.y,
-    angle,
-    speed: 12,
-    life: 60,
-    target,
-  });
-}
+function fireOpponentMachineGun(opp) {
+    opponentBullets.push({
+      x: opp.x,
+      y: opp.y,
+      angle: opp.angle, // 🔥 use plane’s current angle
+      speed: 12,
+      life: 60,
+    });
+  }
+  
 
 function fireOpponentMissile(opp) {
   opponentMissiles.push({
