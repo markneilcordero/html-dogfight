@@ -245,6 +245,13 @@ const opponents = [
   createPlane(300, 1200),
 ];
 
+const allies = [
+    createPlane(player.x + 100, player.y + 50),
+    createPlane(player.x - 100, player.y + 50),
+    createPlane(player.x, player.y + 100),
+  ];
+  
+
 let machineGunBullets = [],
   missiles = [],
   flares = [],
@@ -438,6 +445,37 @@ function updateOpponents() {
   }
 }
 
+function updateAllies() {
+    for (const ally of allies) {
+      // Allies follow the player
+      const dx = player.x - ally.x;
+      const dy = player.y - ally.y;
+      const dist = Math.hypot(dx, dy);
+  
+      const followDistance = 200; // How far allies should stay from you
+  
+      if (dist > followDistance) {
+        const targetAngle = Math.atan2(dy, dx);
+        rotateToward(ally, targetAngle, 0.03);
+        moveForward(ally);
+      }
+  
+      // Allies avoid stacking on each other
+      for (const other of allies) {
+        if (ally === other) continue;
+        const dx2 = ally.x - other.x;
+        const dy2 = ally.y - other.y;
+        const dist2 = Math.hypot(dx2, dy2);
+        if (dist2 < 80) {
+          const repelStrength = (80 - dist2) * 0.02;
+          ally.x += (dx2 / dist2) * repelStrength;
+          ally.y += (dy2 / dist2) * repelStrength;
+        }
+      }
+    }
+  }
+  
+
 function updateOpponentBullets() {
   for (let i = opponentBullets.length - 1; i >= 0; i--) {
     const b = opponentBullets[i];
@@ -515,6 +553,7 @@ function update() {
   updateOpponentBullets();
   updateMissiles();
   updateOpponents();
+  updateAllies();
   updateFlares();
   updateParticles();
   updateFloatingTexts();
@@ -872,6 +911,7 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBackground();
   drawPlayer();
+  drawAllies();
   drawOpponents();
   drawProjectiles();
   drawParticles();
@@ -886,6 +926,13 @@ function drawBackground() {
 function drawPlayer() {
   drawEntity(player, images.player);
 }
+
+function drawAllies() {
+    for (const ally of allies) {
+      drawEntity(ally, images.player); // reuse player image for now
+    }
+  }
+  
 
 function drawOpponents() {
   for (const opp of opponents) {
