@@ -713,25 +713,33 @@ function update() {
   }
 
   // === Update Player Missiles ===
-  for (let i = missiles.length - 1; i >= 0; i--) {
+for (let i = missiles.length - 1; i >= 0; i--) {
     const m = missiles[i];
-
-    // 🚀 Move the missile
-    m.x += Math.cos(m.angle) * m.speed;
-    m.y += Math.sin(m.angle) * m.speed;
-
-    m.life--;
-
-    // 🚀 Check collision with opponent
+  
+    // 🚀 Find the angle toward the opponent
     const dx = opponent.x - m.x;
     const dy = opponent.y - m.y;
+    const targetAngle = Math.atan2(dy, dx);
+  
+    // 🚀 Smoothly turn missile toward opponent
+    const turnRate = 0.05; // Smaller = slower turning
+    let angleDiff = ((targetAngle - m.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    m.angle += Math.max(-turnRate, Math.min(turnRate, angleDiff));
+  
+    // 🚀 Move forward
+    m.x += Math.cos(m.angle) * m.speed;
+    m.y += Math.sin(m.angle) * m.speed;
+  
+    m.life--;
+  
+    // 🚀 Check collision with opponent
     const dist = Math.hypot(dx, dy);
     if (dist < 40) {
       opponent.health -= 25;
       missiles.splice(i, 1);
       continue;
     }
-
+  
     // 🚀 Missile Trail
     missileTrails.push({
       x: m.x - Math.cos(m.angle) * 35,
@@ -740,11 +748,11 @@ function update() {
       alpha: 1,
       color: "lightgray",
     });
-
+  
     if (m.life <= 0) {
       missiles.splice(i, 1);
     }
-  }
+  }  
 
   for (let i = missileTrails.length - 1; i >= 0; i--) {
     const t = missileTrails[i];
@@ -793,25 +801,33 @@ function update() {
   }
 
   // === Update Opponent Missiles ===
-  for (let i = opponentMissiles.length - 1; i >= 0; i--) {
+for (let i = opponentMissiles.length - 1; i >= 0; i--) {
     const m = opponentMissiles[i];
-
-    // 🚀 Move the missile
-    m.x += Math.cos(m.angle) * m.speed;
-    m.y += Math.sin(m.angle) * m.speed;
-
-    m.life--;
-
-    // 🚀 Check collision with player
+  
+    // 🚀 Find the angle toward the player
     const dx = player.x - m.x;
     const dy = player.y - m.y;
+    const targetAngle = Math.atan2(dy, dx);
+  
+    // 🚀 Smoothly turn missile toward player
+    const turnRate = 0.05;
+    let angleDiff = ((targetAngle - m.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    m.angle += Math.max(-turnRate, Math.min(turnRate, angleDiff));
+  
+    // 🚀 Move forward
+    m.x += Math.cos(m.angle) * m.speed;
+    m.y += Math.sin(m.angle) * m.speed;
+  
+    m.life--;
+  
+    // 🚀 Check collision with player
     const dist = Math.hypot(dx, dy);
     if (dist < 40) {
       player.health -= 25;
       opponentMissiles.splice(i, 1);
       continue;
     }
-
+  
     // 🚀 Missile Trail
     opponentMissileTrails.push({
       x: m.x - Math.cos(m.angle) * 35,
@@ -820,11 +836,11 @@ function update() {
       alpha: 1,
       color: "orange",
     });
-
+  
     if (m.life <= 0) {
       opponentMissiles.splice(i, 1);
     }
-  }
+  }  
 
   for (let i = opponentMissileTrails.length - 1; i >= 0; i--) {
     const t = opponentMissileTrails[i];
