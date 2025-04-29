@@ -265,6 +265,9 @@ let isMissileLockedOn = false;
 let lockOnAlertCooldown = 0;
 let missileLockAnnounced = false;
 
+let playerRespawnCooldown = 0;
+let playerDead = false;
+
 // === Lock Variables ===
 const PLAYER_LOCK_TIME = 300; // Player needs 1.5 seconds to lock (adjust this!)
 const OPPONENT_LOCK_TIME = 300; // Opponent needs 1.5 seconds to lock (adjust this!)
@@ -291,7 +294,8 @@ function createPlane(x, y) {
       engineParticles: [],
       orbitDirection: Math.random() < 0.5 ? 1 : -1,
       dodgeCooldown: 0,             // ← NEW
-      dodgeOffset: 0                // ← NEW
+      dodgeOffset: 0,                // ← NEW
+      flareCooldown: 0,
     };
   }
 
@@ -702,12 +706,12 @@ function updatePlayerMissileLock() {
 // [7] Update Functions
 // ====================
 function update() {
+    maybeDeployFlares(opponents);
+    maybeDeployFlares(allies);
   updatePlayer();
   updateBullets();
   updateOpponentBullets();
   updateMissiles();
-  maybeDeployFlares(opponents);
-maybeDeployFlares(allies);
   updateOpponents();
   updateAllies();
   applyAntiStacking([...opponents, ...allies]);
@@ -719,32 +723,50 @@ maybeDeployFlares(allies);
 }
 
 function updatePlayer() {
-  if (joystickActive) {
-    player.angle = joystickAngle;
-  } else {
-    if (keys["ArrowLeft"] || keys["a"]) player.angle -= 0.05;
-    if (keys["ArrowRight"] || keys["d"]) player.angle += 0.05;
+    if (player.health <= 0) {
+        if (!playerDead) {
+          playerDead = true;
+          playerRespawnCooldown = 180;
+        } else {
+          playerRespawnCooldown--;
+          if (playerRespawnCooldown === 0) {
+            respawnPlane(player, false);
+            createFloatingText("🛬 Player Respawned!", player.x, player.y - 60, "cyan", 18);
+            updateCamera();
+            playerDead = false; // ✅ Reset dead status
+          }
+        }
+        return;
+      }
+  
+    // Existing movement, thrust, and camera logic
+    if (joystickActive) {
+      player.angle = joystickAngle;
+    } else {
+      if (keys["ArrowLeft"] || keys["a"]) player.angle -= 0.05;
+      if (keys["ArrowRight"] || keys["d"]) player.angle += 0.05;
+    }
+  
+    if (keys["w"] || keys["ArrowUp"]) {
+      player.thrust += 0.1;
+      if (player.thrust > 5) player.thrust = 5;
+    }
+  
+    if (keys["s"] || keys["ArrowDown"]) {
+      player.thrust -= 0.05;
+      if (player.thrust < 1.0) player.thrust = 1.0;
+    }
+  
+    moveForward(player);
+    createEntityWingTrails(player);
+    createEngineParticles(player);
+  
+    player.x = clamp(player.x, 0, WORLD_WIDTH);
+    player.y = clamp(player.y, 0, WORLD_HEIGHT);
+  
+    updateCamera();
   }
-
-  if (keys["w"] || keys["ArrowUp"]) {
-    player.thrust += 0.1;
-    if (player.thrust > 5) player.thrust = 5;
-  }
-
-  if (keys["s"] || keys["ArrowDown"]) {
-    player.thrust -= 0.05;
-    if (player.thrust < 1.0) player.thrust = 1.0;
-  }
-
-  moveForward(player);
-  createEntityWingTrails(player);
-  createEngineParticles(player);
-
-  player.x = clamp(player.x, 0, WORLD_WIDTH);
-  player.y = clamp(player.y, 0, WORLD_HEIGHT);
-
-  updateCamera();
-}
+  
 
 function createEngineParticles(entity) {
   if (entity.thrust / 5 < 0.7) return;
@@ -842,17 +864,24 @@ function maybeDodge(entity) {
 
   function maybeDeployFlares(planes) {
     for (const plane of planes) {
-      const isChased = opponentMissiles.some((m) => {
+      if (plane.flareCooldown > 0) {
+        plane.flareCooldown--;
+        continue;
+      }
+  
+      const isChased = missiles.some((m) => {
         const dx = plane.x - m.x;
         const dy = plane.y - m.y;
         return Math.hypot(dx, dy) < 250;
       });
   
-      if (isChased && Math.random() < 0.02) { // ~2% chance per frame
+      if (isChased && Math.random() < 0.02) {
         releaseFlaresFor(plane);
+        plane.flareCooldown = 300; // wait 5 seconds (at 60 FPS)
       }
     }
   }
+  
   
   
 
@@ -1112,9 +1141,12 @@ function drawBackground() {
 }
 
 function drawPlayer() {
-  drawEntity(player, images.player);
-  drawEngineParticles(player.engineParticles);
-}
+    if (playerDead) return;
+    drawEntity(player, images.player);
+    drawEngineParticles(player.engineParticles);
+  }
+  
+  
 
 function drawAllies() {
   for (const ally of allies) {
