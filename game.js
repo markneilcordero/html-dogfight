@@ -265,27 +265,138 @@ const player = {
 };
 
 const opponent = {
-    x: 500,
-    y: 500,
-    width: 60,
-    height: 60,
-    angle: 0,
-  
-    // Thrust-based movement
-    thrust: 1.0,
-    maxSpeed: 5,
-    acceleration: 0.03,  // Slower than player
-    deceleration: 0.02,
-  
-    fireCooldown: 0,
-    missileCooldown: 0,
-  };
-  
+  x: 500,
+  y: 500,
+  width: 60,
+  height: 60,
+  angle: 0,
+
+  // Thrust-based movement
+  thrust: 1.0,
+  maxSpeed: 5,
+  acceleration: 0.03, // Slower than player
+  deceleration: 0.02,
+
+  fireCooldown: 0,
+  missileCooldown: 0,
+};
 
 const opponentBullets = [];
 const opponentMissiles = [];
 const opponentMissileTrails = [];
 const opponentBulletTrails = [];
+const opponentParticles = [];
+const opponentWingTrails = [];
+
+function createOpponentAfterburnerParticle() {
+  if (opponent.thrust / opponent.maxSpeed < 0.7) return;
+
+  const colors = ["lightgray", "gray"];
+  const color1 = colors[Math.floor(Math.random() * colors.length)];
+  const color2 = colors[Math.floor(Math.random() * colors.length)];
+
+  const backOffset = 32;
+  const sideOffset = 5;
+
+  // Left Engine
+  opponentParticles.push({
+    x:
+      opponent.x -
+      Math.cos(opponent.angle) * backOffset +
+      Math.cos(opponent.angle + Math.PI / 2) * sideOffset,
+    y:
+      opponent.y -
+      Math.sin(opponent.angle) * backOffset +
+      Math.sin(opponent.angle + Math.PI / 2) * sideOffset,
+    alpha: 1,
+    radius: 3 + Math.random() * 2,
+    angle: opponent.angle + (Math.random() * 0.3 - 0.15),
+    color: color1,
+  });
+
+  // Right Engine
+  opponentParticles.push({
+    x:
+      opponent.x -
+      Math.cos(opponent.angle) * backOffset +
+      Math.cos(opponent.angle - Math.PI / 2) * sideOffset,
+    y:
+      opponent.y -
+      Math.sin(opponent.angle) * backOffset +
+      Math.sin(opponent.angle - Math.PI / 2) * sideOffset,
+    alpha: 1,
+    radius: 3 + Math.random() * 2,
+    angle: opponent.angle + (Math.random() * 0.3 - 0.15),
+    color: color2,
+  });
+}
+
+function updateOpponentParticles() {
+  for (let i = opponentParticles.length - 1; i >= 0; i--) {
+    const p = opponentParticles[i];
+    p.x -= Math.cos(p.angle) * 1;
+    p.y -= Math.sin(p.angle) * 1;
+    p.alpha -= 0.02;
+    if (p.alpha <= 0) {
+      opponentParticles.splice(i, 1);
+    }
+  }
+}
+
+function createOpponentWingTrails() {
+  if (opponent.thrust < 0.5 * opponent.maxSpeed) return;
+
+  const offset = 20;
+  const leftWing = {
+    x: opponent.x + Math.cos(opponent.angle + Math.PI / 2) * offset,
+    y: opponent.y + Math.sin(opponent.angle + Math.PI / 2) * offset,
+    alpha: 0.6,
+  };
+  const rightWing = {
+    x: opponent.x + Math.cos(opponent.angle - Math.PI / 2) * offset,
+    y: opponent.y + Math.sin(opponent.angle - Math.PI / 2) * offset,
+    alpha: 0.6,
+  };
+  opponentWingTrails.push(leftWing, rightWing);
+
+  if (opponentWingTrails.length > 60)
+    opponentWingTrails.splice(0, opponentWingTrails.length - 60);
+}
+
+function updateOpponentWingTrails() {
+  for (let i = opponentWingTrails.length - 1; i >= 0; i--) {
+    opponentWingTrails[i].alpha -= 0.01;
+    if (opponentWingTrails[i].alpha <= 0) {
+      opponentWingTrails.splice(i, 1);
+    }
+  }
+}
+
+function drawOpponentParticles() {
+  for (const p of opponentParticles) {
+    ctx.save();
+    ctx.globalAlpha = p.alpha;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x - camera.x, p.y - camera.y, p.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawOpponentWingTrails() {
+  ctx.strokeStyle = "lightgray";
+  ctx.lineWidth = 1.5;
+  for (const t of opponentWingTrails) {
+    ctx.save();
+    ctx.globalAlpha = t.alpha;
+    ctx.beginPath();
+    ctx.moveTo(t.x - camera.x, t.y - camera.y);
+    ctx.lineTo(t.x - camera.x, t.y - camera.y + 1);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
 
 function updateOpponentAI() {
   // === Step 1: Calculate angle to player
@@ -301,13 +412,12 @@ function updateOpponentAI() {
 
   // === Step 3: Move forward constantly like a real plane
   // === Maintain forward motion like player (thrust-based)
-opponent.thrust += opponent.acceleration;
-if (opponent.thrust > opponent.maxSpeed) opponent.thrust = opponent.maxSpeed;
-if (opponent.thrust < 1.0) opponent.thrust = 1.0; // ✅ maintain minimum speed
+  opponent.thrust += opponent.acceleration;
+  if (opponent.thrust > opponent.maxSpeed) opponent.thrust = opponent.maxSpeed;
+  if (opponent.thrust < 1.0) opponent.thrust = 1.0; // ✅ maintain minimum speed
 
-opponent.x += Math.cos(opponent.angle) * opponent.thrust;
-opponent.y += Math.sin(opponent.angle) * opponent.thrust;
-
+  opponent.x += Math.cos(opponent.angle) * opponent.thrust;
+  opponent.y += Math.sin(opponent.angle) * opponent.thrust;
 
   // === Step 4: Fire machine gun if in range
   const dist = Math.hypot(dx, dy);
@@ -644,7 +754,11 @@ function update() {
 
   createWingTrails();
   updateWingTrails();
+  createOpponentWingTrails();
+  updateOpponentWingTrails();
   updateOpponentAI();
+  createOpponentAfterburnerParticle();
+  updateOpponentParticles();
 }
 
 function draw() {
@@ -795,6 +909,8 @@ function draw() {
   drawSpeedometer();
   drawParticles();
   drawWingTrails();
+  drawOpponentParticles();
+  drawOpponentWingTrails();
 }
 
 function gameLoop() {
