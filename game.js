@@ -436,56 +436,53 @@ function releaseFlares() {
 // [6] Opponent AI
 // ====================
 function updateOpponents() {
-  for (const opp of opponents) {
-    const dx = player.x - opp.x;
-    const dy = player.y - opp.y;
-    const dist = Math.hypot(dx, dy);
-    const targetAngle = Math.atan2(dy, dx);
-
-    rotateToward(opp, targetAngle, 0.03);
-    moveForward(opp);
-
-    // === Opponent vs Opponent repulsion (anti-stacking)
-    for (const other of opponents) {
-      if (opp === other) continue; // Don't repel self
-
-      const dx2 = opp.x - other.x;
-      const dy2 = opp.y - other.y;
-      const dist2 = Math.hypot(dx2, dy2);
-
-      if (dist2 < 80) {
-        // If too close
-        const repelStrength = (80 - dist2) * 0.02; // Adjust strength
-        opp.x += (dx2 / dist2) * repelStrength;
-        opp.y += (dy2 / dist2) * repelStrength;
+    for (const opp of opponents) {
+      const dx = player.x - opp.x;
+      const dy = player.y - opp.y;
+      const dist = Math.hypot(dx, dy);
+      const targetAngle = Math.atan2(dy, dx);
+  
+      rotateToward(opp, targetAngle, 0.03);
+  
+      // === Add smart thrust control ===
+      if (dist > 800) {
+        opp.thrust += 0.05; // speed up
+        if (opp.thrust > 5) opp.thrust = 5;
+      } else if (dist < 400) {
+        opp.thrust -= 0.05; // slow down
+        if (opp.thrust < 1.0) opp.thrust = 1.0;
       }
-    }
-
-    if (dist < 1000) {
-      opponentMissileLockTimer += 1;
-      if (opponentMissileLockTimer > OPPONENT_LOCK_TIME) {
-        opponentMissileLockReady = true;
+  
+      moveForward(opp);
+  
+      // === Repulsion (no stacking) ===
+      for (const other of opponents) {
+        if (opp === other) continue;
+        const dx2 = opp.x - other.x;
+        const dy2 = opp.y - other.y;
+        const dist2 = Math.hypot(dx2, dy2);
+        if (dist2 < 80) {
+          const repelStrength = (80 - dist2) * 0.02;
+          opp.x += (dx2 / dist2) * repelStrength;
+          opp.y += (dy2 / dist2) * repelStrength;
+        }
       }
-    } else {
-      opponentMissileLockTimer = 0;
-      opponentMissileLockReady = false;
-    }
-
-    if (dist < 800 && Math.random() < 0.05) {
-      fireOpponentMachineGun(opp);
-    }
-
-    if (opponentMissileLockReady && Math.random() < 0.02) {
-      fireOpponentMissile(opp);
-      opponentMissileLockReady = false;
-      opponentMissileLockTimer = 0;
+  
+      // === Shooting ===
+      if (dist < 800 && Math.random() < 0.05) {
+        fireOpponentMachineGun(opp);
+      }
+      if (opponentMissileLockReady && Math.random() < 0.02) {
+        fireOpponentMissile(opp);
+        opponentMissileLockReady = false;
+        opponentMissileLockTimer = 0;
+      }
     }
   }
-}
+  
 
-function updateAllies() {
+  function updateAllies() {
     for (const ally of allies) {
-      // === 1. Find nearest opponent ===
       let nearestOpponent = null;
       let nearestDist = Infinity;
       for (const opp of opponents) {
@@ -498,27 +495,35 @@ function updateAllies() {
         }
       }
   
-      // === 2. Move toward nearest opponent ===
       if (nearestOpponent) {
         const dx = nearestOpponent.x - ally.x;
         const dy = nearestOpponent.y - ally.y;
         const targetAngle = Math.atan2(dy, dx);
+  
         rotateToward(ally, targetAngle, 0.05);
+  
+        // === Add smart thrust control ===
+        if (nearestDist > 800) {
+          ally.thrust += 0.05; // speed up
+          if (ally.thrust > 5) ally.thrust = 5;
+        } else if (nearestDist < 400) {
+          ally.thrust -= 0.05; // slow down
+          if (ally.thrust < 1.0) ally.thrust = 1.0;
+        }
+  
         moveForward(ally);
   
-        // === 3. Shoot at opponent if close enough ===
-if (nearestDist < 600) {
-    if (Math.random() < 0.04) {
-      fireAllyMachineGun(ally);
-    }
-    if (Math.random() < 0.01) {
-      fireAllyMissile(ally);
-    }
-  }
-  
+        if (nearestDist < 600) {
+          if (Math.random() < 0.04) {
+            fireAllyMachineGun(ally);
+          }
+          if (Math.random() < 0.01) {
+            fireAllyMissile(ally);
+          }
+        }
       }
   
-      // === 4. Avoid stacking with other allies ===
+      // === Anti-stacking
       for (const other of allies) {
         if (ally === other) continue;
         const dx2 = ally.x - other.x;
@@ -532,6 +537,7 @@ if (nearestDist < 600) {
       }
     }
   }
+  
   
   
   
