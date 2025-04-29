@@ -660,7 +660,6 @@ function update() {
   updateFlares();
   updateParticles();
   updateFloatingTexts();
-  updateWingTrails();
   updateExplosions();
   updatePlayerMissileLock();
 }
