@@ -564,6 +564,9 @@ const targetAngle = Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodge
     opp.thrust = 5;
 
     moveForward(opp);
+    // ✅ Keep opponent inside the world
+    opp.x = clamp(opp.x, 0, WORLD_WIDTH);
+    opp.y = clamp(opp.y, 0, WORLD_HEIGHT);
     createEntityWingTrails(opp);
     createEngineParticles(opp);
 
@@ -630,6 +633,10 @@ const targetAngle = Math.atan2(dy, dx) + offset * ally.orbitDirection + ally.dod
       ally.thrust = 5;
 
       moveForward(ally);
+
+      ally.x = clamp(ally.x, 0, WORLD_WIDTH);
+      ally.y = clamp(ally.y, 0, WORLD_HEIGHT);
+
       createEntityWingTrails(ally);
       createEngineParticles(ally);
 
