@@ -279,18 +279,22 @@ const opponent = {
 const opponentMissiles = [];
 
 function updateOpponentAI() {
+    // === Step 1: Calculate angle to player
     const dx = player.x - opponent.x;
     const dy = player.y - opponent.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    opponent.angle = Math.atan2(dy, dx);
+    const targetAngle = Math.atan2(dy, dx);
   
-    // Move toward player
-    if (dist > 200) {
-      opponent.x += Math.cos(opponent.angle) * opponent.speed;
-      opponent.y += Math.sin(opponent.angle) * opponent.speed;
-    }
+    // === Step 2: Smoothly rotate toward the player (limited turning speed)
+    const angleDiff = ((targetAngle - opponent.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    const turnRate = 0.03; // Lower is slower turning
+    opponent.angle += Math.max(-turnRate, Math.min(turnRate, angleDiff));
   
-    // === Fire Machine Gun
+    // === Step 3: Move forward constantly like a real plane
+    opponent.x += Math.cos(opponent.angle) * opponent.speed;
+    opponent.y += Math.sin(opponent.angle) * opponent.speed;
+  
+    // === Step 4: Fire machine gun if in range
+    const dist = Math.hypot(dx, dy);
     if (opponent.fireCooldown <= 0 && dist < 800) {
       opponentBullets.push({
         x: opponent.x + Math.cos(opponent.angle) * 30,
@@ -302,7 +306,7 @@ function updateOpponentAI() {
       opponent.fireCooldown = 15;
     }
   
-    // === Fire Missile
+    // === Step 5: Fire missile if in range
     if (opponent.missileCooldown <= 0 && dist < 1000) {
       opponentMissiles.push({
         x: opponent.x + Math.cos(opponent.angle) * 40,
@@ -317,6 +321,7 @@ function updateOpponentAI() {
     opponent.fireCooldown--;
     opponent.missileCooldown--;
   }
+  
   
 
 function drawSpeedometer() {
