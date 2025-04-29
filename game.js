@@ -224,6 +224,17 @@ let isMissileLockedOn = false;
 let lockOnAlertCooldown = 0;
 let missileLockAnnounced = false;
 
+// === Lock Variables ===
+const PLAYER_LOCK_TIME = 90;    // Player needs 1.5 seconds to lock (adjust this!)
+const OPPONENT_LOCK_TIME = 90;  // Opponent needs 1.5 seconds to lock (adjust this!)
+
+let playerMissileLockTimer = 0; // how long player has been locking onto opponent
+let playerMissileLockReady = false;
+
+let opponentMissileLockTimer = 0; // how long opponent has been locking onto player
+let opponentMissileLockReady = false;
+
+
 function createPlane(x, y) {
   return { x, y, width: 60, height: 60, speed: 3, angle: 0, thrust: 1.0, health: 100, maxHealth: 100 };
 }
@@ -252,8 +263,18 @@ function fireMachineGun() {
 }
 
 function fireMissile() {
-  missiles.push({ x: player.x, y: player.y, angle: player.angle, speed: 4, life: 180 });
-}
+    if (!playerMissileLockReady) {
+      createFloatingText("LOCKING... 🔒", player.x, player.y - 80, "yellow", 18);
+      return;
+    }
+  
+    // Fire missile
+    missiles.push({ x: player.x, y: player.y, angle: player.angle, speed: 4, life: 180 });
+    
+    playerMissileLockReady = false;
+    playerMissileLockTimer = 0;
+  }
+  
 
 function releaseFlares() {
     for (let i = 0; i < 8; i++) {
@@ -274,18 +295,37 @@ function releaseFlares() {
 // [6] Opponent AI
 // ====================
 function updateOpponent() {
-  const dx = player.x - opponent.x;
-  const dy = player.y - opponent.y;
-  const dist = Math.hypot(dx, dy);
-  const targetAngle = Math.atan2(dy, dx);
-
-  rotateToward(opponent, targetAngle, 0.03);
-
-  moveForward(opponent, 1.0, 5, 0.03);
-
-  if (dist < 800 && Math.random() < 0.05) fireOpponentMachineGun();
-  if (dist < 1000 && Math.random() < 0.01) fireOpponentMissile();
-}
+    const dx = player.x - opponent.x;
+    const dy = player.y - opponent.y;
+    const dist = Math.hypot(dx, dy);
+    const targetAngle = Math.atan2(dy, dx);
+  
+    rotateToward(opponent, targetAngle, 0.03);
+    moveForward(opponent);
+  
+    // === Inside updateOpponent() ===
+if (dist < 1000) {
+    opponentMissileLockTimer += 1;
+    if (opponentMissileLockTimer > OPPONENT_LOCK_TIME) {
+      opponentMissileLockReady = true;
+    }
+  } else {
+    opponentMissileLockTimer = 0;
+    opponentMissileLockReady = false;
+  }
+  
+  
+    if (dist < 800 && Math.random() < 0.05) {
+      fireOpponentMachineGun();
+    }
+    
+    if (opponentMissileLockReady && Math.random() < 0.02) {
+      fireOpponentMissile();
+      opponentMissileLockReady = false;
+      opponentMissileLockTimer = 0;
+    }
+  }
+  
 
 function updateOpponentBullets() {
     for (let i = opponentBullets.length - 1; i >= 0; i--) {
@@ -320,6 +360,25 @@ function fireOpponentMissile() {
   opponentMissiles.push({ x: opponent.x, y: opponent.y, angle: opponent.angle, speed: 4, life: 180 });
 }
 
+function updatePlayerMissileLock() {
+    const dx = opponent.x - player.x;
+    const dy = opponent.y - player.y;
+    const dist = Math.hypot(dx, dy);
+  
+    // === Inside updatePlayerMissileLock() ===
+if (dist < 1000) {
+    playerMissileLockTimer += 1;
+    if (playerMissileLockTimer > PLAYER_LOCK_TIME) {
+      playerMissileLockReady = true;
+    }
+  } else {
+    playerMissileLockTimer = 0;
+    playerMissileLockReady = false;
+  }
+  
+  }
+  
+
 // ====================
 // [7] Update Functions
 // ====================
@@ -332,6 +391,9 @@ function update() {
   updateFlares();
   updateParticles();
   updateFloatingTexts();
+  updateWingTrails();
+  updateExplosions();
+  updatePlayerMissileLock();
 }
 
 function updatePlayer() {
@@ -407,6 +469,17 @@ function createAfterburnerParticle() {
   
     if (wingTrails.length > 60) wingTrails.splice(0, wingTrails.length - 60);
   }
+
+  function updateWingTrails() {
+    for (let i = wingTrails.length - 1; i >= 0; i--) {
+      const t = wingTrails[i];
+      t.alpha -= 0.02; // fade each frame
+      if (t.alpha <= 0) {
+        wingTrails.splice(i, 1); // remove faded trails
+      }
+    }
+  }
+  
   
 
 function updateCamera() {
@@ -589,6 +662,17 @@ function updateFloatingTexts() {
 function createExplosion(x, y) {
   explosions.push({ x, y, life: 30 });
 }
+
+function updateExplosions() {
+    for (let i = explosions.length - 1; i >= 0; i--) {
+      const exp = explosions[i];
+      exp.life--;
+      if (exp.life <= 0) {
+        explosions.splice(i, 1);
+      }
+    }
+  }
+  
 
 // ====================
 // [8] Draw Functions
