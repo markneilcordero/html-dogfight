@@ -352,6 +352,33 @@ function fireAllyMachineGun(ally) {
       life: 60,
     });
   }
+
+  function fireAllyMissile(ally) {
+    // Find nearest opponent
+    let nearestOpponent = null;
+    let nearestDist = Infinity;
+    for (const opp of opponents) {
+      const dx = opp.x - ally.x;
+      const dy = opp.y - ally.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearestOpponent = opp;
+      }
+    }
+  
+    if (nearestOpponent) {
+      missiles.push({
+        x: ally.x,
+        y: ally.y,
+        angle: Math.atan2(nearestOpponent.y - ally.y, nearestOpponent.x - ally.x),
+        speed: 4,
+        life: 180,
+        target: nearestOpponent, // Track this opponent
+      });
+    }
+  }
+  
   
 
 function fireMissile() {
@@ -480,9 +507,15 @@ function updateAllies() {
         moveForward(ally);
   
         // === 3. Shoot at opponent if close enough ===
-        if (nearestDist < 600 && Math.random() < 0.05) {
-          fireAllyMachineGun(ally);
-        }
+if (nearestDist < 600) {
+    if (Math.random() < 0.04) {
+      fireAllyMachineGun(ally);
+    }
+    if (Math.random() < 0.01) {
+      fireAllyMissile(ally);
+    }
+  }
+  
       }
   
       // === 4. Avoid stacking with other allies ===
