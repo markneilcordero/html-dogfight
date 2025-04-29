@@ -46,24 +46,43 @@
       }
 
       #throttleButtons {
-        position: absolute;
-        bottom: 40px;
-        right: 40px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        z-index: 10;
-      }
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 10;
+}
 
-      #throttleButtons button {
-        width: 60px;
-        height: 60px;
-        font-size: 24px;
-        border-radius: 12px;
-        background-color: #333;
-        color: white;
-        border: none;
-      }
+#throttleButtons .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+#throttleButtons .left-column,
+#throttleButtons .right-column {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+#throttleButtons .right-column {
+  align-items: flex-start;
+}
+
+#throttleButtons button {
+  width: 60px;
+  height: 60px;
+  font-size: 24px;
+  border-radius: 12px;
+  background-color: #333;
+  color: white;
+  border: none;
+}
+
       #btnMachineGun {
         width: 60px;
         height: 60px;
@@ -82,6 +101,14 @@
   color: white;
   border: none;
 }
+button {
+  user-select: none; /* 🛡️ Prevent text selection */
+  -webkit-user-select: none; /* 🛡️ For Safari */
+  -moz-user-select: none; /* 🛡️ For Firefox */
+  -ms-user-select: none; /* 🛡️ For older IE */
+  touch-action: manipulation; /* ✋ Prevent long press selection */
+}
+
 
       /* By default, hide joystick + throttle on larger screens */
       .mobile-controls {
@@ -104,12 +131,34 @@
       </div>
 
       <div id="throttleButtons">
-        <button id="btnThrottleUp">▲</button>
-        <button id="btnThrottleDown">▼</button>
-        <button id="btnMachineGun">🔫</button>
-        <button id="btnMissile">🚀</button>
-        <button id="btnFlare">✨</button>
+        <div class="row">
+          <div class="left-column">
+            <button id="btnMachineGun">🔫</button>
+          </div>
+          <div class="right-column">
+            <button id="btnThrottleUp">▲</button>
+          </div>
+        </div>
+      
+        <div class="row">
+          <div class="left-column">
+            <button id="btnMissile">🚀</button>
+          </div>
+          <div class="right-column">
+            <!-- empty on right -->
+          </div>
+        </div>
+      
+        <div class="row">
+          <div class="left-column">
+            <button id="btnFlare">✨</button>
+          </div>
+          <div class="right-column">
+            <button id="btnThrottleDown">▼</button>
+          </div>
+        </div>
       </div>
+      
     </div>
 
     <script src="game.js"></script>

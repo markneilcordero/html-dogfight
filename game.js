@@ -1403,31 +1403,33 @@ function drawHealthBars() {
   }
   
 
-function drawSpeedometer() {
-  const barX = 20;
-  const barY = canvas.height - 30;
-  const barWidth = 200;
-  const barHeight = 15;
-  const speedPercent = player.thrust / 5; // maxSpeed = 5
-
-  ctx.fillStyle = "#555";
-  ctx.fillRect(barX, barY, barWidth, barHeight);
-
-  let barColor = "lime";
-  if (speedPercent > 0.7) barColor = "red";
-  else if (speedPercent > 0.4) barColor = "yellow";
-
-  ctx.fillStyle = barColor;
-  ctx.fillRect(barX, barY, barWidth * speedPercent, barHeight);
-
-  ctx.strokeStyle = "white";
-  ctx.strokeRect(barX, barY, barWidth, barHeight);
-
-  ctx.fillStyle = "white";
-  ctx.font = "20px Arial";
-  ctx.textAlign = "left";
-  ctx.fillText(`Speed: ${player.thrust.toFixed(1)} / 5`, barX, barY - 5);
-}
+  function drawSpeedometer() {
+    const barWidth = 200;
+    const barHeight = 15;
+    const barX = canvas.width - barWidth - 20; // <-- Right side (20px margin from right)
+    const barY = 20; // <-- Top side (20px from top)
+  
+    const speedPercent = player.thrust / 5; // maxSpeed = 5
+  
+    ctx.fillStyle = "#555";
+    ctx.fillRect(barX, barY, barWidth, barHeight);
+  
+    let barColor = "lime";
+    if (speedPercent > 0.7) barColor = "red";
+    else if (speedPercent > 0.4) barColor = "yellow";
+  
+    ctx.fillStyle = barColor;
+    ctx.fillRect(barX, barY, barWidth * speedPercent, barHeight);
+  
+    ctx.strokeStyle = "white";
+    ctx.strokeRect(barX, barY, barWidth, barHeight);
+  
+    ctx.fillStyle = "white";
+    ctx.font = "20px Arial";
+    ctx.textAlign = "center"; // <-- center text above the bar
+    ctx.fillText(`Speed: ${player.thrust.toFixed(1)} / 5`, barX + barWidth / 2, barY - 5);
+  }
+  
 
 function drawUI() {
   drawHealthBars();
