@@ -223,7 +223,6 @@ function setupWeaponControls() {
       player.flareCooldown = 300; // reset cooldown
     }
   });
-  
 
   window.addEventListener("keydown", (e) => {
     if (e.key === "h" && player.flareCooldown <= 0) {
@@ -231,25 +230,36 @@ function setupWeaponControls() {
       player.flareCooldown = 300;
     }
   });
-  
 }
 
 function setupPlayerAIButton() {
-    const btnAI = document.getElementById("btnAI");
-  
-    btnAI.addEventListener("click", () => {
+  const btnAI = document.getElementById("btnAI");
+
+  btnAI.addEventListener("click", () => {
+    playerAIEnabled = !playerAIEnabled;
+    createFloatingText(
+      playerAIEnabled ? "🧠 AI ON" : "🧠 AI OFF",
+      player.x,
+      player.y - 80,
+      "cyan",
+      20
+    );
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "p") {
+      // Press 'P' key to toggle AI too
       playerAIEnabled = !playerAIEnabled;
-      createFloatingText(playerAIEnabled ? "🧠 AI ON" : "🧠 AI OFF", player.x, player.y - 80, "cyan", 20);
-    });
-  
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "p") { // Press 'P' key to toggle AI too
-        playerAIEnabled = !playerAIEnabled;
-        createFloatingText(playerAIEnabled ? "🧠 AI ON" : "🧠 AI OFF", player.x, player.y - 80, "cyan", 20);
-      }
-    });
-  }
-  
+      createFloatingText(
+        playerAIEnabled ? "🧠 AI ON" : "🧠 AI OFF",
+        player.x,
+        player.y - 80,
+        "cyan",
+        20
+      );
+    }
+  });
+}
 
 setupThrottleControls();
 setupWeaponControls();
@@ -276,7 +286,6 @@ for (let i = 0; i < 9; i++) {
   const y = player.y + Math.sin(angle) * radius;
   allies.push(createPlane(x, y));
 }
-
 
 let machineGunBullets = [],
   missiles = [],
@@ -309,62 +318,59 @@ let opponentMissileLockReady = false;
 
 // Inside createPlane():
 function createPlane(x, y) {
-    return {
-      x,
-      y,
-      width: 60,
-      height: 60,
-      speed: 3,
-      angle: 0,
-      thrust: 1.0,
-      health: 100,
-      maxHealth: 100,
-      wingTrails: [],
-      engineParticles: [],
-      orbitDirection: Math.random() < 0.5 ? 1 : -1,
-      dodgeCooldown: 0,             // ← NEW
-      dodgeOffset: 0,                // ← NEW
-      flareCooldown: 0,
-    };
+  return {
+    x,
+    y,
+    width: 60,
+    height: 60,
+    speed: 3,
+    angle: 0,
+    thrust: 1.0,
+    health: 100,
+    maxHealth: 100,
+    wingTrails: [],
+    engineParticles: [],
+    orbitDirection: Math.random() < 0.5 ? 1 : -1,
+    dodgeCooldown: 0, // ← NEW
+    dodgeOffset: 0, // ← NEW
+    flareCooldown: 0,
+  };
+}
+
+function respawnPlane(plane, isOpponent = false) {
+  let safe = false;
+  let attempt = 0;
+
+  while (!safe && attempt < 10) {
+    plane.x = Math.random() * WORLD_WIDTH;
+    plane.y = Math.random() * WORLD_HEIGHT;
+
+    // ✅ Stay away from player spawn (if not the player)
+    const dx = plane.x - player.x;
+    const dy = plane.y - player.y;
+    const dist = Math.hypot(dx, dy);
+
+    safe = dist > 300;
+    attempt++;
   }
 
-  function respawnPlane(plane, isOpponent = false) {
-    let safe = false;
-    let attempt = 0;
-  
-    while (!safe && attempt < 10) {
-      plane.x = Math.random() * WORLD_WIDTH;
-      plane.y = Math.random() * WORLD_HEIGHT;
-  
-      // ✅ Stay away from player spawn (if not the player)
-      const dx = plane.x - player.x;
-      const dy = plane.y - player.y;
-      const dist = Math.hypot(dx, dy);
-  
-      safe = dist > 300;
-      attempt++;
-    }
-  
-    plane.angle = Math.random() * Math.PI * 2;
-    plane.health = plane.maxHealth;
-    plane.thrust = 1.0;
-    plane.engineParticles = [];
-    plane.wingTrails = [];
-    plane.orbitDirection = Math.random() < 0.5 ? 1 : -1;
-    plane.dodgeCooldown = 0;
-    plane.dodgeOffset = 0;
-  
-    createFloatingText(
-      "✈️ Respawned!",
-      plane.x,
-      plane.y - 40,
-      isOpponent ? "red" : "cyan",
-      16
-    );
-  }
-  
-  
-  
+  plane.angle = Math.random() * Math.PI * 2;
+  plane.health = plane.maxHealth;
+  plane.thrust = 1.0;
+  plane.engineParticles = [];
+  plane.wingTrails = [];
+  plane.orbitDirection = Math.random() < 0.5 ? 1 : -1;
+  plane.dodgeCooldown = 0;
+  plane.dodgeOffset = 0;
+
+  createFloatingText(
+    "✈️ Respawned!",
+    plane.x,
+    plane.y - 40,
+    isOpponent ? "red" : "cyan",
+    16
+  );
+}
 
 // ====================
 // [4] Utility Functions
@@ -388,6 +394,27 @@ function createTrail(x, y, color) {
   wingTrails.push({ x, y, color, alpha: 0.6 });
   if (wingTrails.length > 60) wingTrails.shift();
 }
+
+function findNearestOpponent(x, y) {
+    let nearest = null;
+    let nearestDist = Infinity;
+  
+    for (const opp of opponents) {
+      if (opp.health <= 0) continue; // ignore dead opponents
+  
+      const dx = opp.x - x;
+      const dy = opp.y - y;
+      const dist = Math.hypot(dx, dy);
+  
+      if (dist < nearestDist) {
+        nearest = opp;
+        nearestDist = dist;
+      }
+    }
+  
+    return { target: nearest, distance: nearestDist };
+  }
+  
 
 function findNearestFlare(x, y) {
   let nearest = null;
@@ -422,39 +449,48 @@ function findNearestEnemy(x, y) {
 }
 
 function detectIncomingFire(entity) {
-    for (const b of machineGunBullets) {
-      const dx = b.x - entity.x;
-      const dy = b.y - entity.y;
+  for (const b of machineGunBullets) {
+    const dx = b.x - entity.x;
+    const dy = b.y - entity.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 150) return true;
+  }
+  return false;
+}
+
+function detectIncomingMissile(entity) {
+    for (const m of opponentMissiles) {
+      const dx = m.x - entity.x;
+      const dy = m.y - entity.y;
       const dist = Math.hypot(dx, dy);
-      if (dist < 150) return true;
+      if (dist < 300) return true; // missile within danger zone
     }
     return false;
   }
+  
 
-  function applyAntiStacking(allPlanes, minDistance = 80, strength = 0.05) {
-    for (let i = 0; i < allPlanes.length; i++) {
-      for (let j = i + 1; j < allPlanes.length; j++) {
-        const a = allPlanes[i];
-        const b = allPlanes[j];
-        const dx = a.x - b.x;
-        const dy = a.y - b.y;
-        const dist = Math.hypot(dx, dy);
-  
-        if (dist < minDistance && dist > 0.01) {
-          const repel = (minDistance - dist) * strength;
-          const nx = dx / dist;
-          const ny = dy / dist;
-  
-          a.x += nx * repel;
-          a.y += ny * repel;
-          b.x -= nx * repel;
-          b.y -= ny * repel;
-        }
+function applyAntiStacking(allPlanes, minDistance = 80, strength = 0.05) {
+  for (let i = 0; i < allPlanes.length; i++) {
+    for (let j = i + 1; j < allPlanes.length; j++) {
+      const a = allPlanes[i];
+      const b = allPlanes[j];
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist < minDistance && dist > 0.01) {
+        const repel = (minDistance - dist) * strength;
+        const nx = dx / dist;
+        const ny = dy / dist;
+
+        a.x += nx * repel;
+        a.y += ny * repel;
+        b.x -= nx * repel;
+        b.y -= ny * repel;
       }
     }
   }
-  
-  
+}
 
 // ====================
 // [5] Player Actions
@@ -543,21 +579,20 @@ function fireMissile() {
 }
 
 function releaseFlaresFor(entity) {
-    for (let i = 0; i < 8; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      flares.push({
-        x: entity.x,
-        y: entity.y,
-        angle: angle,
-        speed: 1 + Math.random(),
-        life: 180,
-        size: 12 + Math.random() * 6,
-      });
-    }
-  
-    createFloatingText("🔥 Flares!", entity.x, entity.y - 60, "orange", 16);
+  for (let i = 0; i < 8; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    flares.push({
+      x: entity.x,
+      y: entity.y,
+      angle: angle,
+      speed: 1 + Math.random(),
+      life: 180,
+      size: 12 + Math.random() * 6,
+    });
   }
-  
+
+  createFloatingText("🔥 Flares!", entity.x, entity.y - 60, "orange", 16);
+}
 
 // ====================
 // [6] Opponent AI
@@ -565,18 +600,18 @@ function releaseFlaresFor(entity) {
 function updateOpponents() {
   for (const opp of opponents) {
     if (opp.health <= 0) {
-        createExplosion(opp.x, opp.y); // Optional explosion effect
-        respawnPlane(opp, true);       // true = isOpponent
-        continue;                      // Skip this frame after respawn
-      }
+      createExplosion(opp.x, opp.y); // Optional explosion effect
+      respawnPlane(opp, true); // true = isOpponent
+      continue; // Skip this frame after respawn
+    }
     const { target, distance } = findNearestEnemy(opp.x, opp.y);
 
     const dx = target.x - opp.x;
     const dy = target.y - opp.y;
     const offset = Math.PI / 3; // 60 degrees for circling
     maybeDodge(opp);
-const targetAngle = Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodgeOffset;
-
+    const targetAngle =
+      Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodgeOffset;
 
     rotateToward(opp, targetAngle, 0.04);
 
@@ -608,25 +643,24 @@ const targetAngle = Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodge
       fireOpponentMachineGun(opp);
     }
     if (distance < 1000) {
-        opp.lockTimer = (opp.lockTimer || 0) + 1;
-        if (opp.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
-          fireOpponentMissile(opp, target);
-          opp.lockTimer = 0;
-        }
-      } else {
+      opp.lockTimer = (opp.lockTimer || 0) + 1;
+      if (opp.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
+        fireOpponentMissile(opp, target);
         opp.lockTimer = 0;
       }
-      
+    } else {
+      opp.lockTimer = 0;
+    }
   }
 }
 
 function updateAllies() {
   for (const ally of allies) {
     if (ally.health <= 0) {
-        createExplosion(ally.x, ally.y); // Optional explosion effect
-        respawnPlane(ally, false);       // false = isAlly
-        continue;                        // Skip this frame after respawn
-      }
+      createExplosion(ally.x, ally.y); // Optional explosion effect
+      respawnPlane(ally, false); // false = isAlly
+      continue; // Skip this frame after respawn
+    }
     let nearestOpponent = null;
     let nearestDist = Infinity;
     for (const opp of opponents) {
@@ -644,8 +678,8 @@ function updateAllies() {
       const dy = nearestOpponent.y - ally.y;
       const offset = Math.PI / 3;
       maybeDodge(ally);
-const targetAngle = Math.atan2(dy, dx) + offset * ally.orbitDirection + ally.dodgeOffset;
-
+      const targetAngle =
+        Math.atan2(dy, dx) + offset * ally.orbitDirection + ally.dodgeOffset;
 
       rotateToward(ally, targetAngle, 0.06);
 
@@ -716,15 +750,14 @@ function updateOpponentBullets() {
 }
 
 function fireOpponentMachineGun(opp) {
-    opponentBullets.push({
-      x: opp.x,
-      y: opp.y,
-      angle: opp.angle, // 🔥 use plane’s current angle
-      speed: 12,
-      life: 60,
-    });
-  }
-  
+  opponentBullets.push({
+    x: opp.x,
+    y: opp.y,
+    angle: opp.angle, // 🔥 use plane’s current angle
+    speed: 12,
+    life: 60,
+  });
+}
 
 function fireOpponentMissile(opp) {
   opponentMissiles.push({
@@ -761,28 +794,27 @@ function updatePlayerMissileLock() {
 }
 
 function updateOpponentMissileLock() {
-    const dx = player.x - opponents[0].x;
-    const dy = player.y - opponents[0].y;
-    const dist = Math.hypot(dx, dy);
-  
-    if (dist < 1000) {
-      opponentMissileLockTimer++;
-      if (opponentMissileLockTimer > OPPONENT_LOCK_TIME) {
-        opponentMissileLockReady = true;
-      }
-    } else {
-      opponentMissileLockTimer = 0;
-      opponentMissileLockReady = false;
+  const dx = player.x - opponents[0].x;
+  const dy = player.y - opponents[0].y;
+  const dist = Math.hypot(dx, dy);
+
+  if (dist < 1000) {
+    opponentMissileLockTimer++;
+    if (opponentMissileLockTimer > OPPONENT_LOCK_TIME) {
+      opponentMissileLockReady = true;
     }
+  } else {
+    opponentMissileLockTimer = 0;
+    opponentMissileLockReady = false;
   }
-  
+}
 
 // ====================
 // [7] Update Functions
 // ====================
 function update() {
-    maybeDeployFlares(opponents);
-    maybeDeployFlares(allies);
+  maybeDeployFlares(opponents);
+  maybeDeployFlares(allies);
   updatePlayer();
   updateBullets();
   updateOpponentBullets();
@@ -818,7 +850,7 @@ function updatePlayer() {
     if (player.flareCooldown > 0) player.flareCooldown--;
   
     if (playerAIEnabled) {
-      const { target } = findNearestEnemy(player.x, player.y);
+      const { target, distance } = findNearestOpponent(player.x, player.y); // <-- hunting real enemies now
       if (target) {
         const dx = target.x - player.x;
         const dy = target.y - player.y;
@@ -827,6 +859,22 @@ function updatePlayer() {
         const targetAngle = Math.atan2(dy, dx) + offset * player.orbitDirection + player.dodgeOffset;
         rotateToward(player, targetAngle, 0.05);
         player.thrust = 5;
+  
+        // === Smart Fire Machine Gun
+        if (distance < 600 && target.health > 20 && Math.random() < 0.1) {
+          fireMachineGun();
+        }
+  
+        // === Smart Fire Missile
+        if (playerMissileLockReady && distance < 800 && target.health > 40 && Math.random() < 0.02) {
+          fireMissile();
+        }
+      }
+  
+      // === Smart Drop Flares
+      if (detectIncomingMissile(player) && player.flareCooldown <= 0) {
+        releaseFlaresFor(player);
+        player.flareCooldown = 300; // 5 seconds cooldown
       }
     } else {
       if (joystickActive) {
@@ -848,6 +896,12 @@ function updatePlayer() {
     }
   
     moveForward(player);
+  
+    // === Avoid getting stuck at wall
+    if (player.x <= 0 || player.x >= WORLD_WIDTH || player.y <= 0 || player.y >= WORLD_HEIGHT) {
+      player.angle += Math.PI;
+    }
+  
     createEntityWingTrails(player);
     createEngineParticles(player);
   
@@ -856,6 +910,7 @@ function updatePlayer() {
   
     updateCamera();
   }
+  
   
   
 
@@ -931,50 +986,47 @@ function moveForward(entity) {
 }
 
 function maybeDodge(entity) {
-    if (entity.dodgeCooldown > 0) {
-      entity.dodgeCooldown--;
-      return;
-    }
-  
-    // 10% chance to dodge every check
-    if (Math.random() < 0.1) {
-      entity.dodgeOffset = (Math.random() < 0.5 ? -1 : 1) * (Math.PI / 4); // 45 degrees left/right
-      entity.dodgeCooldown = 60 + Math.floor(Math.random() * 60); // cooldown 1–2 seconds
-    }
-
-    if (detectIncomingFire(entity) && Math.random() < 0.2) {
-        entity.dodgeOffset = (Math.random() < 0.5 ? -1 : 1) * (Math.PI / 4);
-        entity.dodgeCooldown = 60 + Math.floor(Math.random() * 60);
-      }
-      
-      if (entity.dodgeOffset !== 0) {
-        entity.dodgeOffset *= 0.95; // fade out
-        if (Math.abs(entity.dodgeOffset) < 0.01) entity.dodgeOffset = 0;
-      }
+  if (entity.dodgeCooldown > 0) {
+    entity.dodgeCooldown--;
+    return;
   }
 
-  function maybeDeployFlares(planes) {
-    for (const plane of planes) {
-      if (plane.flareCooldown > 0) {
-        plane.flareCooldown--;
-        continue;
-      }
-  
-      const isChased = missiles.some((m) => {
-        const dx = plane.x - m.x;
-        const dy = plane.y - m.y;
-        return Math.hypot(dx, dy) < 250;
-      });
-  
-      if (isChased && Math.random() < 0.02) {
-        releaseFlaresFor(plane);
-        plane.flareCooldown = 300; // wait 5 seconds (at 60 FPS)
-      }
+  // 10% chance to dodge every check
+  if (Math.random() < 0.1) {
+    entity.dodgeOffset = (Math.random() < 0.5 ? -1 : 1) * (Math.PI / 4); // 45 degrees left/right
+    entity.dodgeCooldown = 60 + Math.floor(Math.random() * 60); // cooldown 1–2 seconds
+  }
+
+  if (detectIncomingFire(entity) && Math.random() < 0.2) {
+    entity.dodgeOffset = (Math.random() < 0.5 ? -1 : 1) * (Math.PI / 4);
+    entity.dodgeCooldown = 60 + Math.floor(Math.random() * 60);
+  }
+
+  if (entity.dodgeOffset !== 0) {
+    entity.dodgeOffset *= 0.95; // fade out
+    if (Math.abs(entity.dodgeOffset) < 0.01) entity.dodgeOffset = 0;
+  }
+}
+
+function maybeDeployFlares(planes) {
+  for (const plane of planes) {
+    if (plane.flareCooldown > 0) {
+      plane.flareCooldown--;
+      continue;
+    }
+
+    const isChased = missiles.some((m) => {
+      const dx = plane.x - m.x;
+      const dy = plane.y - m.y;
+      return Math.hypot(dx, dy) < 250;
+    });
+
+    if (isChased && Math.random() < 0.02) {
+      releaseFlaresFor(plane);
+      plane.flareCooldown = 300; // wait 5 seconds (at 60 FPS)
     }
   }
-  
-  
-  
+}
 
 function rotateToward(entity, targetAngle, speed, wiggle = 0) {
   let angleDiff =
@@ -1100,7 +1152,6 @@ function updateMissiles() {
         createExplosion(m.x, m.y); // 💥 explode on timeout
         missiles.splice(i, 1);
       }
-      
     }
   }
 
@@ -1159,10 +1210,9 @@ function updateMissiles() {
     }
 
     if (m.life <= 0) {
-        createExplosion(m.x, m.y); // 💥 explode on timeout
-        opponentMissiles.splice(i, 1);
-      }
-      
+      createExplosion(m.x, m.y); // 💥 explode on timeout
+      opponentMissiles.splice(i, 1);
+    }
   }
 }
 
@@ -1236,12 +1286,10 @@ function drawBackground() {
 }
 
 function drawPlayer() {
-    if (playerDead) return;
-    drawEntity(player, images.player);
-    drawEngineParticles(player.engineParticles);
-  }
-  
-  
+  if (playerDead) return;
+  drawEntity(player, images.player);
+  drawEngineParticles(player.engineParticles);
+}
 
 function drawAllies() {
   for (const ally of allies) {
@@ -1397,79 +1445,81 @@ function drawExplosions() {
 }
 
 function drawHealthBars() {
-    // === Player Health Bar (fixed position)
-    const barWidth = 100;
-    const barHeight = 10;
-    const healthPercent = player.health / player.maxHealth;
-  
-    ctx.fillStyle = "red";
-    ctx.fillRect(20, 20, barWidth, barHeight);
-    ctx.fillStyle = "lime";
-    ctx.fillRect(20, 20, barWidth * healthPercent, barHeight);
-    ctx.strokeStyle = "white";
-    ctx.strokeRect(20, 20, barWidth, barHeight);
-  
-    // === Opponents' Health Bars (above each opponent)
-    for (const opp of opponents) {
-      const oppHealthPercent = opp.health / opp.maxHealth;
-      ctx.fillStyle = "red";
-      ctx.fillRect(opp.x - 30 - camera.x, opp.y - 50 - camera.y, 60, 6);
-      ctx.fillStyle = "lime";
-      ctx.fillRect(
-        opp.x - 30 - camera.x,
-        opp.y - 50 - camera.y,
-        60 * oppHealthPercent,
-        6
-      );
-      ctx.strokeStyle = "white";
-      ctx.strokeRect(opp.x - 30 - camera.x, opp.y - 50 - camera.y, 60, 6);
-    }
-  
-    // === Allies' Health Bars (above each ally)
-    for (const ally of allies) {
-      const allyHealthPercent = ally.health / ally.maxHealth;
-      ctx.fillStyle = "red";
-      ctx.fillRect(ally.x - 30 - camera.x, ally.y - 50 - camera.y, 60, 6);
-      ctx.fillStyle = "cyan";
-      ctx.fillRect(
-        ally.x - 30 - camera.x,
-        ally.y - 50 - camera.y,
-        60 * allyHealthPercent,
-        6
-      );
-      ctx.strokeStyle = "white";
-      ctx.strokeRect(ally.x - 30 - camera.x, ally.y - 50 - camera.y, 60, 6);
-    }
-  }
-  
+  // === Player Health Bar (fixed position)
+  const barWidth = 100;
+  const barHeight = 10;
+  const healthPercent = player.health / player.maxHealth;
 
-  function drawSpeedometer() {
-    const barWidth = 200;
-    const barHeight = 15;
-    const barX = canvas.width - barWidth - 20; // <-- Right side (20px margin from right)
-    const barY = 20; // <-- Top side (20px from top)
-  
-    const speedPercent = player.thrust / 5; // maxSpeed = 5
-  
-    ctx.fillStyle = "#555";
-    ctx.fillRect(barX, barY, barWidth, barHeight);
-  
-    let barColor = "lime";
-    if (speedPercent > 0.7) barColor = "red";
-    else if (speedPercent > 0.4) barColor = "yellow";
-  
-    ctx.fillStyle = barColor;
-    ctx.fillRect(barX, barY, barWidth * speedPercent, barHeight);
-  
+  ctx.fillStyle = "red";
+  ctx.fillRect(20, 20, barWidth, barHeight);
+  ctx.fillStyle = "lime";
+  ctx.fillRect(20, 20, barWidth * healthPercent, barHeight);
+  ctx.strokeStyle = "white";
+  ctx.strokeRect(20, 20, barWidth, barHeight);
+
+  // === Opponents' Health Bars (above each opponent)
+  for (const opp of opponents) {
+    const oppHealthPercent = opp.health / opp.maxHealth;
+    ctx.fillStyle = "red";
+    ctx.fillRect(opp.x - 30 - camera.x, opp.y - 50 - camera.y, 60, 6);
+    ctx.fillStyle = "lime";
+    ctx.fillRect(
+      opp.x - 30 - camera.x,
+      opp.y - 50 - camera.y,
+      60 * oppHealthPercent,
+      6
+    );
     ctx.strokeStyle = "white";
-    ctx.strokeRect(barX, barY, barWidth, barHeight);
-  
-    ctx.fillStyle = "white";
-    ctx.font = "20px Arial";
-    ctx.textAlign = "center"; // <-- center text above the bar
-    ctx.fillText(`Speed: ${player.thrust.toFixed(1)} / 5`, barX + barWidth / 2, barY - 5);
+    ctx.strokeRect(opp.x - 30 - camera.x, opp.y - 50 - camera.y, 60, 6);
   }
-  
+
+  // === Allies' Health Bars (above each ally)
+  for (const ally of allies) {
+    const allyHealthPercent = ally.health / ally.maxHealth;
+    ctx.fillStyle = "red";
+    ctx.fillRect(ally.x - 30 - camera.x, ally.y - 50 - camera.y, 60, 6);
+    ctx.fillStyle = "cyan";
+    ctx.fillRect(
+      ally.x - 30 - camera.x,
+      ally.y - 50 - camera.y,
+      60 * allyHealthPercent,
+      6
+    );
+    ctx.strokeStyle = "white";
+    ctx.strokeRect(ally.x - 30 - camera.x, ally.y - 50 - camera.y, 60, 6);
+  }
+}
+
+function drawSpeedometer() {
+  const barWidth = 200;
+  const barHeight = 15;
+  const barX = canvas.width - barWidth - 20; // <-- Right side (20px margin from right)
+  const barY = 20; // <-- Top side (20px from top)
+
+  const speedPercent = player.thrust / 5; // maxSpeed = 5
+
+  ctx.fillStyle = "#555";
+  ctx.fillRect(barX, barY, barWidth, barHeight);
+
+  let barColor = "lime";
+  if (speedPercent > 0.7) barColor = "red";
+  else if (speedPercent > 0.4) barColor = "yellow";
+
+  ctx.fillStyle = barColor;
+  ctx.fillRect(barX, barY, barWidth * speedPercent, barHeight);
+
+  ctx.strokeStyle = "white";
+  ctx.strokeRect(barX, barY, barWidth, barHeight);
+
+  ctx.fillStyle = "white";
+  ctx.font = "20px Arial";
+  ctx.textAlign = "center"; // <-- center text above the bar
+  ctx.fillText(
+    `Speed: ${player.thrust.toFixed(1)} / 5`,
+    barX + barWidth / 2,
+    barY - 5
+  );
+}
 
 function drawUI() {
   drawHealthBars();
