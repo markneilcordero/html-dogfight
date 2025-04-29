@@ -276,19 +276,23 @@ let playerMissileLockReady = false;
 let opponentMissileLockTimer = 0; // how long opponent has been locking onto player
 let opponentMissileLockReady = false;
 
+// Inside createPlane():
 function createPlane(x, y) {
-  return {
-    x,
-    y,
-    width: 60,
-    height: 60,
-    speed: 3,
-    angle: 0,
-    thrust: 1.0,
-    health: 100,
-    maxHealth: 100,
-  };
-}
+    return {
+      x,
+      y,
+      width: 60,
+      height: 60,
+      speed: 3,
+      angle: 0,
+      thrust: 1.0,
+      health: 100,
+      maxHealth: 100,
+      wingTrails: [],
+      engineParticles: [],
+    };
+  }
+  
 
 // ====================
 // [4] Utility Functions
@@ -454,6 +458,8 @@ function updateOpponents() {
       }
   
       moveForward(opp);
+      createEntityWingTrails(opp);
+createEngineParticles(opp);
   
       // === Repulsion (no stacking) ===
       for (const other of opponents) {
@@ -512,6 +518,9 @@ function updateOpponents() {
         }
   
         moveForward(ally);
+        createEntityWingTrails(ally);
+createEngineParticles(ally);
+
   
         if (nearestDist < 600) {
           if (Math.random() < 0.04) {
@@ -629,89 +638,83 @@ function update() {
 }
 
 function updatePlayer() {
-  if (joystickActive) {
-    player.angle = joystickAngle;
-  } else {
-    if (keys["ArrowLeft"] || keys["a"]) player.angle -= 0.05;
-    if (keys["ArrowRight"] || keys["d"]) player.angle += 0.05;
+    if (joystickActive) {
+      player.angle = joystickAngle;
+    } else {
+      if (keys["ArrowLeft"] || keys["a"]) player.angle -= 0.05;
+      if (keys["ArrowRight"] || keys["d"]) player.angle += 0.05;
+    }
+  
+    if (keys["w"] || keys["ArrowUp"]) {
+      player.thrust += 0.1;
+      if (player.thrust > 5) player.thrust = 5;
+    }
+  
+    if (keys["s"] || keys["ArrowDown"]) {
+      player.thrust -= 0.05;
+      if (player.thrust < 1.0) player.thrust = 1.0;
+    }
+  
+    moveForward(player);
+    createEntityWingTrails(player);
+    createEngineParticles(player);
+  
+    player.x = clamp(player.x, 0, WORLD_WIDTH);
+    player.y = clamp(player.y, 0, WORLD_HEIGHT);
+  
+    updateCamera();
   }
+  
 
-  if (keys["w"] || keys["ArrowUp"]) {
-    player.thrust += 0.1;
-    if (player.thrust > 5) player.thrust = 5;
+function createEngineParticles(entity) {
+    if (entity.thrust / 5 < 0.7) return;
+  
+    const backOffset = 32;
+    const sideOffset = 5;
+  
+    for (const dir of [-1, 1]) {
+      entity.engineParticles.push({
+        x:
+          entity.x -
+          Math.cos(entity.angle) * backOffset +
+          Math.cos(entity.angle + dir * Math.PI / 2) * sideOffset,
+        y:
+          entity.y -
+          Math.sin(entity.angle) * backOffset +
+          Math.sin(entity.angle + dir * Math.PI / 2) * sideOffset,
+        alpha: 1,
+        radius: 3 + Math.random() * 2,
+        angle: entity.angle + (Math.random() * 0.3 - 0.15),
+        color: "lightgray",
+      });
+  
+      if (entity.engineParticles.length > 40)
+        entity.engineParticles.splice(0, 1);
+    }
   }
+  
 
-  if (keys["s"] || keys["ArrowDown"]) {
-    player.thrust -= 0.05;
-    if (player.thrust < 1.0) player.thrust = 1.0;
+function createEntityWingTrails(entity) {
+    if (entity.thrust < 0.5 * 5) return;
+  
+    const offset = 20;
+    entity.wingTrails.push({
+      x: entity.x + Math.cos(entity.angle + Math.PI / 2) * offset,
+      y: entity.y + Math.sin(entity.angle + Math.PI / 2) * offset,
+      alpha: 0.6,
+    });
+  
+    entity.wingTrails.push({
+      x: entity.x + Math.cos(entity.angle - Math.PI / 2) * offset,
+      y: entity.y + Math.sin(entity.angle - Math.PI / 2) * offset,
+      alpha: 0.6,
+    });
+  
+    if (entity.wingTrails.length > 60) {
+      entity.wingTrails.splice(0, entity.wingTrails.length - 60);
+    }
   }
-
-  moveForward(player);
-
-  player.x = clamp(player.x, 0, WORLD_WIDTH);
-  player.y = clamp(player.y, 0, WORLD_HEIGHT);
-
-  updateCamera();
-
-  createAfterburnerParticle();
-  createWingTrails();
-}
-
-function createAfterburnerParticle() {
-  if (player.thrust / 5 < 0.7) return; // thrust < 70% of max speed
-
-  const backOffset = 32;
-  const sideOffset = 5;
-
-  particles.push({
-    x:
-      player.x -
-      Math.cos(player.angle) * backOffset +
-      Math.cos(player.angle + Math.PI / 2) * sideOffset,
-    y:
-      player.y -
-      Math.sin(player.angle) * backOffset +
-      Math.sin(player.angle + Math.PI / 2) * sideOffset,
-    alpha: 1,
-    radius: 3 + Math.random() * 2,
-    angle: player.angle + (Math.random() * 0.3 - 0.15),
-    color: "lightgray",
-  });
-
-  particles.push({
-    x:
-      player.x -
-      Math.cos(player.angle) * backOffset +
-      Math.cos(player.angle - Math.PI / 2) * sideOffset,
-    y:
-      player.y -
-      Math.sin(player.angle) * backOffset +
-      Math.sin(player.angle - Math.PI / 2) * sideOffset,
-    alpha: 1,
-    radius: 3 + Math.random() * 2,
-    angle: player.angle + (Math.random() * 0.3 - 0.15),
-    color: "lightgray",
-  });
-}
-
-function createWingTrails() {
-  if (player.thrust < 0.5 * 5) return; // only create when fast
-
-  const offset = 20;
-  wingTrails.push({
-    x: player.x + Math.cos(player.angle + Math.PI / 2) * offset,
-    y: player.y + Math.sin(player.angle + Math.PI / 2) * offset,
-    alpha: 0.6,
-  });
-
-  wingTrails.push({
-    x: player.x + Math.cos(player.angle - Math.PI / 2) * offset,
-    y: player.y + Math.sin(player.angle - Math.PI / 2) * offset,
-    alpha: 0.6,
-  });
-
-  if (wingTrails.length > 60) wingTrails.splice(0, wingTrails.length - 60);
-}
+  
 
 function updateWingTrails() {
   for (let i = wingTrails.length - 1; i >= 0; i--) {
@@ -1023,6 +1026,27 @@ function drawEntity(entity, img) {
   ctx.restore();
 }
 
+function drawEngineParticles(particles) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x - camera.x, p.y - camera.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+  
+      // Update and fade
+      p.x -= Math.cos(p.angle) * 1;
+      p.y -= Math.sin(p.angle) * 1;
+      p.alpha -= 0.02;
+  
+      if (p.alpha <= 0) particles.splice(i, 1);
+    }
+  }
+  
+
 function drawProjectiles() {
   drawMachineGunBullets();
   drawMissiles();
@@ -1094,19 +1118,21 @@ function drawParticles() {
   }
 }
 
-function drawWingTrails() {
-  ctx.strokeStyle = "white";
-  ctx.lineWidth = 1.5;
-  for (const t of wingTrails) {
-    ctx.save();
-    ctx.globalAlpha = t.alpha;
-    ctx.beginPath();
-    ctx.moveTo(t.x - camera.x, t.y - camera.y);
-    ctx.lineTo(t.x - camera.x, t.y - camera.y + 1); // tiny trail
-    ctx.stroke();
-    ctx.restore();
+function drawWingTrails(trails) {
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 1.5;
+    for (const t of trails) {
+      ctx.save();
+      ctx.globalAlpha = t.alpha;
+      ctx.beginPath();
+      ctx.moveTo(t.x - camera.x, t.y - camera.y);
+      ctx.lineTo(t.x - camera.x, t.y - camera.y + 1);
+      ctx.stroke();
+      ctx.restore();
+      t.alpha -= 0.02;
+    }
   }
-}
+  
 
 function drawExplosions() {
   for (const exp of explosions) {
@@ -1183,7 +1209,7 @@ function drawUI() {
   drawHealthBars();
   drawSpeedometer();
   drawFloatingTexts();
-  drawWingTrails();
+  drawWingTrails(player.wingTrails);
 }
 
 function drawFloatingTexts() {
