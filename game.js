@@ -715,15 +715,17 @@ function updateBullets() {
     b.y += Math.sin(b.angle) * b.speed;
     b.life--;
 
-    // Check collision with opponent
-    const dx = opponent.x - b.x;
-    const dy = opponent.y - b.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist < 30) {
-      opponent.health -= 10;
-      createExplosion(opponent.x, opponent.y);
-      machineGunBullets.splice(i, 1);
-      continue;
+    // === Check collision with each opponent ===
+    for (const opp of opponents) {
+      const dx = opp.x - b.x;
+      const dy = opp.y - b.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 30) { // hit radius
+        opp.health -= 10;
+        createExplosion(opp.x, opp.y);
+        machineGunBullets.splice(i, 1);
+        break; // Stop checking after hit
+      }
     }
 
     if (b.life <= 0) {
@@ -731,6 +733,7 @@ function updateBullets() {
     }
   }
 }
+
 
 function updateMissiles() {
   let anyMissileLockedOn = false;
