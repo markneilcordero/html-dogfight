@@ -294,6 +294,26 @@ function createPlane(x, y) {
       dodgeOffset: 0                // ← NEW
     };
   }
+
+  function respawnPlane(plane, isOpponent = false) {
+    plane.x = Math.random() * WORLD_WIDTH;
+    plane.y = Math.random() * WORLD_HEIGHT;
+    plane.angle = Math.random() * Math.PI * 2;
+    plane.health = plane.maxHealth;
+    plane.thrust = 1.0;
+    plane.engineParticles = [];
+    plane.wingTrails = [];
+    plane.orbitDirection = Math.random() < 0.5 ? 1 : -1;
+    plane.dodgeCooldown = 0;
+    plane.dodgeOffset = 0;
+  
+    if (isOpponent) {
+      createFloatingText("✈️ Respawned!", plane.x, plane.y - 40, "red", 16);
+    } else {
+      createFloatingText("✈️ Respawned!", plane.x, plane.y - 40, "cyan", 16);
+    }
+  }
+  
   
 
 // ====================
@@ -491,6 +511,11 @@ function releaseFlares() {
 // ====================
 function updateOpponents() {
   for (const opp of opponents) {
+    if (opp.health <= 0) {
+        createExplosion(opp.x, opp.y); // Optional explosion effect
+        respawnPlane(opp, true);       // true = isOpponent
+        continue;                      // Skip this frame after respawn
+      }
     const { target, distance } = findNearestEnemy(opp.x, opp.y);
 
     const dx = target.x - opp.x;
@@ -536,6 +561,11 @@ const targetAngle = Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodge
 
 function updateAllies() {
   for (const ally of allies) {
+    if (ally.health <= 0) {
+        createExplosion(ally.x, ally.y); // Optional explosion effect
+        respawnPlane(ally, false);       // false = isAlly
+        continue;                        // Skip this frame after respawn
+      }
     let nearestOpponent = null;
     let nearestDist = Infinity;
     for (const opp of opponents) {
@@ -1220,34 +1250,51 @@ function drawExplosions() {
 }
 
 function drawHealthBars() {
-  // Player Health Bar (fixed position)
-  const barWidth = 100;
-  const barHeight = 10;
-  const healthPercent = player.health / player.maxHealth;
-
-  ctx.fillStyle = "red";
-  ctx.fillRect(20, 20, barWidth, barHeight);
-  ctx.fillStyle = "lime";
-  ctx.fillRect(20, 20, barWidth * healthPercent, barHeight);
-  ctx.strokeStyle = "white";
-  ctx.strokeRect(20, 20, barWidth, barHeight);
-
-  // Opponents' Health Bars (above each opponent)
-  for (const opp of opponents) {
-    const oppHealthPercent = opp.health / opp.maxHealth;
+    // === Player Health Bar (fixed position)
+    const barWidth = 100;
+    const barHeight = 10;
+    const healthPercent = player.health / player.maxHealth;
+  
     ctx.fillStyle = "red";
-    ctx.fillRect(opp.x - 30 - camera.x, opp.y - 50 - camera.y, 60, 6);
+    ctx.fillRect(20, 20, barWidth, barHeight);
     ctx.fillStyle = "lime";
-    ctx.fillRect(
-      opp.x - 30 - camera.x,
-      opp.y - 50 - camera.y,
-      60 * oppHealthPercent,
-      6
-    );
+    ctx.fillRect(20, 20, barWidth * healthPercent, barHeight);
     ctx.strokeStyle = "white";
-    ctx.strokeRect(opp.x - 30 - camera.x, opp.y - 50 - camera.y, 60, 6);
+    ctx.strokeRect(20, 20, barWidth, barHeight);
+  
+    // === Opponents' Health Bars (above each opponent)
+    for (const opp of opponents) {
+      const oppHealthPercent = opp.health / opp.maxHealth;
+      ctx.fillStyle = "red";
+      ctx.fillRect(opp.x - 30 - camera.x, opp.y - 50 - camera.y, 60, 6);
+      ctx.fillStyle = "lime";
+      ctx.fillRect(
+        opp.x - 30 - camera.x,
+        opp.y - 50 - camera.y,
+        60 * oppHealthPercent,
+        6
+      );
+      ctx.strokeStyle = "white";
+      ctx.strokeRect(opp.x - 30 - camera.x, opp.y - 50 - camera.y, 60, 6);
+    }
+  
+    // === Allies' Health Bars (above each ally)
+    for (const ally of allies) {
+      const allyHealthPercent = ally.health / ally.maxHealth;
+      ctx.fillStyle = "red";
+      ctx.fillRect(ally.x - 30 - camera.x, ally.y - 50 - camera.y, 60, 6);
+      ctx.fillStyle = "cyan";
+      ctx.fillRect(
+        ally.x - 30 - camera.x,
+        ally.y - 50 - camera.y,
+        60 * allyHealthPercent,
+        6
+      );
+      ctx.strokeStyle = "white";
+      ctx.strokeRect(ally.x - 30 - camera.x, ally.y - 50 - camera.y, 60, 6);
+    }
   }
-}
+  
 
 function drawSpeedometer() {
   const barX = 20;
