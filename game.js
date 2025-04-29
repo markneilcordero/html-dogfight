@@ -255,6 +255,24 @@ function createTrail(x, y, color) {
   if (wingTrails.length > 60) wingTrails.shift();
 }
 
+function findNearestFlare(x, y) {
+    let nearest = null;
+    let nearestDist = Infinity;
+  
+    for (const flare of flares) {
+      const dx = flare.x - x;
+      const dy = flare.y - y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < nearestDist) {
+        nearest = flare;
+        nearestDist = dist;
+      }
+    }
+  
+    return nearest;
+  }
+  
+
 // ====================
 // [5] Player Actions
 // ====================
@@ -492,10 +510,15 @@ function moveForward(entity) {
     entity.y += Math.sin(entity.angle) * entity.thrust;
   }  
 
-function rotateToward(entity, targetAngle, speed) {
-  let angleDiff = ((targetAngle - entity.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
-  entity.angle += Math.max(-speed, Math.min(speed, angleDiff));
-}
+  function rotateToward(entity, targetAngle, speed, wiggle = 0) {
+    let angleDiff = ((targetAngle - entity.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    
+    // === Add random wiggle (optional)
+    angleDiff += (Math.random() - 0.5) * wiggle;
+  
+    entity.angle += Math.max(-speed, Math.min(speed, angleDiff));
+  }
+  
 
 function updateBullets() {
   for (let i = machineGunBullets.length - 1; i >= 0; i--) {
@@ -588,38 +611,63 @@ particles.push({
   
     // === Update opponent missiles ===
     for (let i = opponentMissiles.length - 1; i >= 0; i--) {
-      const m = opponentMissiles[i];
-      const dx = player.x - m.x;
-      const dy = player.y - m.y;
-      const targetAngle = Math.atan2(dy, dx);
-  
-      rotateToward(m, targetAngle, 0.05);
-  
-      m.x += Math.cos(m.angle) * m.speed;
-      m.y += Math.sin(m.angle) * m.speed;
-      m.life--;
-
-      // === Missile trail (opponent) ===
-  particles.push({
-    x: m.x,
-    y: m.y,
-    alpha: 0.5,
-    radius: 2 + Math.random() * 2,
-    angle: m.angle + (Math.random() * 0.2 - 0.1),
-    color: "white"
-  });
-  
-      if (Math.hypot(dx, dy) < 40) {
-        player.health -= 25;
-        createExplosion(player.x, player.y);
-        opponentMissiles.splice(i, 1);
-        continue;
+        const m = opponentMissiles[i];
+      
+        let targetX, targetY;
+      
+        // === If there are flares, prefer chasing the nearest flare
+        const nearestFlare = findNearestFlare(m.x, m.y);
+        if (nearestFlare) {
+          targetX = nearestFlare.x;
+          targetY = nearestFlare.y;
+        } else {
+          targetX = player.x;
+          targetY = player.y;
+        }
+      
+        const dx = targetX - m.x;
+        const dy = targetY - m.y;
+        const targetAngle = Math.atan2(dy, dx);
+      
+        rotateToward(m, targetAngle, 0.05);
+      
+        m.x += Math.cos(m.angle) * m.speed;
+        m.y += Math.sin(m.angle) * m.speed;
+        m.life--;
+      
+        // === Missile trail (opponent)
+        particles.push({
+          x: m.x,
+          y: m.y,
+          alpha: 0.5,
+          radius: 2 + Math.random() * 2,
+          angle: m.angle + (Math.random() * 0.2 - 0.1),
+          color: "white"
+        });
+      
+        if (nearestFlare) {
+          // === Hit flare
+          if (Math.hypot(dx, dy) < 20) {
+            createExplosion(nearestFlare.x, nearestFlare.y);
+            opponentMissiles.splice(i, 1);
+            flares.splice(flares.indexOf(nearestFlare), 1); // Remove the flare
+            continue;
+          }
+        } else {
+          // === Hit player
+          if (Math.hypot(dx, dy) < 40) {
+            player.health -= 25;
+            createExplosion(player.x, player.y);
+            opponentMissiles.splice(i, 1);
+            continue;
+          }
+        }
+      
+        if (m.life <= 0) {
+          opponentMissiles.splice(i, 1);
+        }
       }
-  
-      if (m.life <= 0) {
-        opponentMissiles.splice(i, 1);
-      }
-    }
+      
   }
   
 
