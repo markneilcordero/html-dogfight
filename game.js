@@ -334,6 +334,22 @@ function findNearestFlare(x, y) {
   return nearest;
 }
 
+function findNearestEnemy(x, y) {
+    let nearest = player;
+    let nearestDist = Math.hypot(player.x - x, player.y - y);
+  
+    for (const ally of allies) {
+      const dist = Math.hypot(ally.x - x, ally.y - y);
+      if (dist < nearestDist) {
+        nearest = ally;
+        nearestDist = dist;
+      }
+    }
+  
+    return { target: nearest, distance: nearestDist };
+  }
+  
+
 // ====================
 // [5] Player Actions
 // ====================
@@ -441,27 +457,28 @@ function releaseFlares() {
 // ====================
 function updateOpponents() {
     for (const opp of opponents) {
-      const dx = player.x - opp.x;
-      const dy = player.y - opp.y;
-      const dist = Math.hypot(dx, dy);
+      const { target, distance } = findNearestEnemy(opp.x, opp.y);
+  
+      const dx = target.x - opp.x;
+      const dy = target.y - opp.y;
       const targetAngle = Math.atan2(dy, dx);
   
       rotateToward(opp, targetAngle, 0.03);
   
-      // === Add smart thrust control ===
-      if (dist > 800) {
-        opp.thrust += 0.05; // speed up
+      // === Thrust Control ===
+      if (distance > 800) {
+        opp.thrust += 0.05;
         if (opp.thrust > 5) opp.thrust = 5;
-      } else if (dist < 400) {
-        opp.thrust -= 0.05; // slow down
+      } else if (distance < 400) {
+        opp.thrust -= 0.05;
         if (opp.thrust < 1.0) opp.thrust = 1.0;
       }
   
       moveForward(opp);
       createEntityWingTrails(opp);
-createEngineParticles(opp);
+      createEngineParticles(opp);
   
-      // === Repulsion (no stacking) ===
+      // === Repulsion ===
       for (const other of opponents) {
         if (opp === other) continue;
         const dx2 = opp.x - other.x;
@@ -475,16 +492,17 @@ createEngineParticles(opp);
       }
   
       // === Shooting ===
-      if (dist < 800 && Math.random() < 0.05) {
-        fireOpponentMachineGun(opp);
+      if (distance < 800 && Math.random() < 0.05) {
+        fireOpponentMachineGun(opp, target);
       }
       if (opponentMissileLockReady && Math.random() < 0.02) {
-        fireOpponentMissile(opp);
+        fireOpponentMissile(opp, target);
         opponentMissileLockReady = false;
         opponentMissileLockTimer = 0;
       }
     }
   }
+  
   
 
   function updateAllies() {
@@ -559,15 +577,22 @@ function updateOpponentBullets() {
     b.life--;
 
     // Check collision with player
-    const dx = player.x - b.x;
-    const dy = player.y - b.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist < 30) {
-      player.health -= 10;
-      createExplosion(player.x, player.y);
-      opponentBullets.splice(i, 1);
-      continue;
-    }
+    let hit = false;
+const targets = [player, ...allies];
+for (const t of targets) {
+  const dx = t.x - b.x;
+  const dy = t.y - b.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist < 30) {
+    t.health -= 10;
+    createExplosion(t.x, t.y);
+    opponentBullets.splice(i, 1);
+    hit = true;
+    break;
+  }
+}
+if (hit) continue;
+
 
     if (b.life <= 0) {
       opponentBullets.splice(i, 1);
@@ -575,15 +600,18 @@ function updateOpponentBullets() {
   }
 }
 
-function fireOpponentMachineGun(opp) {
-  opponentBullets.push({
-    x: opp.x,
-    y: opp.y,
-    angle: opp.angle,
-    speed: 12,
-    life: 60,
-  });
-}
+function fireOpponentMachineGun(opp, target) {
+    const angle = Math.atan2(target.y - opp.y, target.x - opp.x);
+    opponentBullets.push({
+      x: opp.x,
+      y: opp.y,
+      angle,
+      speed: 12,
+      life: 60,
+      target,
+    });
+  }
+  
 
 function fireOpponentMissile(opp) {
   opponentMissiles.push({
