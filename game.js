@@ -323,7 +323,7 @@ function createPlane(x, y) {
     y,
     width: 60,
     height: 60,
-    speed: 1,
+    speed: 3,
     angle: 0,
     thrust: 1.0,
     health: 100,
