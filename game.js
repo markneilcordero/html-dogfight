@@ -323,7 +323,7 @@ function createPlane(x, y) {
     y,
     width: 60,
     height: 60,
-    speed: 3,
+    speed: 1,
     angle: 0,
     thrust: 1.0,
     health: 100,
@@ -981,9 +981,10 @@ function updateCamera() {
 }
 
 function moveForward(entity) {
-  entity.x += Math.cos(entity.angle) * entity.thrust;
-  entity.y += Math.sin(entity.angle) * entity.thrust;
-}
+    entity.x += Math.cos(entity.angle) * entity.thrust * entity.speed;
+    entity.y += Math.sin(entity.angle) * entity.thrust * entity.speed;
+  }
+  
 
 function maybeDodge(entity) {
   if (entity.dodgeCooldown > 0) {
