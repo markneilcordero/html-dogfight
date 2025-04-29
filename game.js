@@ -220,13 +220,13 @@ function setupWeaponControls() {
   btnFlare.addEventListener("click", () => {
     if (flares.length < 1) {
       // simple cooldown check
-      releaseFlares();
+      releaseFlaresFor(player);
     }
   });
 
   window.addEventListener("keydown", (e) => {
     if (e.key === "h") {
-      releaseFlares();
+        releaseFlaresFor(player);
     }
   });
 }
@@ -492,19 +492,22 @@ function fireMissile() {
   playerMissileLockTimer = 0;
 }
 
-function releaseFlares() {
-  for (let i = 0; i < 8; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    flares.push({
-      x: player.x,
-      y: player.y,
-      angle: angle,
-      speed: 1 + Math.random(),
-      life: 180,
-      size: 12 + Math.random() * 6, // ✅ Add this!
-    });
+function releaseFlaresFor(entity) {
+    for (let i = 0; i < 8; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      flares.push({
+        x: entity.x,
+        y: entity.y,
+        angle: angle,
+        speed: 1 + Math.random(),
+        life: 180,
+        size: 12 + Math.random() * 6,
+      });
+    }
+  
+    createFloatingText("🔥 Flares!", entity.x, entity.y - 60, "orange", 16);
   }
-}
+  
 
 // ====================
 // [6] Opponent AI
@@ -703,6 +706,8 @@ function update() {
   updateBullets();
   updateOpponentBullets();
   updateMissiles();
+  maybeDeployFlares(opponents);
+maybeDeployFlares(allies);
   updateOpponents();
   updateAllies();
   applyAntiStacking([...opponents, ...allies]);
@@ -834,6 +839,21 @@ function maybeDodge(entity) {
         if (Math.abs(entity.dodgeOffset) < 0.01) entity.dodgeOffset = 0;
       }
   }
+
+  function maybeDeployFlares(planes) {
+    for (const plane of planes) {
+      const isChased = opponentMissiles.some((m) => {
+        const dx = plane.x - m.x;
+        const dy = plane.y - m.y;
+        return Math.hypot(dx, dy) < 250;
+      });
+  
+      if (isChased && Math.random() < 0.02) { // ~2% chance per frame
+        releaseFlaresFor(plane);
+      }
+    }
+  }
+  
   
 
 function rotateToward(entity, targetAngle, speed, wiggle = 0) {
