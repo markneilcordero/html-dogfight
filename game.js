@@ -38,6 +38,9 @@ machineGunBulletImg.src = "images/bullet.png"; // Save the uploaded image as thi
 const missileImg = new Image();
 missileImg.src = "images/missile.png"; // Replace with correct path if needed
 
+const flareImg = new Image();
+flareImg.src = "images/flare.png"; // Rename your uploaded file to flare.png and place it inside the /images/ folder
+
 const minSpeed = 1.0; // ✅ Declare this first
 let thrust = minSpeed; // ✅ Now this is valid
 
@@ -54,6 +57,10 @@ const container = document.getElementById("joystickContainer");
 
 const missiles = [];
 let lastMissileSide = "right"; // Start with right, so the first missile is from the left
+
+const flares = [];
+let flareCooldown = 0;
+
 function fireMissile() {
   const sideOffset = 10; // Distance from center to wing
   const forwardOffset = 30; // In front of the ship
@@ -77,6 +84,21 @@ function fireMissile() {
 
   // Toggle for next shot
   lastMissileSide = lastMissileSide === "left" ? "right" : "left";
+}
+
+function releaseFlares() {
+  for (let i = 0; i < 8; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random(); // Random slow drift
+    flares.push({
+      x: player.x,
+      y: player.y,
+      angle: angle,
+      speed: speed,
+      life: 180,
+      size: 12 + Math.random() * 6, // Tiny
+    });
+  }
 }
 
 const machineGunBullets = [];
@@ -136,6 +158,14 @@ btnMissile.addEventListener(
   },
   { passive: true }
 );
+
+const btnFlare = document.getElementById("btnFlare");
+btnFlare.addEventListener("click", () => {
+  if (flareCooldown <= 0) {
+    releaseFlares();
+    flareCooldown = 300; // Cooldown in frames (~5 seconds)
+  }
+});
 
 btnMissile.addEventListener("click", (e) => {
   if (missileTouchHandled) {
@@ -713,25 +743,26 @@ function update() {
   }
 
   // === Update Player Missiles ===
-for (let i = missiles.length - 1; i >= 0; i--) {
+  for (let i = missiles.length - 1; i >= 0; i--) {
     const m = missiles[i];
-  
+
     // 🚀 Find the angle toward the opponent
     const dx = opponent.x - m.x;
     const dy = opponent.y - m.y;
     const targetAngle = Math.atan2(dy, dx);
-  
+
     // 🚀 Smoothly turn missile toward opponent
     const turnRate = 0.05; // Smaller = slower turning
-    let angleDiff = ((targetAngle - m.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    let angleDiff =
+      ((targetAngle - m.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
     m.angle += Math.max(-turnRate, Math.min(turnRate, angleDiff));
-  
+
     // 🚀 Move forward
     m.x += Math.cos(m.angle) * m.speed;
     m.y += Math.sin(m.angle) * m.speed;
-  
+
     m.life--;
-  
+
     // 🚀 Check collision with opponent
     const dist = Math.hypot(dx, dy);
     if (dist < 40) {
@@ -739,7 +770,7 @@ for (let i = missiles.length - 1; i >= 0; i--) {
       missiles.splice(i, 1);
       continue;
     }
-  
+
     // 🚀 Missile Trail
     missileTrails.push({
       x: m.x - Math.cos(m.angle) * 35,
@@ -748,11 +779,11 @@ for (let i = missiles.length - 1; i >= 0; i--) {
       alpha: 1,
       color: "lightgray",
     });
-  
+
     if (m.life <= 0) {
       missiles.splice(i, 1);
     }
-  }  
+  }
 
   for (let i = missileTrails.length - 1; i >= 0; i--) {
     const t = missileTrails[i];
@@ -801,25 +832,37 @@ for (let i = missiles.length - 1; i >= 0; i--) {
   }
 
   // === Update Opponent Missiles ===
-for (let i = opponentMissiles.length - 1; i >= 0; i--) {
+  for (let i = opponentMissiles.length - 1; i >= 0; i--) {
     const m = opponentMissiles[i];
-  
-    // 🚀 Find the angle toward the player
-    const dx = player.x - m.x;
-    const dy = player.y - m.y;
-    const targetAngle = Math.atan2(dy, dx);
-  
+
+    // 🚀 Choose flare if one is close, otherwise target player
+  let target = player;
+  let minDist = Infinity;
+
+  for (const f of flares) {
+    const d = Math.hypot(f.x - m.x, f.y - m.y);
+    if (d < minDist) {
+      minDist = d;
+      target = f;
+    }
+  }
+
+  const dx = target.x - m.x;
+  const dy = target.y - m.y;
+  const targetAngle = Math.atan2(dy, dx);
+
     // 🚀 Smoothly turn missile toward player
     const turnRate = 0.05;
-    let angleDiff = ((targetAngle - m.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    let angleDiff =
+      ((targetAngle - m.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
     m.angle += Math.max(-turnRate, Math.min(turnRate, angleDiff));
-  
+
     // 🚀 Move forward
     m.x += Math.cos(m.angle) * m.speed;
     m.y += Math.sin(m.angle) * m.speed;
-  
+
     m.life--;
-  
+
     // 🚀 Check collision with player
     const dist = Math.hypot(dx, dy);
     if (dist < 40) {
@@ -827,7 +870,7 @@ for (let i = opponentMissiles.length - 1; i >= 0; i--) {
       opponentMissiles.splice(i, 1);
       continue;
     }
-  
+
     // 🚀 Missile Trail
     opponentMissileTrails.push({
       x: m.x - Math.cos(m.angle) * 35,
@@ -836,16 +879,26 @@ for (let i = opponentMissiles.length - 1; i >= 0; i--) {
       alpha: 1,
       color: "orange",
     });
-  
+
     if (m.life <= 0) {
       opponentMissiles.splice(i, 1);
     }
-  }  
+  }
 
   for (let i = opponentMissileTrails.length - 1; i >= 0; i--) {
     const t = opponentMissileTrails[i];
     t.alpha -= 0.02;
     if (t.alpha <= 0) opponentMissileTrails.splice(i, 1);
+  }
+
+  if (flareCooldown > 0) flareCooldown--;
+
+  for (let i = flares.length - 1; i >= 0; i--) {
+    const f = flares[i];
+    f.x += Math.cos(f.angle) * f.speed;
+    f.y += Math.sin(f.angle) * f.speed;
+    f.life--;
+    if (f.life <= 0) flares.splice(i, 1);
   }
 
   createAfterburnerParticle();
@@ -1026,6 +1079,15 @@ function draw() {
     ctx.translate(m.x - camera.x, m.y - camera.y);
     ctx.rotate(m.angle);
     ctx.drawImage(missileImg, -40, -20, 40, 40);
+    ctx.restore();
+  }
+
+  for (const f of flares) {
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    ctx.translate(f.x - camera.x, f.y - camera.y);
+    ctx.rotate(f.angle);
+    ctx.drawImage(flareImg, -f.size / 2, -f.size / 2, f.size, f.size);
     ctx.restore();
   }
 
