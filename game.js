@@ -29,6 +29,9 @@ skyImg.src = "images/sky.jpeg"; // your uploaded image
 const playerImg = new Image();
 playerImg.src = "images/player.png"; // Your uploaded fighter plane
 
+const opponentImg = new Image();
+opponentImg.src = "images/opponent.png"; // Save your uploaded image with this name
+
 const machineGunBulletImg = new Image();
 machineGunBulletImg.src = "images/bullet.png"; // Save the uploaded image as this name
 
@@ -260,6 +263,61 @@ const player = {
   speed: 3,
   angle: 0, // New: For rotation
 };
+
+const opponent = {
+    x: 500,
+    y: 500,
+    width: 60,
+    height: 60,
+    speed: 2,
+    angle: 0,
+    fireCooldown: 0,
+    missileCooldown: 0,
+  };
+
+  const opponentBullets = [];
+const opponentMissiles = [];
+
+function updateOpponentAI() {
+    const dx = player.x - opponent.x;
+    const dy = player.y - opponent.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    opponent.angle = Math.atan2(dy, dx);
+  
+    // Move toward player
+    if (dist > 200) {
+      opponent.x += Math.cos(opponent.angle) * opponent.speed;
+      opponent.y += Math.sin(opponent.angle) * opponent.speed;
+    }
+  
+    // === Fire Machine Gun
+    if (opponent.fireCooldown <= 0 && dist < 800) {
+      opponentBullets.push({
+        x: opponent.x + Math.cos(opponent.angle) * 30,
+        y: opponent.y + Math.sin(opponent.angle) * 30,
+        angle: opponent.angle,
+        speed: 12,
+        life: 60,
+      });
+      opponent.fireCooldown = 15;
+    }
+  
+    // === Fire Missile
+    if (opponent.missileCooldown <= 0 && dist < 1000) {
+      opponentMissiles.push({
+        x: opponent.x + Math.cos(opponent.angle) * 40,
+        y: opponent.y + Math.sin(opponent.angle) * 40,
+        angle: opponent.angle,
+        speed: 4,
+        life: 180,
+      });
+      opponent.missileCooldown = 180;
+    }
+  
+    opponent.fireCooldown--;
+    opponent.missileCooldown--;
+  }
+  
 
 function drawSpeedometer() {
   const speedText = `Speed: ${thrust.toFixed(1)} / ${maxSpeed}`;
@@ -513,11 +571,31 @@ function update() {
     if (t.alpha <= 0) missileTrails.splice(i, 1);
   }
 
+  // === Opponent Bullets
+for (let i = opponentBullets.length - 1; i >= 0; i--) {
+    const b = opponentBullets[i];
+    b.x += Math.cos(b.angle) * b.speed;
+    b.y += Math.sin(b.angle) * b.speed;
+    b.life--;
+    if (b.life <= 0) opponentBullets.splice(i, 1);
+  }
+  
+  // === Opponent Missiles
+  for (let i = opponentMissiles.length - 1; i >= 0; i--) {
+    const m = opponentMissiles[i];
+    m.x += Math.cos(m.angle) * m.speed;
+    m.y += Math.sin(m.angle) * m.speed;
+    m.life--;
+    if (m.life <= 0) opponentMissiles.splice(i, 1);
+  }
+  
+
   createAfterburnerParticle();
   updateParticles();
 
   createWingTrails();
   updateWingTrails();
+  updateOpponentAI();
 }
 
 function draw() {
@@ -610,6 +688,32 @@ function draw() {
     ctx.drawImage(missileImg, -40, -20, 40, 40); // Missile is now 60x24 pixels
     ctx.restore();
   }
+
+  // === Draw Opponent
+ctx.save();
+ctx.translate(opponent.x - camera.x, opponent.y - camera.y);
+ctx.rotate(opponent.angle + Math.PI / 4);
+ctx.drawImage(opponentImg, -opponent.width / 2, -opponent.height / 2, opponent.width, opponent.height);
+ctx.restore();
+
+// === Draw Opponent Bullets
+for (const b of opponentBullets) {
+  ctx.save();
+  ctx.translate(b.x - camera.x, b.y - camera.y);
+  ctx.rotate(b.angle);
+  ctx.drawImage(machineGunBulletImg, -10, -5, 20, 10);
+  ctx.restore();
+}
+
+// === Draw Opponent Missiles
+for (const m of opponentMissiles) {
+  ctx.save();
+  ctx.translate(m.x - camera.x, m.y - camera.y);
+  ctx.rotate(m.angle);
+  ctx.drawImage(missileImg, -40, -20, 40, 40);
+  ctx.restore();
+}
+
 
   // === Draw Speedometer ===
   drawSpeedometer();
