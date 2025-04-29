@@ -277,21 +277,24 @@ let opponentMissileLockReady = false;
 
 // Inside createPlane():
 function createPlane(x, y) {
-  return {
-    x,
-    y,
-    width: 60,
-    height: 60,
-    speed: 3,
-    angle: 0,
-    thrust: 1.0,
-    health: 100,
-    maxHealth: 100,
-    wingTrails: [],
-    engineParticles: [],
-    orbitDirection: Math.random() < 0.5 ? 1 : -1, // ← NEW
-  };
-}
+    return {
+      x,
+      y,
+      width: 60,
+      height: 60,
+      speed: 3,
+      angle: 0,
+      thrust: 1.0,
+      health: 100,
+      maxHealth: 100,
+      wingTrails: [],
+      engineParticles: [],
+      orbitDirection: Math.random() < 0.5 ? 1 : -1,
+      dodgeCooldown: 0,             // ← NEW
+      dodgeOffset: 0                // ← NEW
+    };
+  }
+  
 
 // ====================
 // [4] Utility Functions
@@ -347,6 +350,17 @@ function findNearestEnemy(x, y) {
 
   return { target: nearest, distance: nearestDist };
 }
+
+function detectIncomingFire(entity) {
+    for (const b of machineGunBullets) {
+      const dx = b.x - entity.x;
+      const dy = b.y - entity.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 150) return true;
+    }
+    return false;
+  }
+  
 
 // ====================
 // [5] Player Actions
@@ -458,7 +472,9 @@ function updateOpponents() {
     const dx = target.x - opp.x;
     const dy = target.y - opp.y;
     const offset = Math.PI / 3; // 60 degrees for circling
-    const targetAngle = Math.atan2(dy, dx) + offset * opp.orbitDirection;
+    maybeDodge(opp);
+const targetAngle = Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodgeOffset;
+
 
     rotateToward(opp, targetAngle, 0.04);
 
@@ -518,7 +534,9 @@ function updateAllies() {
       const dx = nearestOpponent.x - ally.x;
       const dy = nearestOpponent.y - ally.y;
       const offset = Math.PI / 3;
-      const targetAngle = Math.atan2(dy, dx) + offset * ally.orbitDirection;
+      maybeDodge(ally);
+const targetAngle = Math.atan2(dy, dx) + offset * ally.orbitDirection + ally.dodgeOffset;
+
 
       rotateToward(ally, targetAngle, 0.06);
 
@@ -751,6 +769,30 @@ function moveForward(entity) {
   entity.x += Math.cos(entity.angle) * entity.thrust;
   entity.y += Math.sin(entity.angle) * entity.thrust;
 }
+
+function maybeDodge(entity) {
+    if (entity.dodgeCooldown > 0) {
+      entity.dodgeCooldown--;
+      return;
+    }
+  
+    // 10% chance to dodge every check
+    if (Math.random() < 0.1) {
+      entity.dodgeOffset = (Math.random() < 0.5 ? -1 : 1) * (Math.PI / 4); // 45 degrees left/right
+      entity.dodgeCooldown = 60 + Math.floor(Math.random() * 60); // cooldown 1–2 seconds
+    }
+
+    if (detectIncomingFire(entity) && Math.random() < 0.2) {
+        entity.dodgeOffset = (Math.random() < 0.5 ? -1 : 1) * (Math.PI / 4);
+        entity.dodgeCooldown = 60 + Math.floor(Math.random() * 60);
+      }
+      
+      if (entity.dodgeOffset !== 0) {
+        entity.dodgeOffset *= 0.95; // fade out
+        if (Math.abs(entity.dodgeOffset) < 0.01) entity.dodgeOffset = 0;
+      }
+  }
+  
 
 function rotateToward(entity, targetAngle, speed, wiggle = 0) {
   let angleDiff =
