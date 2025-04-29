@@ -360,6 +360,30 @@ function detectIncomingFire(entity) {
     }
     return false;
   }
+
+  function applyAntiStacking(allPlanes, minDistance = 80, strength = 0.05) {
+    for (let i = 0; i < allPlanes.length; i++) {
+      for (let j = i + 1; j < allPlanes.length; j++) {
+        const a = allPlanes[i];
+        const b = allPlanes[j];
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        const dist = Math.hypot(dx, dy);
+  
+        if (dist < minDistance && dist > 0.01) {
+          const repel = (minDistance - dist) * strength;
+          const nx = dx / dist;
+          const ny = dy / dist;
+  
+          a.x += nx * repel;
+          a.y += ny * repel;
+          b.x -= nx * repel;
+          b.y -= ny * repel;
+        }
+      }
+    }
+  }
+  
   
 
 // ====================
@@ -664,6 +688,7 @@ function update() {
   updateMissiles();
   updateOpponents();
   updateAllies();
+  applyAntiStacking([...opponents, ...allies]);
   updateFlares();
   updateParticles();
   updateFloatingTexts();
