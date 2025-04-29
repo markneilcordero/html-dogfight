@@ -1025,6 +1025,7 @@ function drawBackground() {
 
 function drawPlayer() {
   drawEntity(player, images.player);
+  drawEngineParticles(player.engineParticles);
 }
 
 function drawAllies() {
@@ -1155,7 +1156,8 @@ function drawParticles() {
 function drawWingTrails(trails) {
     ctx.strokeStyle = "white";
     ctx.lineWidth = 1.5;
-    for (const t of trails) {
+    for (let i = trails.length - 1; i >= 0; i--) {
+      const t = trails[i];
       ctx.save();
       ctx.globalAlpha = t.alpha;
       ctx.beginPath();
@@ -1164,8 +1166,10 @@ function drawWingTrails(trails) {
       ctx.stroke();
       ctx.restore();
       t.alpha -= 0.02;
+      if (t.alpha <= 0) trails.splice(i, 1); // ✅ fade & clean
     }
   }
+  
   
 
 function drawExplosions() {
