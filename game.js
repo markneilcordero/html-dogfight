@@ -148,6 +148,14 @@ window.addEventListener("keydown", (e) => {
   if (e.key === "g") fireMissile();
 });
 
+window.addEventListener("keydown", (e) => {
+    if (e.key === "h" && flareCooldown <= 0) {
+      releaseFlares();
+      flareCooldown = 300; // 5 seconds cooldown
+    }
+  });
+  
+
 const btnMissile = document.getElementById("btnMissile");
 let missileTouchHandled = false;
 btnMissile.addEventListener(
