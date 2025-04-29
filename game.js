@@ -29,6 +29,57 @@ skyImg.src = "images/sky.jpeg"; // your uploaded image
 const playerImg = new Image();
 playerImg.src = "images/player.png"; // Your uploaded fighter plane
 
+let joystickAngle = 0;
+let joystickActive = false;
+
+const joystick = document.getElementById("joystick");
+const container = document.getElementById("joystickContainer");
+
+joystick.addEventListener(
+  "touchstart",
+  (e) => {
+    joystickActive = true;
+  },
+  { passive: false }
+);
+
+joystick.addEventListener(
+  "touchmove",
+  (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = container.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = touch.clientX - centerX;
+    const dy = touch.clientY - centerY;
+    joystickAngle = Math.atan2(dy, dx);
+  },
+  { passive: false }
+);
+
+joystick.addEventListener("touchend", () => {
+  joystickActive = false;
+});
+
+document.getElementById("btnThrottleUp").addEventListener(
+  "touchstart",
+  () => {
+    thrust += acceleration;
+    if (thrust > maxSpeed) thrust = maxSpeed;
+  },
+  { passive: true }
+);
+
+document.getElementById("btnThrottleDown").addEventListener(
+  "touchstart",
+  () => {
+    thrust -= deceleration;
+    if (thrust < minSpeed) thrust = minSpeed;
+  },
+  { passive: true }
+);
+
 const player = {
   x: WORLD_WIDTH / 2,
   y: WORLD_HEIGHT / 2,
@@ -197,8 +248,12 @@ const friction = 0.02; // Passive slow down if no key pressed
 
 function update() {
   // Rotate left/right
-  if (keys["ArrowLeft"] || keys["a"]) player.angle -= 0.05;
-  if (keys["ArrowRight"] || keys["d"]) player.angle += 0.05;
+  if (joystickActive) {
+    player.angle = joystickAngle;
+  } else {
+    if (keys["ArrowLeft"] || keys["a"]) player.angle -= 0.05;
+    if (keys["ArrowRight"] || keys["d"]) player.angle += 0.05;
+  }
 
   const minSpeed = 1.0;
   // === Throttle-based controls ===

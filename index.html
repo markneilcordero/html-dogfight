@@ -1,24 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Dogfight Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: black;
-    }
-    canvas {
-      display: block;
-      background: #87ceeb; /* Sky blue */
-    }
-  </style>
-</head>
-<body>
-  <canvas id="gameCanvas" width="800" height="600"></canvas>
-  <script src="game.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dogfight Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: black;
+      }
+      canvas {
+        display: block;
+        background: #87ceeb; /* Sky blue */
+      }
+      #joystickContainer {
+        position: absolute;
+        bottom: 40px;
+        left: 40px;
+        width: 120px;
+        height: 120px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+      }
+
+      #joystick {
+        width: 40px;
+        height: 40px;
+        background: #ccc;
+        border-radius: 50%;
+        touch-action: none;
+      }
+
+      #throttleButtons {
+        position: absolute;
+        bottom: 40px;
+        right: 40px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 10;
+      }
+
+      #throttleButtons button {
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+        border-radius: 12px;
+        background-color: #333;
+        color: white;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="joystickContainer">
+      <div id="joystick"></div>
+    </div>
+
+    <div id="throttleButtons">
+      <button id="btnThrottleUp">▲</button>
+      <button id="btnThrottleDown">▼</button>
+    </div>
+
+    <script src="game.js"></script>
+  </body>
 </html>
