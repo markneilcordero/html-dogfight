@@ -238,18 +238,24 @@ setupWeaponControls();
 // [3] Entity Definitions
 // ====================
 const player = createPlane(WORLD_WIDTH / 2, WORLD_HEIGHT / 2);
-const opponents = [
-  createPlane(500, 500),
-  createPlane(1000, 300),
-  createPlane(800, 800),
-  createPlane(300, 1200),
-];
+// === 10 Opponents randomly placed on map
+const opponents = [];
+for (let i = 0; i < 10; i++) {
+  const x = Math.random() * WORLD_WIDTH;
+  const y = Math.random() * WORLD_HEIGHT;
+  opponents.push(createPlane(x, y));
+}
 
-const allies = [
-  createPlane(player.x + 100, player.y + 50),
-  createPlane(player.x - 100, player.y + 50),
-  createPlane(player.x, player.y + 100),
-];
+// === 9 Allies near the player (formation)
+const allies = [];
+for (let i = 0; i < 9; i++) {
+  const angle = (i / 9) * Math.PI * 2; // Spread in a circle
+  const radius = 150;
+  const x = player.x + Math.cos(angle) * radius;
+  const y = player.y + Math.sin(angle) * radius;
+  allies.push(createPlane(x, y));
+}
+
 
 let machineGunBullets = [],
   missiles = [],
@@ -702,6 +708,23 @@ function updatePlayerMissileLock() {
   }
 }
 
+function updateOpponentMissileLock() {
+    const dx = player.x - opponents[0].x;
+    const dy = player.y - opponents[0].y;
+    const dist = Math.hypot(dx, dy);
+  
+    if (dist < 1000) {
+      opponentMissileLockTimer++;
+      if (opponentMissileLockTimer > OPPONENT_LOCK_TIME) {
+        opponentMissileLockReady = true;
+      }
+    } else {
+      opponentMissileLockTimer = 0;
+      opponentMissileLockReady = false;
+    }
+  }
+  
+
 // ====================
 // [7] Update Functions
 // ====================
@@ -720,6 +743,7 @@ function update() {
   updateFloatingTexts();
   updateExplosions();
   updatePlayerMissileLock();
+  updateOpponentMissileLock();
 }
 
 function updatePlayer() {
@@ -1006,8 +1030,10 @@ function updateMissiles() {
       }
 
       if (m.life <= 0) {
+        createExplosion(m.x, m.y); // 💥 explode on timeout
         missiles.splice(i, 1);
       }
+      
     }
   }
 
@@ -1066,8 +1092,10 @@ function updateMissiles() {
     }
 
     if (m.life <= 0) {
-      opponentMissiles.splice(i, 1);
-    }
+        createExplosion(m.x, m.y); // 💥 explode on timeout
+        opponentMissiles.splice(i, 1);
+      }
+      
   }
 }
 
