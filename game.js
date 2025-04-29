@@ -218,17 +218,20 @@ function setupWeaponControls() {
 
   // === Flare Button (click) ===
   btnFlare.addEventListener("click", () => {
-    if (flares.length < 1) {
-      // simple cooldown check
+    if (player.flareCooldown <= 0) {
       releaseFlaresFor(player);
+      player.flareCooldown = 300; // reset cooldown
     }
   });
+  
 
   window.addEventListener("keydown", (e) => {
-    if (e.key === "h") {
-        releaseFlaresFor(player);
+    if (e.key === "h" && player.flareCooldown <= 0) {
+      releaseFlaresFor(player);
+      player.flareCooldown = 300;
     }
   });
+  
 }
 
 setupThrottleControls();
@@ -784,6 +787,8 @@ function updatePlayer() {
         }
         return;
       }
+
+      if (player.flareCooldown > 0) player.flareCooldown--;
   
     // Existing movement, thrust, and camera logic
     if (joystickActive) {
