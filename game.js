@@ -32,6 +32,9 @@ playerImg.src = "images/player.png"; // Your uploaded fighter plane
 const machineGunBulletImg = new Image();
 machineGunBulletImg.src = "images/bullet.png"; // Save the uploaded image as this name
 
+const missileImg = new Image();
+missileImg.src = "images/missile.png"; // Replace with correct path if needed
+
 const minSpeed = 1.0; // ✅ Declare this first
 let thrust = minSpeed; // ✅ Now this is valid
 
@@ -45,6 +48,48 @@ let joystickActive = false;
 
 const joystick = document.getElementById("joystick");
 const container = document.getElementById("joystickContainer");
+
+const missiles = [];
+
+function fireMissile() {
+  const innerOffset = 18; // Closer to the center
+  const outerOffset = 12; // Farther from the center
+  const forwardOffset = 20; // How far in front of the ship
+
+  const offsets = [innerOffset, outerOffset];
+
+  for (const offset of offsets) {
+    // Left side missiles
+    missiles.push({
+      x:
+        player.x +
+        Math.cos(player.angle) * forwardOffset +
+        Math.cos(player.angle + Math.PI / 2) * offset,
+      y:
+        player.y +
+        Math.sin(player.angle) * forwardOffset +
+        Math.sin(player.angle + Math.PI / 2) * offset,
+      angle: player.angle,
+      speed: 8,
+      life: 180,
+    });
+
+    // Right side missiles
+    missiles.push({
+      x:
+        player.x +
+        Math.cos(player.angle) * forwardOffset +
+        Math.cos(player.angle - Math.PI / 2) * offset,
+      y:
+        player.y +
+        Math.sin(player.angle) * forwardOffset +
+        Math.sin(player.angle - Math.PI / 2) * offset,
+      angle: player.angle,
+      speed: 8,
+      life: 180,
+    });
+  }
+}
 
 const machineGunBullets = [];
 
@@ -88,6 +133,14 @@ window.addEventListener("keydown", (e) => {
     machineGunInterval = setInterval(fireMachineGun, 100);
   }
 });
+
+window.addEventListener("keydown", (e) => {
+  if (e.key === "g") fireMissile();
+});
+
+const btnMissile = document.getElementById("btnMissile");
+btnMissile.addEventListener("touchstart", fireMissile, { passive: true });
+btnMissile.addEventListener("click", fireMissile); // for mouse/tap support too
 
 window.addEventListener("keyup", (e) => {
   if (e.key === "f") {
@@ -435,6 +488,14 @@ function update() {
     if (t.alpha <= 0) bulletTrails.splice(i, 1);
   }
 
+  for (let i = missiles.length - 1; i >= 0; i--) {
+    const m = missiles[i];
+    m.x += Math.cos(m.angle) * m.speed;
+    m.y += Math.sin(m.angle) * m.speed;
+    m.life--;
+    if (m.life <= 0) missiles.splice(i, 1);
+  }
+
   createAfterburnerParticle();
   updateParticles();
 
@@ -511,6 +572,14 @@ function draw() {
     ctx.translate(b.x - camera.x, b.y - camera.y);
     ctx.rotate(b.angle);
     ctx.drawImage(machineGunBulletImg, -10, -5, 20, 10); // Adjust size if needed
+    ctx.restore();
+  }
+
+  for (const m of missiles) {
+    ctx.save();
+    ctx.translate(m.x - camera.x, m.y - camera.y);
+    ctx.rotate(m.angle);
+    ctx.drawImage(missileImg, -40, -18, 35, 35); // Missile is now 60x24 pixels
     ctx.restore();
   }
 
