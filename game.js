@@ -29,6 +29,9 @@ skyImg.src = "images/sky.jpeg"; // your uploaded image
 const playerImg = new Image();
 playerImg.src = "images/player.png"; // Your uploaded fighter plane
 
+const machineGunBulletImg = new Image();
+machineGunBulletImg.src = "images/bullet.png"; // Save the uploaded image as this name
+
 const minSpeed = 1.0; // ✅ Declare this first
 let thrust = minSpeed; // ✅ Now this is valid
 
@@ -43,39 +46,88 @@ let joystickActive = false;
 const joystick = document.getElementById("joystick");
 const container = document.getElementById("joystickContainer");
 
+const machineGunBullets = [];
+
+function fireMachineGun() {
+  machineGunBullets.push({
+    x: player.x + Math.cos(player.angle) * 30,
+    y: player.y + Math.sin(player.angle) * 30,
+    angle: player.angle,
+    speed: 16,
+    life: 60, // frames
+  });
+}
+
+let machineGunInterval = null;
+
+// === Mobile Button
+const btnMachineGun = document.getElementById("btnMachineGun");
+
+btnMachineGun.addEventListener(
+  "touchstart",
+  () => {
+    if (machineGunInterval) return;
+    machineGunInterval = setInterval(fireMachineGun, 100); // 10 bullets per second
+  },
+  { passive: true }
+);
+
+btnMachineGun.addEventListener("touchend", () => {
+  clearInterval(machineGunInterval);
+  machineGunInterval = null;
+});
+
+btnMachineGun.addEventListener("touchcancel", () => {
+  clearInterval(machineGunInterval);
+  machineGunInterval = null;
+});
+
+// === Keyboard (F key)
+window.addEventListener("keydown", (e) => {
+  if (e.key === "f" && !machineGunInterval) {
+    machineGunInterval = setInterval(fireMachineGun, 100);
+  }
+});
+
+window.addEventListener("keyup", (e) => {
+  if (e.key === "f") {
+    clearInterval(machineGunInterval);
+    machineGunInterval = null;
+  }
+});
+
 container.addEventListener(
-    "touchstart",
-    (e) => {
-      joystickActive = true;
-    },
-    { passive: false }
-  );
-  
-  container.addEventListener("touchmove", (e) => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    const rect = container.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const dx = touch.clientX - centerX;
-    const dy = touch.clientY - centerY;
-    joystickAngle = Math.atan2(dy, dx);
-  
-    const distance = Math.min(Math.sqrt(dx * dx + dy * dy), 40); // limit drag radius
-    const angle = Math.atan2(dy, dx);
-    const knobX = Math.cos(angle) * distance;
-    const knobY = Math.sin(angle) * distance;
-  
-    joystick.style.left = `50%`;
-    joystick.style.top = `50%`;
-    joystick.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
-  });
-  
-  container.addEventListener("touchend", () => {
-    joystickActive = false;
-    joystick.style.transform = `translate(-50%, -50%)`;
-  });
-  
+  "touchstart",
+  (e) => {
+    joystickActive = true;
+  },
+  { passive: false }
+);
+
+container.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = container.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  const dx = touch.clientX - centerX;
+  const dy = touch.clientY - centerY;
+  joystickAngle = Math.atan2(dy, dx);
+
+  const distance = Math.min(Math.sqrt(dx * dx + dy * dy), 40); // limit drag radius
+  const angle = Math.atan2(dy, dx);
+  const knobX = Math.cos(angle) * distance;
+  const knobY = Math.sin(angle) * distance;
+
+  joystick.style.left = `50%`;
+  joystick.style.top = `50%`;
+  joystick.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+});
+
+container.addEventListener("touchend", () => {
+  joystickActive = false;
+  joystick.style.transform = `translate(-50%, -50%)`;
+});
 
 document.getElementById("btnThrottleUp").addEventListener(
   "touchstart",
@@ -94,6 +146,58 @@ document.getElementById("btnThrottleDown").addEventListener(
   },
   { passive: true }
 );
+
+let throttleIntervalUp = null;
+let throttleIntervalDown = null;
+
+const btnThrottleUp = document.getElementById("btnThrottleUp");
+const btnThrottleDown = document.getElementById("btnThrottleDown");
+
+// === Throttle Up Button ===
+btnThrottleUp.addEventListener(
+  "touchstart",
+  () => {
+    if (throttleIntervalUp) return; // Prevent multiple intervals
+    throttleIntervalUp = setInterval(() => {
+      thrust += acceleration;
+      if (thrust > maxSpeed) thrust = maxSpeed;
+    }, 100); // Every 100ms while holding
+  },
+  { passive: true }
+);
+
+btnThrottleUp.addEventListener("touchend", () => {
+  clearInterval(throttleIntervalUp);
+  throttleIntervalUp = null;
+});
+
+btnThrottleUp.addEventListener("touchcancel", () => {
+  clearInterval(throttleIntervalUp);
+  throttleIntervalUp = null;
+});
+
+// === Throttle Down Button ===
+btnThrottleDown.addEventListener(
+  "touchstart",
+  () => {
+    if (throttleIntervalDown) return;
+    throttleIntervalDown = setInterval(() => {
+      thrust -= deceleration;
+      if (thrust < minSpeed) thrust = minSpeed;
+    }, 100);
+  },
+  { passive: true }
+);
+
+btnThrottleDown.addEventListener("touchend", () => {
+  clearInterval(throttleIntervalDown);
+  throttleIntervalDown = null;
+});
+
+btnThrottleDown.addEventListener("touchcancel", () => {
+  clearInterval(throttleIntervalDown);
+  throttleIntervalDown = null;
+});
 
 const player = {
   x: WORLD_WIDTH / 2,
@@ -255,18 +359,19 @@ const keys = {};
 window.addEventListener("keydown", (e) => (keys[e.key] = true));
 window.addEventListener("keyup", (e) => (keys[e.key] = false));
 
+const bulletTrails = [];
 function update() {
   // Rotate left/right
   if (joystickActive) {
     player.angle = joystickAngle;
-  
+
     // Auto-thrust while using joystick
     player.x += Math.cos(player.angle) * thrust;
     player.y += Math.sin(player.angle) * thrust;
   } else {
     if (keys["ArrowLeft"] || keys["a"]) player.angle -= 0.05;
     if (keys["ArrowRight"] || keys["d"]) player.angle += 0.05;
-  
+
     player.x += Math.cos(player.angle) * thrust;
     player.y += Math.sin(player.angle) * thrust;
   }
@@ -296,6 +401,39 @@ function update() {
   camera.y = player.y - camera.height / 2;
   camera.x = Math.max(0, Math.min(WORLD_WIDTH - camera.width, camera.x));
   camera.y = Math.max(0, Math.min(WORLD_HEIGHT - camera.height, camera.y));
+
+  // === Update Machine Gun Bullets ===
+  for (let i = machineGunBullets.length - 1; i >= 0; i--) {
+    const b = machineGunBullets[i];
+    b.x += Math.cos(b.angle) * b.speed;
+    b.y += Math.sin(b.angle) * b.speed;
+    b.life--;
+    if (b.life <= 0) machineGunBullets.splice(i, 1);
+  }
+
+  for (let i = machineGunBullets.length - 1; i >= 0; i--) {
+    const b = machineGunBullets[i];
+    b.x += Math.cos(b.angle) * b.speed;
+    b.y += Math.sin(b.angle) * b.speed;
+    b.life--;
+
+    // === 🔥 Add trail particle
+    bulletTrails.push({
+      x: b.x - Math.cos(b.angle) * 10, // behind the bullet
+      y: b.y - Math.sin(b.angle) * 10,
+      radius: 2 + Math.random() * 2,
+      alpha: 1,
+      color: "yellow",
+    });
+
+    if (b.life <= 0) machineGunBullets.splice(i, 1);
+  }
+
+  for (let i = bulletTrails.length - 1; i >= 0; i--) {
+    const t = bulletTrails[i];
+    t.alpha -= 0.05;
+    if (t.alpha <= 0) bulletTrails.splice(i, 1);
+  }
 
   createAfterburnerParticle();
   updateParticles();
@@ -355,6 +493,26 @@ function draw() {
     player.height
   );
   ctx.restore();
+
+  // === 🔥 Draw Bullet Trails
+  for (const t of bulletTrails) {
+    ctx.save();
+    ctx.globalAlpha = t.alpha;
+    ctx.fillStyle = t.color;
+    ctx.beginPath();
+    ctx.arc(t.x - camera.x, t.y - camera.y, t.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // === Draw Machine Gun Bullets ===
+  for (const b of machineGunBullets) {
+    ctx.save();
+    ctx.translate(b.x - camera.x, b.y - camera.y);
+    ctx.rotate(b.angle);
+    ctx.drawImage(machineGunBulletImg, -10, -5, 20, 10); // Adjust size if needed
+    ctx.restore();
+  }
 
   // === Draw Speedometer ===
   drawSpeedometer();
