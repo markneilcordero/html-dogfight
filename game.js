@@ -246,11 +246,10 @@ const opponents = [
 ];
 
 const allies = [
-    createPlane(player.x + 100, player.y + 50),
-    createPlane(player.x - 100, player.y + 50),
-    createPlane(player.x, player.y + 100),
-  ];
-  
+  createPlane(player.x + 100, player.y + 50),
+  createPlane(player.x - 100, player.y + 50),
+  createPlane(player.x, player.y + 100),
+];
 
 let machineGunBullets = [],
   missiles = [],
@@ -278,21 +277,21 @@ let opponentMissileLockReady = false;
 
 // Inside createPlane():
 function createPlane(x, y) {
-    return {
-      x,
-      y,
-      width: 60,
-      height: 60,
-      speed: 3,
-      angle: 0,
-      thrust: 1.0,
-      health: 100,
-      maxHealth: 100,
-      wingTrails: [],
-      engineParticles: [],
-    };
-  }
-  
+  return {
+    x,
+    y,
+    width: 60,
+    height: 60,
+    speed: 3,
+    angle: 0,
+    thrust: 1.0,
+    health: 100,
+    maxHealth: 100,
+    wingTrails: [],
+    engineParticles: [],
+    orbitDirection: Math.random() < 0.5 ? 1 : -1, // ← NEW
+  };
+}
 
 // ====================
 // [4] Utility Functions
@@ -335,20 +334,19 @@ function findNearestFlare(x, y) {
 }
 
 function findNearestEnemy(x, y) {
-    let nearest = player;
-    let nearestDist = Math.hypot(player.x - x, player.y - y);
-  
-    for (const ally of allies) {
-      const dist = Math.hypot(ally.x - x, ally.y - y);
-      if (dist < nearestDist) {
-        nearest = ally;
-        nearestDist = dist;
-      }
+  let nearest = player;
+  let nearestDist = Math.hypot(player.x - x, player.y - y);
+
+  for (const ally of allies) {
+    const dist = Math.hypot(ally.x - x, ally.y - y);
+    if (dist < nearestDist) {
+      nearest = ally;
+      nearestDist = dist;
     }
-  
-    return { target: nearest, distance: nearestDist };
   }
-  
+
+  return { target: nearest, distance: nearestDist };
+}
 
 // ====================
 // [5] Player Actions
@@ -364,42 +362,40 @@ function fireMachineGun() {
 }
 
 function fireAllyMachineGun(ally) {
-    machineGunBullets.push({
-      x: ally.x,
-      y: ally.y,
-      angle: ally.angle,
-      speed: 16,
-      life: 60,
-    });
+  machineGunBullets.push({
+    x: ally.x,
+    y: ally.y,
+    angle: ally.angle,
+    speed: 16,
+    life: 60,
+  });
+}
+
+function fireAllyMissile(ally) {
+  // Find nearest opponent
+  let nearestOpponent = null;
+  let nearestDist = Infinity;
+  for (const opp of opponents) {
+    const dx = opp.x - ally.x;
+    const dy = opp.y - ally.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearestOpponent = opp;
+    }
   }
 
-  function fireAllyMissile(ally) {
-    // Find nearest opponent
-    let nearestOpponent = null;
-    let nearestDist = Infinity;
-    for (const opp of opponents) {
-      const dx = opp.x - ally.x;
-      const dy = opp.y - ally.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < nearestDist) {
-        nearestDist = dist;
-        nearestOpponent = opp;
-      }
-    }
-  
-    if (nearestOpponent) {
-      missiles.push({
-        x: ally.x,
-        y: ally.y,
-        angle: Math.atan2(nearestOpponent.y - ally.y, nearestOpponent.x - ally.x),
-        speed: 4,
-        life: 180,
-        target: nearestOpponent, // Track this opponent
-      });
-    }
+  if (nearestOpponent) {
+    missiles.push({
+      x: ally.x,
+      y: ally.y,
+      angle: Math.atan2(nearestOpponent.y - ally.y, nearestOpponent.x - ally.x),
+      speed: 4,
+      life: 180,
+      target: nearestOpponent, // Track this opponent
+    });
   }
-  
-  
+}
 
 function fireMissile() {
   if (!playerMissileLockReady) {
@@ -456,118 +452,113 @@ function releaseFlares() {
 // [6] Opponent AI
 // ====================
 function updateOpponents() {
+  for (const opp of opponents) {
+    const { target, distance } = findNearestEnemy(opp.x, opp.y);
+
+    const dx = target.x - opp.x;
+    const dy = target.y - opp.y;
+    const offset = Math.PI / 3; // 60 degrees for circling
+    const targetAngle = Math.atan2(dy, dx) + offset * opp.orbitDirection;
+
+    rotateToward(opp, targetAngle, 0.04);
+
+    // === Thrust Control ===
+    if (distance > 800) {
+      opp.thrust += 0.05;
+      if (opp.thrust > 5) opp.thrust = 5;
+    } else if (distance < 400) {
+      opp.thrust -= 0.05;
+      if (opp.thrust < 1.0) opp.thrust = 1.0;
+    }
+
+    moveForward(opp);
+    createEntityWingTrails(opp);
+    createEngineParticles(opp);
+
+    // === Repulsion ===
+    for (const other of opponents) {
+      if (opp === other) continue;
+      const dx2 = opp.x - other.x;
+      const dy2 = opp.y - other.y;
+      const dist2 = Math.hypot(dx2, dy2);
+      if (dist2 < 80) {
+        const repelStrength = (80 - dist2) * 0.02;
+        opp.x += (dx2 / dist2) * repelStrength;
+        opp.y += (dy2 / dist2) * repelStrength;
+      }
+    }
+
+    // === Shooting ===
+    if (distance < 800 && Math.random() < 0.05) {
+      fireOpponentMachineGun(opp, target);
+    }
+    if (opponentMissileLockReady && Math.random() < 0.02) {
+      fireOpponentMissile(opp, target);
+      opponentMissileLockReady = false;
+      opponentMissileLockTimer = 0;
+    }
+  }
+}
+
+function updateAllies() {
+  for (const ally of allies) {
+    let nearestOpponent = null;
+    let nearestDist = Infinity;
     for (const opp of opponents) {
-      const { target, distance } = findNearestEnemy(opp.x, opp.y);
-  
-      const dx = target.x - opp.x;
-      const dy = target.y - opp.y;
-      const targetAngle = Math.atan2(dy, dx);
-  
-      rotateToward(opp, targetAngle, 0.03);
-  
-      // === Thrust Control ===
-      if (distance > 800) {
-        opp.thrust += 0.05;
-        if (opp.thrust > 5) opp.thrust = 5;
-      } else if (distance < 400) {
-        opp.thrust -= 0.05;
-        if (opp.thrust < 1.0) opp.thrust = 1.0;
-      }
-  
-      moveForward(opp);
-      createEntityWingTrails(opp);
-      createEngineParticles(opp);
-  
-      // === Repulsion ===
-      for (const other of opponents) {
-        if (opp === other) continue;
-        const dx2 = opp.x - other.x;
-        const dy2 = opp.y - other.y;
-        const dist2 = Math.hypot(dx2, dy2);
-        if (dist2 < 80) {
-          const repelStrength = (80 - dist2) * 0.02;
-          opp.x += (dx2 / dist2) * repelStrength;
-          opp.y += (dy2 / dist2) * repelStrength;
-        }
-      }
-  
-      // === Shooting ===
-      if (distance < 800 && Math.random() < 0.05) {
-        fireOpponentMachineGun(opp, target);
-      }
-      if (opponentMissileLockReady && Math.random() < 0.02) {
-        fireOpponentMissile(opp, target);
-        opponentMissileLockReady = false;
-        opponentMissileLockTimer = 0;
+      const dx = opp.x - ally.x;
+      const dy = opp.y - ally.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearestOpponent = opp;
       }
     }
-  }
-  
-  
 
-  function updateAllies() {
-    for (const ally of allies) {
-      let nearestOpponent = null;
-      let nearestDist = Infinity;
-      for (const opp of opponents) {
-        const dx = opp.x - ally.x;
-        const dy = opp.y - ally.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < nearestDist) {
-          nearestDist = dist;
-          nearestOpponent = opp;
-        }
-      }
-  
-      if (nearestOpponent) {
-        const dx = nearestOpponent.x - ally.x;
-        const dy = nearestOpponent.y - ally.y;
-        const targetAngle = Math.atan2(dy, dx);
-  
-        rotateToward(ally, targetAngle, 0.05);
-  
-        // === Add smart thrust control ===
-        if (nearestDist > 800) {
-          ally.thrust += 0.05; // speed up
-          if (ally.thrust > 5) ally.thrust = 5;
-        } else if (nearestDist < 400) {
-          ally.thrust -= 0.05; // slow down
-          if (ally.thrust < 1.0) ally.thrust = 1.0;
-        }
-  
-        moveForward(ally);
-        createEntityWingTrails(ally);
-createEngineParticles(ally);
+    if (nearestOpponent) {
+      const dx = nearestOpponent.x - ally.x;
+      const dy = nearestOpponent.y - ally.y;
+      const offset = Math.PI / 3;
+      const targetAngle = Math.atan2(dy, dx) + offset * ally.orbitDirection;
 
-  
-        if (nearestDist < 600) {
-          if (Math.random() < 0.04) {
-            fireAllyMachineGun(ally);
-          }
-          if (Math.random() < 0.01) {
-            fireAllyMissile(ally);
-          }
-        }
+      rotateToward(ally, targetAngle, 0.06);
+
+      // === Add smart thrust control ===
+      if (nearestDist > 800) {
+        ally.thrust += 0.05; // speed up
+        if (ally.thrust > 5) ally.thrust = 5;
+      } else if (nearestDist < 400) {
+        ally.thrust -= 0.05; // slow down
+        if (ally.thrust < 1.0) ally.thrust = 1.0;
       }
-  
-      // === Anti-stacking
-      for (const other of allies) {
-        if (ally === other) continue;
-        const dx2 = ally.x - other.x;
-        const dy2 = ally.y - other.y;
-        const dist2 = Math.hypot(dx2, dy2);
-        if (dist2 < 80) {
-          const repelStrength = (80 - dist2) * 0.02;
-          ally.x += (dx2 / dist2) * repelStrength;
-          ally.y += (dy2 / dist2) * repelStrength;
+
+      moveForward(ally);
+      createEntityWingTrails(ally);
+      createEngineParticles(ally);
+
+      if (nearestDist < 600) {
+        if (Math.random() < 0.04) {
+          fireAllyMachineGun(ally);
+        }
+        if (Math.random() < 0.01) {
+          fireAllyMissile(ally);
         }
       }
     }
+
+    // === Anti-stacking
+    for (const other of allies) {
+      if (ally === other) continue;
+      const dx2 = ally.x - other.x;
+      const dy2 = ally.y - other.y;
+      const dist2 = Math.hypot(dx2, dy2);
+      if (dist2 < 80) {
+        const repelStrength = (80 - dist2) * 0.02;
+        ally.x += (dx2 / dist2) * repelStrength;
+        ally.y += (dy2 / dist2) * repelStrength;
+      }
+    }
   }
-  
-  
-  
-  
+}
 
 function updateOpponentBullets() {
   for (let i = opponentBullets.length - 1; i >= 0; i--) {
@@ -578,21 +569,20 @@ function updateOpponentBullets() {
 
     // Check collision with player
     let hit = false;
-const targets = [player, ...allies];
-for (const t of targets) {
-  const dx = t.x - b.x;
-  const dy = t.y - b.y;
-  const dist = Math.hypot(dx, dy);
-  if (dist < 30) {
-    t.health -= 10;
-    createExplosion(t.x, t.y);
-    opponentBullets.splice(i, 1);
-    hit = true;
-    break;
-  }
-}
-if (hit) continue;
-
+    const targets = [player, ...allies];
+    for (const t of targets) {
+      const dx = t.x - b.x;
+      const dy = t.y - b.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 30) {
+        t.health -= 10;
+        createExplosion(t.x, t.y);
+        opponentBullets.splice(i, 1);
+        hit = true;
+        break;
+      }
+    }
+    if (hit) continue;
 
     if (b.life <= 0) {
       opponentBullets.splice(i, 1);
@@ -601,17 +591,16 @@ if (hit) continue;
 }
 
 function fireOpponentMachineGun(opp, target) {
-    const angle = Math.atan2(target.y - opp.y, target.x - opp.x);
-    opponentBullets.push({
-      x: opp.x,
-      y: opp.y,
-      angle,
-      speed: 12,
-      life: 60,
-      target,
-    });
-  }
-  
+  const angle = Math.atan2(target.y - opp.y, target.x - opp.x);
+  opponentBullets.push({
+    x: opp.x,
+    y: opp.y,
+    angle,
+    speed: 12,
+    life: 60,
+    target,
+  });
+}
 
 function fireOpponentMissile(opp) {
   opponentMissiles.push({
@@ -665,83 +654,79 @@ function update() {
 }
 
 function updatePlayer() {
-    if (joystickActive) {
-      player.angle = joystickAngle;
-    } else {
-      if (keys["ArrowLeft"] || keys["a"]) player.angle -= 0.05;
-      if (keys["ArrowRight"] || keys["d"]) player.angle += 0.05;
-    }
-  
-    if (keys["w"] || keys["ArrowUp"]) {
-      player.thrust += 0.1;
-      if (player.thrust > 5) player.thrust = 5;
-    }
-  
-    if (keys["s"] || keys["ArrowDown"]) {
-      player.thrust -= 0.05;
-      if (player.thrust < 1.0) player.thrust = 1.0;
-    }
-  
-    moveForward(player);
-    createEntityWingTrails(player);
-    createEngineParticles(player);
-  
-    player.x = clamp(player.x, 0, WORLD_WIDTH);
-    player.y = clamp(player.y, 0, WORLD_HEIGHT);
-  
-    updateCamera();
+  if (joystickActive) {
+    player.angle = joystickAngle;
+  } else {
+    if (keys["ArrowLeft"] || keys["a"]) player.angle -= 0.05;
+    if (keys["ArrowRight"] || keys["d"]) player.angle += 0.05;
   }
-  
+
+  if (keys["w"] || keys["ArrowUp"]) {
+    player.thrust += 0.1;
+    if (player.thrust > 5) player.thrust = 5;
+  }
+
+  if (keys["s"] || keys["ArrowDown"]) {
+    player.thrust -= 0.05;
+    if (player.thrust < 1.0) player.thrust = 1.0;
+  }
+
+  moveForward(player);
+  createEntityWingTrails(player);
+  createEngineParticles(player);
+
+  player.x = clamp(player.x, 0, WORLD_WIDTH);
+  player.y = clamp(player.y, 0, WORLD_HEIGHT);
+
+  updateCamera();
+}
 
 function createEngineParticles(entity) {
-    if (entity.thrust / 5 < 0.7) return;
-  
-    const backOffset = 32;
-    const sideOffset = 5;
-  
-    for (const dir of [-1, 1]) {
-      entity.engineParticles.push({
-        x:
-          entity.x -
-          Math.cos(entity.angle) * backOffset +
-          Math.cos(entity.angle + dir * Math.PI / 2) * sideOffset,
-        y:
-          entity.y -
-          Math.sin(entity.angle) * backOffset +
-          Math.sin(entity.angle + dir * Math.PI / 2) * sideOffset,
-        alpha: 1,
-        radius: 3 + Math.random() * 2,
-        angle: entity.angle + (Math.random() * 0.3 - 0.15),
-        color: "lightgray",
-      });
-  
-      if (entity.engineParticles.length > 40)
-        entity.engineParticles.splice(0, 1);
-    }
+  if (entity.thrust / 5 < 0.7) return;
+
+  const backOffset = 32;
+  const sideOffset = 5;
+
+  for (const dir of [-1, 1]) {
+    entity.engineParticles.push({
+      x:
+        entity.x -
+        Math.cos(entity.angle) * backOffset +
+        Math.cos(entity.angle + (dir * Math.PI) / 2) * sideOffset,
+      y:
+        entity.y -
+        Math.sin(entity.angle) * backOffset +
+        Math.sin(entity.angle + (dir * Math.PI) / 2) * sideOffset,
+      alpha: 1,
+      radius: 3 + Math.random() * 2,
+      angle: entity.angle + (Math.random() * 0.3 - 0.15),
+      color: "lightgray",
+    });
+
+    if (entity.engineParticles.length > 40) entity.engineParticles.splice(0, 1);
   }
-  
+}
 
 function createEntityWingTrails(entity) {
-    if (entity.thrust < 0.5 * 5) return;
-  
-    const offset = 20;
-    entity.wingTrails.push({
-      x: entity.x + Math.cos(entity.angle + Math.PI / 2) * offset,
-      y: entity.y + Math.sin(entity.angle + Math.PI / 2) * offset,
-      alpha: 0.6,
-    });
-  
-    entity.wingTrails.push({
-      x: entity.x + Math.cos(entity.angle - Math.PI / 2) * offset,
-      y: entity.y + Math.sin(entity.angle - Math.PI / 2) * offset,
-      alpha: 0.6,
-    });
-  
-    if (entity.wingTrails.length > 60) {
-      entity.wingTrails.splice(0, entity.wingTrails.length - 60);
-    }
+  if (entity.thrust < 0.5 * 5) return;
+
+  const offset = 20;
+  entity.wingTrails.push({
+    x: entity.x + Math.cos(entity.angle + Math.PI / 2) * offset,
+    y: entity.y + Math.sin(entity.angle + Math.PI / 2) * offset,
+    alpha: 0.6,
+  });
+
+  entity.wingTrails.push({
+    x: entity.x + Math.cos(entity.angle - Math.PI / 2) * offset,
+    y: entity.y + Math.sin(entity.angle - Math.PI / 2) * offset,
+    alpha: 0.6,
+  });
+
+  if (entity.wingTrails.length > 60) {
+    entity.wingTrails.splice(0, entity.wingTrails.length - 60);
   }
-  
+}
 
 function updateWingTrails() {
   for (let i = wingTrails.length - 1; i >= 0; i--) {
@@ -789,7 +774,8 @@ function updateBullets() {
       const dx = opp.x - b.x;
       const dy = opp.y - b.y;
       const dist = Math.hypot(dx, dy);
-      if (dist < 30) { // hit radius
+      if (dist < 30) {
+        // hit radius
         opp.health -= 10;
         createExplosion(opp.x, opp.y);
         machineGunBullets.splice(i, 1);
@@ -802,7 +788,6 @@ function updateBullets() {
     }
   }
 }
-
 
 function updateMissiles() {
   let anyMissileLockedOn = false;
@@ -1028,23 +1013,20 @@ function drawPlayer() {
 }
 
 function drawAllies() {
-    for (const ally of allies) {
-      drawWingTrails(ally.wingTrails);
-      drawEngineParticles(ally.engineParticles);
-      drawEntity(ally, images.player);
-    }
+  for (const ally of allies) {
+    drawWingTrails(ally.wingTrails);
+    drawEngineParticles(ally.engineParticles);
+    drawEntity(ally, images.player);
   }
-  
-  
+}
 
-  function drawOpponents() {
-    for (const opp of opponents) {
-      drawWingTrails(opp.wingTrails);
-      drawEngineParticles(opp.engineParticles);
-      drawEntity(opp, images.opponent);
-    }
+function drawOpponents() {
+  for (const opp of opponents) {
+    drawWingTrails(opp.wingTrails);
+    drawEngineParticles(opp.engineParticles);
+    drawEntity(opp, images.opponent);
   }
-  
+}
 
 function drawEntity(entity, img) {
   ctx.save();
@@ -1061,25 +1043,24 @@ function drawEntity(entity, img) {
 }
 
 function drawEngineParticles(particles) {
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i];
-      ctx.save();
-      ctx.globalAlpha = p.alpha;
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x - camera.x, p.y - camera.y, p.radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-  
-      // Update and fade
-      p.x -= Math.cos(p.angle) * 1;
-      p.y -= Math.sin(p.angle) * 1;
-      p.alpha -= 0.02;
-  
-      if (p.alpha <= 0) particles.splice(i, 1);
-    }
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    ctx.save();
+    ctx.globalAlpha = p.alpha;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x - camera.x, p.y - camera.y, p.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Update and fade
+    p.x -= Math.cos(p.angle) * 1;
+    p.y -= Math.sin(p.angle) * 1;
+    p.alpha -= 0.02;
+
+    if (p.alpha <= 0) particles.splice(i, 1);
   }
-  
+}
 
 function drawProjectiles() {
   drawMachineGunBullets();
@@ -1153,23 +1134,21 @@ function drawParticles() {
 }
 
 function drawWingTrails(trails) {
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 1.5;
-    for (let i = trails.length - 1; i >= 0; i--) {
-      const t = trails[i];
-      ctx.save();
-      ctx.globalAlpha = t.alpha;
-      ctx.beginPath();
-      ctx.moveTo(t.x - camera.x, t.y - camera.y);
-      ctx.lineTo(t.x - camera.x, t.y - camera.y + 1);
-      ctx.stroke();
-      ctx.restore();
-      t.alpha -= 0.02;
-      if (t.alpha <= 0) trails.splice(i, 1); // ✅ fade & clean
-    }
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 1.5;
+  for (let i = trails.length - 1; i >= 0; i--) {
+    const t = trails[i];
+    ctx.save();
+    ctx.globalAlpha = t.alpha;
+    ctx.beginPath();
+    ctx.moveTo(t.x - camera.x, t.y - camera.y);
+    ctx.lineTo(t.x - camera.x, t.y - camera.y + 1);
+    ctx.stroke();
+    ctx.restore();
+    t.alpha -= 0.02;
+    if (t.alpha <= 0) trails.splice(i, 1); // ✅ fade & clean
   }
-  
-  
+}
 
 function drawExplosions() {
   for (const exp of explosions) {
