@@ -28,14 +28,21 @@
         align-items: center;
         justify-content: center;
         z-index: 10;
+        touch-action: none;
+        overflow: hidden;
       }
 
       #joystick {
+        position: absolute;
         width: 40px;
         height: 40px;
         background: #ccc;
         border-radius: 50%;
+        pointer-events: none;
         touch-action: none;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
       }
 
       #throttleButtons {
@@ -57,17 +64,30 @@
         color: white;
         border: none;
       }
+      /* By default, hide joystick + throttle on larger screens */
+      .mobile-controls {
+        display: none;
+      }
+
+      /* Show on mobile and tablet only (screens narrower than 1024px) */
+      @media (max-width: 1024px) {
+        .mobile-controls {
+          display: block;
+        }
+      }
     </style>
   </head>
   <body>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div id="joystickContainer">
-      <div id="joystick"></div>
-    </div>
+    <div class="mobile-controls">
+      <div id="joystickContainer">
+        <div id="joystick"></div>
+      </div>
 
-    <div id="throttleButtons">
-      <button id="btnThrottleUp">▲</button>
-      <button id="btnThrottleDown">▼</button>
+      <div id="throttleButtons">
+        <button id="btnThrottleUp">▲</button>
+        <button id="btnThrottleDown">▼</button>
+      </div>
     </div>
 
     <script src="game.js"></script>

@@ -29,23 +29,29 @@ skyImg.src = "images/sky.jpeg"; // your uploaded image
 const playerImg = new Image();
 playerImg.src = "images/player.png"; // Your uploaded fighter plane
 
+const minSpeed = 1.0; // ✅ Declare this first
+let thrust = minSpeed; // ✅ Now this is valid
+
+const maxSpeed = 5;
+const acceleration = 0.1;
+const deceleration = 0.05;
+const friction = 0.02;
+
 let joystickAngle = 0;
 let joystickActive = false;
 
 const joystick = document.getElementById("joystick");
 const container = document.getElementById("joystickContainer");
 
-joystick.addEventListener(
-  "touchstart",
-  (e) => {
-    joystickActive = true;
-  },
-  { passive: false }
-);
-
-joystick.addEventListener(
-  "touchmove",
-  (e) => {
+container.addEventListener(
+    "touchstart",
+    (e) => {
+      joystickActive = true;
+    },
+    { passive: false }
+  );
+  
+  container.addEventListener("touchmove", (e) => {
     e.preventDefault();
     const touch = e.touches[0];
     const rect = container.getBoundingClientRect();
@@ -54,13 +60,22 @@ joystick.addEventListener(
     const dx = touch.clientX - centerX;
     const dy = touch.clientY - centerY;
     joystickAngle = Math.atan2(dy, dx);
-  },
-  { passive: false }
-);
-
-joystick.addEventListener("touchend", () => {
-  joystickActive = false;
-});
+  
+    const distance = Math.min(Math.sqrt(dx * dx + dy * dy), 40); // limit drag radius
+    const angle = Math.atan2(dy, dx);
+    const knobX = Math.cos(angle) * distance;
+    const knobY = Math.sin(angle) * distance;
+  
+    joystick.style.left = `50%`;
+    joystick.style.top = `50%`;
+    joystick.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+  });
+  
+  container.addEventListener("touchend", () => {
+    joystickActive = false;
+    joystick.style.transform = `translate(-50%, -50%)`;
+  });
+  
 
 document.getElementById("btnThrottleUp").addEventListener(
   "touchstart",
@@ -240,19 +255,20 @@ const keys = {};
 window.addEventListener("keydown", (e) => (keys[e.key] = true));
 window.addEventListener("keyup", (e) => (keys[e.key] = false));
 
-let thrust = 0; // New: current thrust/speed
-const maxSpeed = 5;
-const acceleration = 0.1;
-const deceleration = 0.05;
-const friction = 0.02; // Passive slow down if no key pressed
-
 function update() {
   // Rotate left/right
   if (joystickActive) {
     player.angle = joystickAngle;
+  
+    // Auto-thrust while using joystick
+    player.x += Math.cos(player.angle) * thrust;
+    player.y += Math.sin(player.angle) * thrust;
   } else {
     if (keys["ArrowLeft"] || keys["a"]) player.angle -= 0.05;
     if (keys["ArrowRight"] || keys["d"]) player.angle += 0.05;
+  
+    player.x += Math.cos(player.angle) * thrust;
+    player.y += Math.sin(player.angle) * thrust;
   }
 
   const minSpeed = 1.0;
