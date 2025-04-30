@@ -925,7 +925,7 @@ function updateOpponents() {
         if (!opp.missileRegenTimer) opp.missileRegenTimer = 0;
         opp.missileRegenTimer++;
         if (opp.missileRegenTimer >= 300) {
-          opp.missileAmmo = 2;
+          opp.missileAmmo = 4;
           createFloatingText(
             "🚀 Opponent Missile Refilled!",
             opp.x,
@@ -1059,7 +1059,7 @@ function updateAllies() {
         if (!ally.missileRegenTimer) ally.missileRegenTimer = 0;
         ally.missileRegenTimer++;
         if (ally.missileRegenTimer >= 300) {
-          ally.missileAmmo = 2;
+          ally.missileAmmo = 4;
           createFloatingText(
             "🚀 Ally Missile Refilled!",
             ally.x,
@@ -1563,7 +1563,7 @@ function updatePlayer() {
     player.missileRegenTimer++;
     if (player.missileRegenTimer >= 300) {
       // 5 seconds at 60 FPS
-      player.missileAmmo = 2;
+      player.missileAmmo = 4;
       createFloatingText(
         "🚀 Missile Refilled!",
         player.x,
