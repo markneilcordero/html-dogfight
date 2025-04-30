@@ -331,11 +331,14 @@ function createPlane(x, y) {
     wingTrails: [],
     engineParticles: [],
     orbitDirection: Math.random() < 0.5 ? 1 : -1,
-    dodgeCooldown: 0, // ← NEW
-    dodgeOffset: 0, // ← NEW
+    dodgeCooldown: 0,
+    dodgeOffset: 0,
     flareCooldown: 0,
+    machineGunAmmo: 200, // 🔫 New
+    missileAmmo: 4,      // 🚀 New
   };
 }
+
 
 function respawnPlane(plane, isOpponent = false) {
   let safe = false;
@@ -362,6 +365,9 @@ function respawnPlane(plane, isOpponent = false) {
   plane.orbitDirection = Math.random() < 0.5 ? 1 : -1;
   plane.dodgeCooldown = 0;
   plane.dodgeOffset = 0;
+
+  plane.machineGunAmmo = 200;
+  plane.missileAmmo = 4;
 
   createFloatingText(
     "✈️ Respawned!",
@@ -494,6 +500,11 @@ function applyAntiStacking(allPlanes, minDistance = 80, strength = 0.05) {
 // [5] Player Actions
 // ====================
 function fireMachineGun() {
+  if (player.machineGunAmmo <= 0) {
+    createFloatingText("🔫 OUT OF AMMO", player.x, player.y - 60, "gray", 16);
+    return;
+  }
+
   machineGunBullets.push({
     x: player.x,
     y: player.y,
@@ -501,9 +512,14 @@ function fireMachineGun() {
     speed: 16,
     life: 60,
   });
+
+  player.machineGunAmmo--; // 🔻 reduce ammo
 }
 
+
 function fireAllyMachineGun(ally) {
+  if (ally.machineGunAmmo <= 0) return;
+
   machineGunBullets.push({
     x: ally.x,
     y: ally.y,
@@ -511,9 +527,13 @@ function fireAllyMachineGun(ally) {
     speed: 16,
     life: 60,
   });
+
+  ally.machineGunAmmo--;
 }
 
+
 function fireAllyMissile(ally) {
+  if (ally.missileAmmo <= 0) return;
   let nearestOpponent = null;
   let nearestDist = Infinity;
 
@@ -549,9 +569,16 @@ function fireAllyMissile(ally) {
     life: 180,
     target: nearestOpponent,
   });
+
+  ally.missileAmmo--;
 }
 
 function fireMissile() {
+  if (player.missileAmmo <= 0) {
+    createFloatingText("🚀 OUT OF MISSILES", player.x, player.y - 60, "gray", 16);
+    return;
+  }
+
   // === Find nearest opponent
   let nearestOpponent = null;
   let nearestDist = Infinity;
@@ -589,7 +616,6 @@ function fireMissile() {
     return;
   }
 
-  // === Fire missile
   missiles.push({
     x: player.x,
     y: player.y,
@@ -599,9 +625,12 @@ function fireMissile() {
     target: nearestOpponent,
   });
 
+  player.missileAmmo--;
   playerMissileLockReady = false;
   playerMissileLockTimer = 0;
 }
+
+
 
 
 function releaseFlaresFor(entity) {
@@ -794,16 +823,22 @@ function updateOpponentBullets() {
 }
 
 function fireOpponentMachineGun(opp) {
+  if (opp.machineGunAmmo <= 0) return;
+
   opponentBullets.push({
     x: opp.x,
     y: opp.y,
-    angle: opp.angle, // 🔥 use plane’s current angle
+    angle: opp.angle,
     speed: 12,
     life: 60,
   });
+
+  opp.machineGunAmmo--;
 }
 
+
 function fireOpponentMissile(opp, target) {
+  if (opp.missileAmmo <= 0) return;
   const dx = target.x - opp.x;
   const dy = target.y - opp.y;
   const distance = Math.hypot(dx, dy);
@@ -823,6 +858,8 @@ function fireOpponentMissile(opp, target) {
     speed: 4,
     life: 180,
   });
+
+  opp.missileAmmo--;
 }
 
 function updatePlayerMissileLock() {
@@ -1617,6 +1654,12 @@ function drawUI() {
   drawSpeedometer();
   drawFloatingTexts();
   drawWingTrails(player.wingTrails);
+
+  // Show ammo count
+  ctx.fillStyle = "white";
+  ctx.font = "16px Arial";
+  ctx.textAlign = "left";
+  ctx.fillText(`🔫 ${player.machineGunAmmo} | 🚀 ${player.missileAmmo}`, 20, 50);
 }
 
 function drawFloatingTexts() {
