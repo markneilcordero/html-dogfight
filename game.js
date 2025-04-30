@@ -8,7 +8,7 @@ const isMobile = window.innerWidth <= 768;
 
 // Apply scale for mobile to zoom out a bit
 if (isMobile) {
-  ctx.scale(0.85, 0.85); // Adjust scale factor as needed
+  ctx.scale(1, 1); // Adjust scale factor as needed
 }
 
 const WORLD_WIDTH = 4000;
