@@ -352,7 +352,7 @@ function createPlane(x, y) {
     y,
     width: 60,
     height: 60,
-    speed: 1,
+    speed: 0.5,
     angle: 0,
     thrust: 1.0,
     health: 100,
@@ -1987,6 +1987,43 @@ function drawMissileRangeGuide() {
 
   ctx.restore();
 }
+
+function drawLockOnLine() {
+  if (!playerMissileLockReady) return;
+
+  // Find nearest opponent
+  let nearestOpponent = null;
+  let nearestDist = Infinity;
+  for (const opp of opponents) {
+    if (opp.health <= 0) continue;
+    const dx = opp.x - player.x;
+    const dy = opp.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearestOpponent = opp;
+    }
+  }
+
+  if (!nearestOpponent) return;
+
+  const px = player.x - camera.x;
+  const py = player.y - camera.y;
+  const ox = nearestOpponent.x - camera.x;
+  const oy = nearestOpponent.y - camera.y;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(px, py);
+  ctx.lineTo(ox, oy);
+  ctx.strokeStyle = "rgba(255, 0, 0, 0.4)";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]); // dashed line
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
 
 
 function drawUI() {
