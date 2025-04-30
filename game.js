@@ -4,6 +4,13 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+const isMobile = window.innerWidth <= 768;
+
+// Apply scale for mobile to zoom out a bit
+if (isMobile) {
+  ctx.scale(0.85, 0.85); // Adjust scale factor as needed
+}
+
 const WORLD_WIDTH = 4000;
 const WORLD_HEIGHT = 4000;
 
