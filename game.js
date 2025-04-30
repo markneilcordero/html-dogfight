@@ -14,7 +14,6 @@ const camera = {
   height: window.innerHeight,
 };
 
-
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -1233,16 +1232,23 @@ function updatePlayer() {
       maybeDodge(player);
 
       // Avoid steering directly into an opponent
+      let avoided = false;
       for (const opp of opponents) {
         if (opp.health <= 0) continue;
         const dx = opp.x - player.x;
         const dy = opp.y - player.y;
         const dist = Math.hypot(dx, dy);
-        if (dist < 120) {
-          const avoidAngle = Math.atan2(-dy, -dx); // steer away
-          rotateToward(player, avoidAngle, 0.05);
-          break; // prioritize escape over aiming
+        if (dist < 100) {
+          const avoidAngle = Math.atan2(-dy, -dx); // opposite direction
+          rotateToward(player, avoidAngle, 0.08); // faster turning to escape
+          adjustThrottle(player, 4.5); // boost speed
+          avoided = true;
+          break;
         }
+      }
+
+      if (!avoided) {
+        rotateToward(player, targetAngle + player.dodgeOffset, 0.05);
       }
 
       rotateToward(player, targetAngle + player.dodgeOffset, 0.05);
@@ -1255,7 +1261,6 @@ function updatePlayer() {
       } else {
         adjustThrottle(player, 2); // 🌀 Dogfight
       }
-      
 
       // === Avoid collision with opponents
       for (const opp of opponents) {
@@ -2182,12 +2187,11 @@ function drawOffscreenIndicators() {
 
     // Determine edge position
     const playerScreenX = player.x - camera.x;
-const playerScreenY = player.y - camera.y;
-const radius = 80; // You can tweak this distance as needed
+    const playerScreenY = player.y - camera.y;
+    const radius = 80; // You can tweak this distance as needed
 
-const indicatorX = playerScreenX + Math.cos(angle) * radius;
-const indicatorY = playerScreenY + Math.sin(angle) * radius;
-
+    const indicatorX = playerScreenX + Math.cos(angle) * radius;
+    const indicatorY = playerScreenY + Math.sin(angle) * radius;
 
     // Draw triangle
     ctx.save();
@@ -2205,7 +2209,6 @@ const indicatorY = playerScreenY + Math.sin(angle) * radius;
     ctx.restore();
   }
 }
-
 
 function drawUI() {
   drawHealthBars();
