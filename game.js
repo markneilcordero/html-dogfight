@@ -585,7 +585,7 @@ function isInMissileCone(
   const dx = target.x - player.x;
   const dy = target.y - player.y;
   const distance = Math.hypot(dx, dy);
-  if (distance > maxRange || distance < 300) return false;
+  if (distance > maxRange) return false; // ✅ Allow close-range locks
 
   const angleToTarget = Math.atan2(dy, dx);
   const angleDiff =
@@ -658,9 +658,9 @@ function fireAllyMissile(ally) {
   const dy = predicted.y - ally.y;
 
   const distance = Math.hypot(dx, dy);
-  const minRange = 300;
   const maxRange = 900;
-  if (distance < minRange || distance > maxRange) return;
+  if (distance > maxRange) return; // ✅ Allow close range shots
+
 
   const targetAngle = Math.atan2(dy, dx);
   const angleDiff = Math.abs(
@@ -723,9 +723,13 @@ function fireMissile() {
       ((angleToTarget - player.angle + Math.PI * 3) % (2 * Math.PI)) - Math.PI;
 
     let reason = "❌ NOT IN RANGE";
-    if (dist < 300) reason = "❌ TOO CLOSE";
-    else if (dist > 900) reason = "❌ TOO FAR";
-    else if (Math.abs(angleDiff) > Math.PI / 6) reason = "❌ NOT ALIGNED";
+    if (dist < 0) {
+      reason = "❌ INVALID DIST";
+    } else if (dist > 900) {
+      reason = "❌ TOO FAR";
+    } else if (Math.abs(angleDiff) > Math.PI / 6) {
+      reason = "❌ NOT ALIGNED";
+    }    
 
     createFloatingText(reason, player.x, player.y - 60, "gray", 16);
     return;
@@ -1032,9 +1036,9 @@ function fireOpponentMissile(opp, target) {
   const dy = predicted.y - opp.y;
 
   const distance = Math.hypot(dx, dy);
-  const minRange = 300;
   const maxRange = 900;
-  if (distance < minRange || distance > maxRange) return;
+  if (distance > maxRange) return;
+
 
   const targetAngle = Math.atan2(dy, dx);
   const angleDiff = Math.abs(
