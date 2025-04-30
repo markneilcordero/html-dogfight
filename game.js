@@ -824,7 +824,15 @@ function updateOpponents() {
       createEngineParticles(opp);
 
       // Shooting logic
-      if (distance < 800 && Math.random() < 0.05) fireOpponentMachineGun(opp);
+      const angleToTarget = Math.atan2(dy, dx);
+if (
+  distance < 800 &&
+  isAngleAligned(opp.angle, angleToTarget) &&
+  Math.random() < 0.05
+) {
+  fireOpponentMachineGun(opp);
+}
+
       if (distance < 1000) {
         opp.lockTimer = (opp.lockTimer || 0) + 1;
         if (opp.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
@@ -898,7 +906,15 @@ function updateAllies() {
       createEngineParticles(ally);
 
       // Only fire when within range
-      if (nearestDist < 600 && Math.random() < 0.04) fireAllyMachineGun(ally);
+      const angleToTarget = Math.atan2(dy, dx);
+if (
+  nearestDist < 600 &&
+  isAngleAligned(ally.angle, angleToTarget) &&
+  Math.random() < 0.04
+) {
+  fireAllyMachineGun(ally);
+}
+
       if (nearestDist < 1000 && Math.random() < 0.01) fireAllyMissile(ally);
     }
 
