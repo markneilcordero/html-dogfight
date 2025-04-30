@@ -844,7 +844,7 @@ function releaseFlaresFor(entity) {
           y: offsetY,
           angle: baseAngle + spread,
           speed: 1 + Math.random() * 0.5,
-          life: 180,
+          life: 100,
           size: 12 + Math.random() * 6,
           owner: entity, // ✅ assign owner
         });
