@@ -564,7 +564,7 @@ function applyAntiStacking(allPlanes, minDistance = 80, strength = 0.05) {
   }
 }
 
-function checkCollision(entityA, entityB, threshold = 40) {
+function checkCollision(entityA, entityB, threshold = 100) {
   const dx = entityA.x - entityB.x;
   const dy = entityA.y - entityB.y;
   const distance = Math.hypot(dx, dy);
@@ -736,7 +736,7 @@ function fireMissile() {
     y: player.y,
     angle: targetAngle,
     speed: 4,
-    life: 180,
+    life: 800,
     target: nearestOpponent,
   });
 
@@ -1048,7 +1048,7 @@ function fireOpponentMissile(opp, target) {
     y: opp.y,
     angle: targetAngle,
     speed: 4,
-    life: 180,
+    life: 800,
   });
 
   opp.missileAmmo--;
@@ -1127,7 +1127,7 @@ function update() {
   // === Check Ally-Opponent Collision
   for (const ally of allies) {
     for (const opp of opponents) {
-      if (ally.health > 0 && opp.health > 0 && checkCollision(ally, opp, 40)) {
+      if (ally.health > 0 && opp.health > 0 && checkCollision(ally, opp, 100)) {
         // 💥 Explosion on both
         createExplosion(ally.x, ally.y, 100);
         createExplosion(opp.x, opp.y, 100);
