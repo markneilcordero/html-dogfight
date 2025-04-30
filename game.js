@@ -546,6 +546,14 @@ function applyAntiStacking(allPlanes, minDistance = 80, strength = 0.05) {
   }
 }
 
+function checkCollision(entityA, entityB, threshold = 40) {
+  const dx = entityA.x - entityB.x;
+  const dy = entityA.y - entityB.y;
+  const distance = Math.hypot(dx, dy);
+  return distance < threshold;
+}
+
+
 // ====================
 // [5] Player Actions
 // ====================
@@ -1048,6 +1056,33 @@ function update() {
   updateMissiles();
   updateOpponents();
   updateAllies();
+
+  // === Check Ally-Opponent Collision
+  for (const ally of allies) {
+    for (const opp of opponents) {
+      if (ally.health > 0 && opp.health > 0 && checkCollision(ally, opp, 40)) {
+        // 💥 Explosion on both
+        createExplosion(ally.x, ally.y, 100);
+        createExplosion(opp.x, opp.y, 100);
+        ally.health = 0;
+        opp.health = 0;
+        createFloatingText("💥 COLLISION!", ally.x, ally.y - 60, "orange", 18);
+      }
+    }
+  }
+
+  // === Check Player-Opponent Collision
+  for (const opp of opponents) {
+    if (player.health > 0 && opp.health > 0 && checkCollision(player, opp, 40)) {
+      createExplosion(player.x, player.y, 100);
+      createExplosion(opp.x, opp.y, 100);
+      player.health = 0;
+      opp.health = 0;
+      createFloatingText("💥 Player Crashed!", player.x, player.y - 60, "red", 20);
+      createFloatingText("💥 Opponent Crashed!", opp.x, opp.y - 60, "orange", 16);
+    }
+  }
+
   applyAntiStacking([...opponents, ...allies]);
   updateFlares();
   updateParticles();
