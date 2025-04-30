@@ -2149,40 +2149,27 @@ function drawSpeedometer() {
 }
 
 function drawMissileRangeGuide() {
-  const minRange = 300;
   const maxRange = 900;
-  const coneAngle = Math.PI / 6; // 30 degrees to match logic
+  const coneAngle = Math.PI / 6; // 30 degrees
 
   const px = player.x - camera.x;
   const py = player.y - camera.y;
   const angle = player.angle;
 
-  // Outer cone lines (max range)
-  const leftOuter = {
+  const left = {
     x: px + Math.cos(angle - coneAngle) * maxRange,
     y: py + Math.sin(angle - coneAngle) * maxRange,
   };
-  const rightOuter = {
+  const right = {
     x: px + Math.cos(angle + coneAngle) * maxRange,
     y: py + Math.sin(angle + coneAngle) * maxRange,
   };
 
-  // Inner cone lines (min range)
-  const leftInner = {
-    x: px + Math.cos(angle - coneAngle) * minRange,
-    y: py + Math.sin(angle - coneAngle) * minRange,
-  };
-  const rightInner = {
-    x: px + Math.cos(angle + coneAngle) * minRange,
-    y: py + Math.sin(angle + coneAngle) * minRange,
-  };
-
   ctx.save();
   ctx.beginPath();
-  ctx.moveTo(leftInner.x, leftInner.y);
-  ctx.lineTo(leftOuter.x, leftOuter.y);
-  ctx.lineTo(rightOuter.x, rightOuter.y);
-  ctx.lineTo(rightInner.x, rightInner.y);
+  ctx.moveTo(px, py);             // Start at the player
+  ctx.lineTo(left.x, left.y);     // Draw to left edge
+  ctx.lineTo(right.x, right.y);   // Draw to right edge
   ctx.closePath();
 
   ctx.fillStyle = "rgba(0, 255, 0, 0.08)";
@@ -2192,6 +2179,7 @@ function drawMissileRangeGuide() {
   ctx.stroke();
   ctx.restore();
 }
+
 
 function drawLockOnLine() {
   if (!playerMissileLockReady) return;
