@@ -1199,10 +1199,12 @@ function updatePlayerAutopilot() {
   // === [1] Handle Evading First
   const underFire = detectIncomingMissile(player) || detectIncomingFire(player);
   if (underFire) {
-    maybeDodge(player);
-    adjustThrottle(player, 4.5);
-
-    if (autopilotMode !== "aggressive" && player.flareCooldown <= 0) {
+    if (autopilotMode !== "aggressive") {
+      maybeDodge(player);
+      adjustThrottle(player, 4.5);
+    }
+    // Always release flares if missile is incoming and cooldown is ready
+    if (player.flareCooldown <= 0 && detectIncomingMissile(player)) {
       releaseFlaresFor(player);
       player.flareCooldown = 300;
     }
@@ -1228,19 +1230,38 @@ function updatePlayerAutopilot() {
     return;
   }
 
-  const dx = target.x - player.x;
-  const dy = target.y - player.y;
-  const targetAngle = Math.atan2(dy, dx);
-
   maybeDodge(player);
+
+  const predicted = predictTargetPosition(player, target, 6);
+  const interceptAngle = Math.atan2(
+    predicted.y - player.y,
+    predicted.x - player.x
+  );
+  rotateToward(player, interceptAngle + player.dodgeOffset, 0.08);
+
+  const targetAngle = Math.atan2(target.y - player.y, target.x - player.x);
 
   // 🛡️ In defensive mode, back away slowly instead of pursuing
   if (autopilotMode === "defensive" && distance < 600) {
     const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
     rotateToward(player, retreatAngle + player.dodgeOffset, 0.05);
-  } else {
-    rotateToward(player, targetAngle + player.dodgeOffset, 0.05);
+  } else if (autopilotMode === "aggressive") {
+    const strafeOffset = (player.orbitDirection || 1) * (Math.PI / 3); // 60° strafe
+    const strafeAngle = targetAngle + strafeOffset + player.dodgeOffset;
+    rotateToward(player, strafeAngle, 0.08);
+  } else if (autopilotMode === "balanced") {
+    if (distance < 400) {
+      // 🧠 Strafe around the target at mid-range
+      const strafeOffset = (player.orbitDirection || 1) * (Math.PI / 4); // 45° strafe
+      const strafeAngle = targetAngle + strafeOffset + player.dodgeOffset;
+      rotateToward(player, strafeAngle, 0.08);
+    } else {
+      // 📡 Close in or reposition with predictive aim
+      const aimAngle = targetAngle + player.dodgeOffset + Math.random() * 0.05;
+      rotateToward(player, aimAngle, 0.06);
+    }
   }
+  
 
   // === [4] Throttle Based on Mode
   if (autopilotMode === "defensive") {
@@ -1262,33 +1283,50 @@ function updatePlayerAutopilot() {
   } else if (autopilotMode === "aggressive") {
     adjustThrottle(player, 5);
   } else {
-    adjustThrottle(player, distance > 1000 ? 5 : distance > 300 ? 3.5 : 2);
+    if (autopilotMode === "balanced") {
+      if (underFire) {
+        adjustThrottle(player, 4); // escape if under fire
+      } else {
+        adjustThrottle(player, distance > 800 ? 4.5 : distance > 400 ? 3 : 2.5);
+      }
+    }    
   }
 
   // === [5] Fire Logic
+  // === [5] Fire Logic
+  const dx = target.x - player.x;
+  const dy = target.y - player.y;
   const angleToTarget = Math.atan2(dy, dx);
+
   const aligned = isAngleAligned(player.angle, angleToTarget);
 
-  const tryFireMissile =
-    playerMissileLockReady &&
-    player.missileAmmo > 0 &&
-    aligned &&
-    distance < 900 &&
-    Math.random() < (autopilotMode === "aggressive" ? 0.05 : 0.02);
+  const tryFireGun =
+  autopilotMode !== "defensive" &&
+  player.machineGunAmmo > 0 &&
+  aligned &&
+  distance < 600 &&
+  Math.random() < (
+    autopilotMode === "aggressive" ? 0.4 :
+    autopilotMode === "balanced" ? 0.2 :
+    0.1
+  );
+
+const tryFireMissile =
+  playerMissileLockReady &&
+  player.missileAmmo > 0 &&
+  aligned &&
+  distance < 1000 &&
+  Math.random() < (
+    autopilotMode === "aggressive" ? 0.15 :
+    autopilotMode === "balanced" ? 0.07 :
+    0.03
+  );
+
 
   if (tryFireMissile) {
     fireMissile();
-    return;
-  }
-
-  const tryFireGun =
-    autopilotMode !== "defensive" && // Don't fire in defensive mode
-    player.machineGunAmmo > 0 &&
-    aligned &&
-    distance < 800 &&
-    Math.random() < (autopilotMode === "defensive" ? 0.05 : 0.15);
-
-  if (tryFireGun) {
+    return; // 🔥 missile takes priority
+  } else if (tryFireGun) {
     fireMachineGun();
   }
 }
