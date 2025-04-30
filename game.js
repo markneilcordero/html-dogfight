@@ -1245,7 +1245,16 @@ function updatePlayer() {
       }
 
       rotateToward(player, targetAngle + player.dodgeOffset, 0.05);
-      player.thrust = 5;
+      if (detectIncomingFire(player)) {
+        adjustThrottle(player, 4.5); // 🧠 Evade
+      } else if (distance > 1000) {
+        adjustThrottle(player, 5); // 🛫 Chase
+      } else if (distance > 300) {
+        adjustThrottle(player, 3.5); // 🎯 Aim
+      } else {
+        adjustThrottle(player, 2); // 🌀 Dogfight
+      }
+      
 
       // === Avoid collision with opponents
       for (const opp of opponents) {
