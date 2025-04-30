@@ -276,11 +276,24 @@ updateCamera();
 
 // === 10 Opponents randomly placed on map
 const opponents = [];
+const oppStartX = 50; // Starting X position near top-left
+const oppStartY = 50;
+
 for (let i = 0; i < 10; i++) {
-  const x = Math.random() * WORLD_WIDTH;
-  const y = Math.random() * WORLD_HEIGHT;
-  opponents.push(createPlane(x, y));
+  const col = i % 2;
+  const row = Math.floor(i / 2);
+  const x = oppStartX + col * 60;
+  const y = oppStartY + row * 60;
+
+  const opp = createPlane(x, y);
+  opp.angle = Math.PI / 2; // Downward
+  opp.isTakingOff = false;
+  opp.delayedTaxiStart = i * 90; // staggered takeoff
+  opp.taxiTimer = 90;
+
+  opponents.push(opp);
 }
+
 
 // === 9 Allies near the player (formation)
 // === 9 Allies at the bottom-right corner "airport"
@@ -365,8 +378,13 @@ function respawnPlane(plane, isOpponent = false) {
 
   while (!safe && attempt < 10) {
     if (isOpponent) {
-      plane.x = Math.random() * WORLD_WIDTH;
-      plane.y = Math.random() * WORLD_HEIGHT;
+      const offsetX = Math.floor(Math.random() * 2) * 60;
+      const offsetY = Math.floor(Math.random() * 5) * 60;
+      plane.x = 50 + offsetX;
+      plane.y = 50 + offsetY;
+      plane.angle = Math.PI / 2; // Take off downward
+      plane.isTakingOff = true;
+      plane.taxiTimer = 90;
     } else {
       const offsetX = Math.floor(Math.random() * 3) * 50;
       const offsetY = Math.floor(Math.random() * 3) * 50;
@@ -710,6 +728,34 @@ function updateOpponents() {
       respawnPlane(opp, true); // true = isOpponent
       continue; // Skip this frame after respawn
     }
+    if (!opp.isTakingOff && opp.delayedTaxiStart > 0) {
+      opp.delayedTaxiStart--;
+      continue; // ⏳ wait before taxiing
+    }
+    
+    if (!opp.hasStartedTaxi && opp.delayedTaxiStart <= 0) {
+      opp.isTakingOff = true;
+      opp.hasStartedTaxi = true; // 🟢 Add this flag
+      opp.taxiTimer = 90;
+      continue;
+    }
+    
+
+    if (opp.isTakingOff) {
+      opp.thrust = 0.5; // Taxi speed
+      moveForward(opp);
+      createEngineParticles(opp);
+      opp.taxiTimer--;
+
+      if (opp.taxiTimer > 0) continue; // still taxiing
+opp.isTakingOff = false;
+opp.thrust = 5; // Ready for battle
+continue; // ✅ skip combat logic this frame
+
+    }
+    
+    
+    
     const { target, distance } = findNearestEnemy(opp.x, opp.y);
 
     const dx = target.x - opp.x;
@@ -1503,23 +1549,33 @@ function drawOpponents() {
 }
 
 function drawAirport() {
-  const airportX = WORLD_WIDTH - 250;
-  const airportY = WORLD_HEIGHT - 250;
-
-  // Runway pad
+  // Player + ally airport (bottom right)
+  const airportX1 = WORLD_WIDTH - 250;
+  const airportY1 = WORLD_HEIGHT - 250;
   ctx.fillStyle = "#333";
-  ctx.fillRect(airportX - camera.x, airportY - camera.y, 200, 200);
-
-  // Runway lines
+  ctx.fillRect(airportX1 - camera.x, airportY1 - camera.y, 200, 200);
   ctx.strokeStyle = "white";
   ctx.lineWidth = 2;
   for (let i = 0; i < 5; i++) {
     ctx.beginPath();
-    ctx.moveTo(airportX - camera.x + 20 + i * 40, airportY - camera.y);
-    ctx.lineTo(airportX - camera.x + 20 + i * 40, airportY - camera.y + 200);
+    ctx.moveTo(airportX1 - camera.x + 20 + i * 40, airportY1 - camera.y);
+    ctx.lineTo(airportX1 - camera.x + 20 + i * 40, airportY1 - camera.y + 200);
+    ctx.stroke();
+  }
+
+  // Opponent airport (top left)
+  const airportX2 = 0;
+  const airportY2 = 0;
+  ctx.fillStyle = "#333";
+  ctx.fillRect(airportX2 - camera.x, airportY2 - camera.y, 200, 200);
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    ctx.moveTo(airportX2 - camera.x + 20 + i * 40, airportY2 - camera.y);
+    ctx.lineTo(airportX2 - camera.x + 20 + i * 40, airportY2 - camera.y + 200);
     ctx.stroke();
   }
 }
+
 
 
 
