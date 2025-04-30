@@ -70,7 +70,9 @@
       }
 
       #throttleButtons .right-column {
-        align-items: flex-start;
+        flex-direction: column; /* 🧱 Stack vertically */
+        align-items: center; /* 🔧 Center them */
+        gap: 10px; /* 📏 Spacing between 🤖 and 🎛️ */
       }
 
       #throttleButtons button {
@@ -162,9 +164,8 @@
   </head>
   <body>
     <div id="desktopInstructions" class="desktop-only">
-      🕹️ Controls: Move (Arrow Keys / WASD) • 🔫 Fire (F) • 🚀 Missile (G) • ✨
-      Flare (H) • 🤖 Toggle AI (J)
-    </div>
+      🕹️ Controls: Move (Arrow Keys / WASD) • 🔫 Fire (F) • 🚀 Missile (G) • ✨ Flare (H) • 🤖 Toggle AI (J) • 🎛️ Switch Mode (K)
+    </div>    
 
     <canvas id="gameCanvas" width="800" height="600"></canvas>
 
@@ -176,10 +177,11 @@
       <div id="throttleButtons">
         <div class="row">
           <div class="left-column">
-            <button id="btnMachineGun">🔫</button>
+            <button id="btnAI">🤖</button>
           </div>
           <div class="right-column">
-            <button id="btnThrottleUp">▲</button>
+            <button id="btnMode" title="Switch Mode">🎛️</button>
+            <button id="btnMachineGun">🔫</button>
           </div>
         </div>
 
@@ -188,8 +190,8 @@
             <button id="btnMissile">🚀</button>
           </div>
           <div class="right-column">
-            <!-- empty on right -->
-            <button id="btnAI">🤖</button>
+            <button id="btnThrottleUp">▲</button>
+            <!-- Add this button next to btnAI -->
           </div>
         </div>
 

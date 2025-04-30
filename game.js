@@ -251,6 +251,22 @@ function setupWeaponControls() {
 
 function setupPlayerAIButton() {
   const btnAI = document.getElementById("btnAI");
+  const btnMode = document.getElementById("btnMode");
+
+  btnMode.addEventListener("click", () => {
+    const modes = ["balanced", "aggressive", "defensive"];
+    const currentIndex = modes.indexOf(autopilotMode);
+    autopilotMode = modes[(currentIndex + 1) % modes.length];
+  
+    createFloatingText(
+      `🧠 Mode: ${autopilotMode.toUpperCase()}`,
+      player.x,
+      player.y - 80,
+      "yellow",
+      20
+    );
+  });
+  
 
   btnAI.addEventListener("click", () => {
     playerAIEnabled = !playerAIEnabled;
