@@ -493,7 +493,8 @@ function findNearestEnemy(x, y) {
   let nearestDist = Math.hypot(player.x - x, player.y - y);
 
   for (const ally of allies) {
-    const dist = Math.hypot(ally.x - x, ally.y - y);
+    if (ally.health <= 0) continue;
+    const dist = Math.hypot(ally.x - x, ally.y - y);  
     if (dist < nearestDist) {
       nearest = ally;
       nearestDist = dist;
@@ -786,49 +787,32 @@ function updateOpponents() {
 
     const { target, distance } = findNearestEnemy(opp.x, opp.y);
 
-    const dx = target.x - opp.x;
-    const dy = target.y - opp.y;
-    const offset = Math.PI / 3; // 60 degrees for circling
-    maybeDodge(opp);
-    const targetAngle =
-      Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodgeOffset;
+    if (target) {
+      const dx = target.x - opp.x;
+      const dy = target.y - opp.y;
+      const offset = Math.PI / 3;
+      maybeDodge(opp);
+      const targetAngle =
+        Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodgeOffset;
 
-    rotateToward(opp, targetAngle, 0.04);
+      rotateToward(opp, targetAngle, 0.04);
+      opp.thrust = 5;
+      moveForward(opp);
+      bounceOffWalls(opp);
+      createEntityWingTrails(opp);
+      createEngineParticles(opp);
 
-    // === Thrust Control ===
-    opp.thrust = 5;
-
-    moveForward(opp);
-    // ✅ Keep opponent inside the world
-    bounceOffWalls(opp);
-    createEntityWingTrails(opp);
-    createEngineParticles(opp);
-
-    // === Repulsion ===
-    for (const other of opponents) {
-      if (opp === other) continue;
-      const dx2 = opp.x - other.x;
-      const dy2 = opp.y - other.y;
-      const dist2 = Math.hypot(dx2, dy2);
-      if (dist2 < 80) {
-        const repelStrength = (80 - dist2) * 0.02;
-        opp.x += (dx2 / dist2) * repelStrength;
-        opp.y += (dy2 / dist2) * repelStrength;
+      // Shooting logic
+      if (distance < 800 && Math.random() < 0.05) fireOpponentMachineGun(opp);
+      if (distance < 1000) {
+        opp.lockTimer = (opp.lockTimer || 0) + 1;
+        if (opp.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
+          fireOpponentMissile(opp, target);
+          opp.lockTimer = 0;
+        }
+      } else {
+        opp.lockTimer = Math.max(0, (opp.lockTimer || 0) - 1); // 📌 Do not reset to 0 instantly
       }
-    }
-
-    // === Shooting ===
-    if (distance < 800 && Math.random() < 0.05) {
-      fireOpponentMachineGun(opp);
-    }
-    if (distance < 1000) {
-      opp.lockTimer = (opp.lockTimer || 0) + 1;
-      if (opp.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
-        fireOpponentMissile(opp, target);
-        opp.lockTimer = 0;
-      }
-    } else {
-      opp.lockTimer = 0;
     }
   }
 }
@@ -881,30 +865,20 @@ function updateAllies() {
       const dy = nearestOpponent.y - ally.y;
       const offset = Math.PI / 3;
       maybeDodge(ally);
-      const targetAngle =
-        Math.atan2(dy, dx) + offset * ally.orbitDirection + ally.dodgeOffset;
-
+      const targetAngle = Math.atan2(dy, dx) + offset * ally.orbitDirection + ally.dodgeOffset;
+    
       rotateToward(ally, targetAngle, 0.06);
-
-      // === Add smart thrust control ===
       ally.thrust = 5;
-
       moveForward(ally);
-
       bounceOffWalls(ally);
-
       createEntityWingTrails(ally);
       createEngineParticles(ally);
-
-      if (nearestDist < 600) {
-        if (Math.random() < 0.04) {
-          fireAllyMachineGun(ally);
-        }
-        if (Math.random() < 0.01) {
-          fireAllyMissile(ally);
-        }
-      }
+    
+      // Only fire when within range
+      if (nearestDist < 600 && Math.random() < 0.04) fireAllyMachineGun(ally);
+      if (nearestDist < 1000 && Math.random() < 0.01) fireAllyMissile(ally);
     }
+    
 
     // === Anti-stacking
     for (const other of allies) {
