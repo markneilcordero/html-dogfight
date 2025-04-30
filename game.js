@@ -1066,42 +1066,48 @@ function updatePlayer() {
   }
 
   if (player.flareCooldown > 0) player.flareCooldown--;
-
   if (playerAIEnabled) {
-    const { target, distance } = findNearestOpponent(player.x, player.y); // <-- hunting real enemies now
+    const { target, distance } = findNearestOpponent(player.x, player.y);
+  
     if (target) {
       const dx = target.x - player.x;
       const dy = target.y - player.y;
-      const offset = Math.PI / 3;
+      const targetAngle = Math.atan2(dy, dx);
+  
       maybeDodge(player);
-      const targetAngle =
-        Math.atan2(dy, dx) +
-        offset * player.orbitDirection +
-        player.dodgeOffset;
-      rotateToward(player, targetAngle, 0.05);
+      rotateToward(player, targetAngle + player.dodgeOffset, 0.05);
       player.thrust = 5;
-
-      // === Smart Fire Machine Gun
-      if (distance < 600 && target.health > 20 && Math.random() < 0.1) {
+  
+      // ✅ Fire machine gun only if we have ammo
+      if (player.machineGunAmmo > 0 && distance < 800 && Math.random() < 0.15) {
         fireMachineGun();
       }
-
-      // === Smart Fire Missile
+  
+      // ✅ Fire missile only if we have ammo and lock is ready
       if (
+        player.missileAmmo > 0 &&
         playerMissileLockReady &&
-        distance < 800 &&
-        target.health > 40 &&
-        Math.random() < 0.02
+        target.health > 30 &&
+        Math.random() < 0.03
       ) {
         fireMissile();
       }
     }
-
-    // === Smart Drop Flares
+  
+    // ✅ Smart flares
     if (detectIncomingMissile(player) && player.flareCooldown <= 0) {
       releaseFlaresFor(player);
-      player.flareCooldown = 300; // 5 seconds cooldown
+      player.flareCooldown = 300;
     }
+
+    if (player.machineGunAmmo <= 0 && Math.random() < 0.01) {
+      createFloatingText("🔫 OUT OF BULLETS", player.x, player.y - 70, "gray", 14);
+    }
+    
+    if (player.missileAmmo <= 0 && Math.random() < 0.01) {
+      createFloatingText("🚀 OUT OF MISSILES", player.x, player.y - 70, "gray", 14);
+    }
+    
   } else {
     if (joystickActive) {
       player.angle = joystickAngle;
