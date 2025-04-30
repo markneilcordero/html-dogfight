@@ -1230,6 +1230,11 @@ function updatePlayerAutopilot() {
     return;
   }
 
+  // 🎲 Randomize orbit direction occasionally
+  if (Math.random() < 0.01) {
+    player.orbitDirection = Math.random() < 0.5 ? 1 : -1;
+  }
+
   maybeDodge(player);
 
   const predicted = predictTargetPosition(player, target, 6);
@@ -1250,6 +1255,24 @@ function updatePlayerAutopilot() {
     const strafeAngle = targetAngle + strafeOffset + player.dodgeOffset;
     rotateToward(player, strafeAngle, 0.08);
   } else if (autopilotMode === "balanced") {
+    if (player.health < 30) {
+      // 🚨 Low health — disengage
+      const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
+      rotateToward(player, retreatAngle, 0.05);
+      adjustThrottle(player, 4.5);
+      return;
+    }
+
+    const noAmmo = player.machineGunAmmo <= 0 && player.missileAmmo <= 0;
+    if (noAmmo) {
+      // 🕊️ No ammo — fly evasively
+      const orbitAngle =
+        targetAngle + (player.orbitDirection || 1) * (Math.PI / 2);
+      rotateToward(player, orbitAngle, 0.05);
+      adjustThrottle(player, 3);
+      return;
+    }
+
     if (distance < 400) {
       // 🧠 Strafe around the target at mid-range
       const strafeOffset = (player.orbitDirection || 1) * (Math.PI / 4); // 45° strafe
@@ -1261,7 +1284,6 @@ function updatePlayerAutopilot() {
       rotateToward(player, aimAngle, 0.06);
     }
   }
-  
 
   // === [4] Throttle Based on Mode
   if (autopilotMode === "defensive") {
@@ -1289,7 +1311,7 @@ function updatePlayerAutopilot() {
       } else {
         adjustThrottle(player, distance > 800 ? 4.5 : distance > 400 ? 3 : 2.5);
       }
-    }    
+    }
   }
 
   // === [5] Fire Logic
@@ -1301,27 +1323,26 @@ function updatePlayerAutopilot() {
   const aligned = isAngleAligned(player.angle, angleToTarget);
 
   const tryFireGun =
-  autopilotMode !== "defensive" &&
-  player.machineGunAmmo > 0 &&
-  aligned &&
-  distance < 600 &&
-  Math.random() < (
-    autopilotMode === "aggressive" ? 0.4 :
-    autopilotMode === "balanced" ? 0.2 :
-    0.1
-  );
+    autopilotMode !== "defensive" &&
+    player.machineGunAmmo > 0 &&
+    aligned &&
+    distance < 600 &&
+    (player.machineGunAmmo > 50 ? Math.random() < 0.25 : Math.random() < 0.08);
 
-const tryFireMissile =
-  playerMissileLockReady &&
-  player.missileAmmo > 0 &&
-  aligned &&
-  distance < 1000 &&
-  Math.random() < (
-    autopilotMode === "aggressive" ? 0.15 :
-    autopilotMode === "balanced" ? 0.07 :
-    0.03
-  );
-
+  const tryFireMissile =
+    playerMissileLockReady &&
+    player.missileAmmo > 0 &&
+    aligned &&
+    distance < 1000 &&
+    target.health > 40 &&
+    Math.random() <
+      (autopilotMode === "aggressive"
+        ? 0.15
+        : autopilotMode === "balanced"
+        ? distance < 500
+          ? 0.12
+          : 0.06
+        : 0.03);
 
   if (tryFireMissile) {
     fireMissile();
