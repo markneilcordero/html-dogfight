@@ -6,10 +6,13 @@ const ctx = canvas.getContext("2d");
 
 const isMobile = window.innerWidth <= 768;
 
+function getScaleFactor() {
+  return window.innerWidth < 768 ? 0.85 : 1; // 0.85 = zoom out on mobile
+}
+
 // Apply scale for mobile to zoom out a bit
 if (isMobile) {
-  const scale = window.innerWidth / 1200; // Example: scale relative to a 1200px width
-  ctx.scale(scale, scale);
+  ctx.scale(0.85, 0.85);
 }
 
 const WORLD_WIDTH = 4000;
@@ -21,6 +24,8 @@ const camera = {
   width: window.innerWidth,
   height: window.innerHeight,
 };
+
+
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -1800,7 +1805,14 @@ function updateExplosions() {
 // [8] Draw Functions
 // ====================
 function draw() {
+  const scale = getScaleFactor();
+
+  // Reset transform before scaling
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // clear previous scale
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Apply zoom-out scaling
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
   drawBackground();
   drawAirport();
   drawPlayer();
@@ -1810,6 +1822,7 @@ function draw() {
   drawParticles();
   drawExplosions();
   drawUI();
+  drawOffscreenIndicators();
   drawOffscreenIndicators();
 }
 
