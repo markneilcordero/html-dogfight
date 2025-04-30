@@ -598,7 +598,7 @@ function releaseFlaresFor(entity) {
 function updateOpponents() {
   for (const opp of opponents) {
     if (opp.health <= 0) {
-      createExplosion(opp.x, opp.y); // Optional explosion effect
+      createExplosion(opp.x, opp.y, 100); // Optional explosion effect
       respawnPlane(opp, true); // true = isOpponent
       continue; // Skip this frame after respawn
     }
@@ -654,7 +654,7 @@ function updateOpponents() {
 function updateAllies() {
   for (const ally of allies) {
     if (ally.health <= 0) {
-      createExplosion(ally.x, ally.y); // Optional explosion effect
+      createExplosion(ally.x, ally.y, 100); // Optional explosion effect
       respawnPlane(ally, false); // false = isAlly
       continue; // Skip this frame after respawn
     }
@@ -829,6 +829,7 @@ function update() {
 function updatePlayer() {
   if (player.health <= 0) {
     if (!playerDead) {
+      createExplosion(player.x, player.y, 100);
       playerDead = true;
       playerRespawnCooldown = 60;
     } else {
@@ -1082,7 +1083,7 @@ function updateBullets() {
       if (dist < 30) {
         // hit radius
         opp.health -= 10;
-        createExplosion(opp.x, opp.y);
+        createExplosion(opp.x, opp.y, 20);
         machineGunBullets.splice(i, 1);
         break; // Stop checking after hit
       }
@@ -1172,7 +1173,7 @@ function updateMissiles() {
       // Check hit
       if (Math.hypot(dx, dy) < 40) {
         nearestOpponent.health -= 25;
-        createExplosion(nearestOpponent.x, nearestOpponent.y);
+        createExplosion(nearestOpponent.x, nearestOpponent.y, 70);
         missiles.splice(i, 1);
         continue;
       }
@@ -1232,7 +1233,7 @@ function updateMissiles() {
       // === Hit player
       if (Math.hypot(dx, dy) < 40) {
         player.health -= 25;
-        createExplosion(player.x, player.y);
+        createExplosion(player.x, player.y, 70);
         opponentMissiles.splice(i, 1);
         continue;
       }
@@ -1281,8 +1282,8 @@ function updateFloatingTexts() {
   }
 }
 
-function createExplosion(x, y) {
-  explosions.push({ x, y, life: 30 });
+function createExplosion(x, y, size = 80) {
+  explosions.push({ x, y, size, life: 30 });
 }
 
 function updateExplosions() {
@@ -1464,11 +1465,11 @@ function drawExplosions() {
     ctx.globalAlpha = exp.life / 30; // fade out over 30 frames
     ctx.drawImage(
       images.explosion,
-      exp.x - 40 - camera.x,
-      exp.y - 40 - camera.y,
-      80,
-      80
-    );
+      exp.x - exp.size / 2 - camera.x,
+      exp.y - exp.size / 2 - camera.y,
+      exp.size,
+      exp.size
+    );    
     ctx.restore();
   }
 }
