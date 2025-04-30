@@ -38,6 +38,23 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function adjustThrottle(
+  entity,
+  targetThrust,
+  rate = 0.02,
+  minThrust = 3,
+  maxThrust = 5
+) {
+  if (entity.thrust < targetThrust) {
+    entity.thrust = Math.min(entity.thrust + rate, targetThrust);
+  } else if (entity.thrust > targetThrust) {
+    entity.thrust = Math.max(entity.thrust - rate, targetThrust);
+  }
+
+  // Clamp to min/max bounds
+  entity.thrust = clamp(entity.thrust, minThrust, maxThrust);
+}
+
 function loadImage(src) {
   const img = new Image();
   img.src = src;
@@ -816,7 +833,18 @@ function updateOpponents() {
         Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodgeOffset;
 
       avoidMapEdges(opp);
-      opp.thrust = 5;
+      const underFire = detectIncomingFire(opp);
+
+      if (underFire) {
+        adjustThrottle(opp, 4.5); // 🧠 Evade if under fire
+      } else if (distance > 1000) {
+        adjustThrottle(opp, 5); // 🛫 Chase
+      } else if (distance > 300) {
+        adjustThrottle(opp, 3.5); // 🎯 Aim
+      } else {
+        adjustThrottle(opp, 2); // 🌀 Dogfight
+      }
+
       rotateToward(opp, targetAngle, 0.05);
       moveForward(opp);
       bounceOffWalls(opp);
@@ -825,13 +853,13 @@ function updateOpponents() {
 
       // Shooting logic
       const angleToTarget = Math.atan2(dy, dx);
-if (
-  distance < 800 &&
-  isAngleAligned(opp.angle, angleToTarget) &&
-  Math.random() < 0.05
-) {
-  fireOpponentMachineGun(opp);
-}
+      if (
+        distance < 800 &&
+        isAngleAligned(opp.angle, angleToTarget) &&
+        Math.random() < 0.05
+      ) {
+        fireOpponentMachineGun(opp);
+      }
 
       if (distance < 1000) {
         opp.lockTimer = (opp.lockTimer || 0) + 1;
@@ -898,7 +926,18 @@ function updateAllies() {
         Math.atan2(dy, dx) + offset * ally.orbitDirection + ally.dodgeOffset;
 
       avoidMapEdges(ally);
-      ally.thrust = 5;
+      const underFire = detectIncomingFire(ally);
+
+      if (underFire) {
+        adjustThrottle(ally, 4.5); // 🧠 Evade if under fire
+      } else if (nearestDist > 1000) {
+        adjustThrottle(ally, 5); // 🛫 Chase at full speed
+      } else if (nearestDist > 300) {
+        adjustThrottle(ally, 3.5); // 🎯 Aim and hover
+      } else {
+        adjustThrottle(ally, 2); // 🌀 Close-range dogfight
+      }
+
       rotateToward(ally, targetAngle, 0.05);
       moveForward(ally);
       bounceOffWalls(ally);
@@ -907,13 +946,13 @@ function updateAllies() {
 
       // Only fire when within range
       const angleToTarget = Math.atan2(dy, dx);
-if (
-  nearestDist < 600 &&
-  isAngleAligned(ally.angle, angleToTarget) &&
-  Math.random() < 0.04
-) {
-  fireAllyMachineGun(ally);
-}
+      if (
+        nearestDist < 600 &&
+        isAngleAligned(ally.angle, angleToTarget) &&
+        Math.random() < 0.04
+      ) {
+        fireAllyMachineGun(ally);
+      }
 
       if (nearestDist < 1000 && Math.random() < 0.01) fireAllyMissile(ally);
     }
