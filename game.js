@@ -247,8 +247,7 @@ function setupPlayerAIButton() {
   });
 
   window.addEventListener("keydown", (e) => {
-    if (e.key === "p") {
-      // Press 'P' key to toggle AI too
+    if (e.key === "j" || e.key === "J") {
       playerAIEnabled = !playerAIEnabled;
       createFloatingText(
         playerAIEnabled ? "🧠 AI ON" : "🧠 AI OFF",
@@ -258,7 +257,7 @@ function setupPlayerAIButton() {
         20
       );
     }
-  });
+  });  
 }
 
 setupThrottleControls();
@@ -396,6 +395,7 @@ function respawnPlane(plane, isOpponent = false) {
     
       plane.isTakingOff = true;
       plane.taxiTimer = 120;
+      plane.hasStartedTaxi = false;
     }    
     
     
@@ -409,7 +409,11 @@ function respawnPlane(plane, isOpponent = false) {
     attempt++;
   }
 
-  plane.angle = Math.random() * Math.PI * 2;
+  if (isOpponent) {
+    plane.angle = Math.PI / 2; // Downward (top-left airport)
+  } else {
+    plane.angle = -Math.PI / 2; // Upward (bottom-right airport)
+  }
   plane.health = plane.maxHealth;
   plane.thrust = 1.0;
   plane.engineParticles = [];
@@ -1031,8 +1035,9 @@ function updatePlayer() {
     player.taxiTimer--;
     if (player.taxiTimer <= 0) {
       player.isTakingOff = false;
-      player.thrust = 1.0; // Start flying
-    }
+      player.thrust = 5.0; // 🚀 Go full speed after takeoff
+      createFloatingText("⚡ Full Throttle!", player.x, player.y - 50, "lime", 16);
+    }    
     updateCamera();
     return; // Skip rest of update during taxi
   }
