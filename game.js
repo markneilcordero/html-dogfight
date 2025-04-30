@@ -553,7 +553,6 @@ function checkCollision(entityA, entityB, threshold = 40) {
   return distance < threshold;
 }
 
-
 // ====================
 // [5] Player Actions
 // ====================
@@ -1073,13 +1072,29 @@ function update() {
 
   // === Check Player-Opponent Collision
   for (const opp of opponents) {
-    if (player.health > 0 && opp.health > 0 && checkCollision(player, opp, 40)) {
+    if (
+      player.health > 0 &&
+      opp.health > 0 &&
+      checkCollision(player, opp, 40)
+    ) {
       createExplosion(player.x, player.y, 100);
       createExplosion(opp.x, opp.y, 100);
       player.health = 0;
       opp.health = 0;
-      createFloatingText("💥 Player Crashed!", player.x, player.y - 60, "red", 20);
-      createFloatingText("💥 Opponent Crashed!", opp.x, opp.y - 60, "orange", 16);
+      createFloatingText(
+        "💥 Player Crashed!",
+        player.x,
+        player.y - 60,
+        "red",
+        20
+      );
+      createFloatingText(
+        "💥 Opponent Crashed!",
+        opp.x,
+        opp.y - 60,
+        "orange",
+        16
+      );
     }
   }
 
@@ -1147,8 +1162,37 @@ function updatePlayer() {
       const targetAngle = Math.atan2(dy, dx);
 
       maybeDodge(player);
+
+      // Avoid steering directly into an opponent
+      for (const opp of opponents) {
+        if (opp.health <= 0) continue;
+        const dx = opp.x - player.x;
+        const dy = opp.y - player.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 120) {
+          const avoidAngle = Math.atan2(-dy, -dx); // steer away
+          rotateToward(player, avoidAngle, 0.05);
+          break; // prioritize escape over aiming
+        }
+      }
+
       rotateToward(player, targetAngle + player.dodgeOffset, 0.05);
       player.thrust = 5;
+
+      // === Avoid collision with opponents
+      for (const opp of opponents) {
+        if (opp.health <= 0) continue;
+        const dx = player.x - opp.x;
+        const dy = player.y - opp.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 80) {
+          const repelStrength = (80 - dist) * 0.03; // fine-tune this strength
+          const nx = dx / dist;
+          const ny = dy / dist;
+          player.x += nx * repelStrength;
+          player.y += ny * repelStrength;
+        }
+      }
 
       // ✅ Fire machine gun only if we have ammo
       if (player.machineGunAmmo > 0 && distance < 800 && Math.random() < 0.15) {
@@ -1373,7 +1417,6 @@ function maybeDodge(entity) {
     if (Math.abs(entity.dodgeOffset) < 0.01) entity.dodgeOffset = 0;
   }
 }
-
 
 function maybeDeployFlares(planes) {
   for (const plane of planes) {
