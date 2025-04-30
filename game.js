@@ -560,14 +560,23 @@ function fireMissile() {
 
   if (!nearestOpponent) return;
 
-  // === Calculate angle between player and opponent
   const dx = nearestOpponent.x - player.x;
   const dy = nearestOpponent.y - player.y;
   const targetAngle = Math.atan2(dy, dx);
+  const distanceToTarget = Math.hypot(dx, dy);
 
-  // === Check if facing within a small cone (e.g., 30 degrees)
+  // === Custom range check
+  const minRange = 300;
+  const maxRange = 900;
+
+  if (distanceToTarget < minRange || distanceToTarget > maxRange) {
+    createFloatingText("🚫 OUT OF RANGE", player.x, player.y - 60, "gray", 16);
+    return;
+  }
+
+  // === Check if facing the target (±30 degrees)
   const angleDiff = Math.abs(((player.angle - targetAngle + Math.PI) % (2 * Math.PI)) - Math.PI);
-  const maxAngleOffset = Math.PI / 6; // 30 degrees in radians
+  const maxAngleOffset = Math.PI / 6; // 30 degrees
 
   if (angleDiff > maxAngleOffset) {
     createFloatingText("❌ NOT ALIGNED", player.x, player.y - 60, "gray", 16);
@@ -587,6 +596,7 @@ function fireMissile() {
   playerMissileLockReady = false;
   playerMissileLockTimer = 0;
 }
+
 
 
 function releaseFlaresFor(entity) {
