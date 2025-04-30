@@ -272,6 +272,7 @@ const player = createPlane(WORLD_WIDTH - 150, WORLD_HEIGHT - 150);
 player.angle = -Math.PI / 2; // Point upward
 player.isTakingOff = true;
 player.taxiTimer = 120;
+updateCamera();
 
 // === 10 Opponents randomly placed on map
 const opponents = [];
@@ -294,8 +295,15 @@ for (let i = 0; i < 9; i++) {
   const y = startY + row * 50;
   const ally = createPlane(x, y);
   ally.angle = -Math.PI / 2; // Pointing up
+
+  // ✅ Delayed takeoff logic
+  ally.isTakingOff = false;
+  ally.delayedTaxiStart = i * 60; // stagger each ally by 60 frames (1 second)
+  ally.taxiTimer = 90; // actual taxi time once started
+
   allies.push(ally);
 }
+
 
 
 let machineGunBullets = [],
@@ -753,19 +761,26 @@ function updateOpponents() {
 
 function updateAllies() {
   for (const ally of allies) {
-    // --- Taxiing and Takeoff logic ---
-    if (ally.isTakingOff) {
-      ally.thrust = 0.5; // Taxi slowly
-      moveForward(ally);
-      createEngineParticles(ally);
-
-      ally.taxiTimer--;
-      if (ally.taxiTimer <= 0) {
-        ally.isTakingOff = false;
-        ally.thrust = 1.0; // Start flying
-      }
-      continue; // Skip combat logic during taxi
+    if (!ally.isTakingOff && ally.delayedTaxiStart > 0) {
+      ally.delayedTaxiStart--;
+      continue; // wait for its turn
     }
+
+    // === Begin taxiing
+    if (!ally.isTakingOff && ally.delayedTaxiStart <= 0) {
+      ally.isTakingOff = true;
+    }
+
+    if (!ally.isTakingOff && ally.delayedTaxiStart > 0) {
+      ally.delayedTaxiStart--;
+      continue; // Wait before taxiing
+    }
+    
+    if (!ally.isTakingOff && ally.delayedTaxiStart <= 0) {
+      ally.isTakingOff = true;
+      ally.taxiTimer = 90; // Reset taxiTimer if needed
+    }
+    
     if (ally.health <= 0) {
       createExplosion(ally.x, ally.y, 100); // Optional explosion effect
       respawnPlane(ally, false); // false = isAlly
@@ -971,6 +986,7 @@ function updatePlayer() {
       player.isTakingOff = false;
       player.thrust = 1.0; // Start flying
     }
+    updateCamera();
     return; // Skip rest of update during taxi
   }
   
