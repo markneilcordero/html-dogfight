@@ -257,7 +257,7 @@ function setupPlayerAIButton() {
         20
       );
     }
-  });  
+  });
 }
 
 setupThrottleControls();
@@ -294,7 +294,6 @@ for (let i = 0; i < 10; i++) {
   opponents.push(opp);
 }
 
-
 // === 9 Allies near the player (formation)
 // === 9 Allies at the bottom-right corner "airport"
 const allies = [];
@@ -316,8 +315,6 @@ for (let i = 0; i < 9; i++) {
 
   allies.push(ally);
 }
-
-
 
 let machineGunBullets = [],
   missiles = [],
@@ -367,10 +364,9 @@ function createPlane(x, y) {
     dodgeOffset: 0,
     flareCooldown: 0,
     machineGunAmmo: 200, // 🔫 New
-    missileAmmo: 4,      // 🚀 New
+    missileAmmo: 4, // 🚀 New
   };
 }
-
 
 function respawnPlane(plane, isOpponent = false) {
   let safe = false;
@@ -392,13 +388,11 @@ function respawnPlane(plane, isOpponent = false) {
       plane.x = WORLD_WIDTH - 200 + offsetX;
       plane.y = WORLD_HEIGHT - 200 + offsetY;
       plane.angle = -Math.PI / 2;
-    
+
       plane.isTakingOff = true;
       plane.taxiTimer = 120;
       plane.hasStartedTaxi = false;
-    }    
-    
-    
+    }
 
     // ✅ Stay away from player spawn (if not the player)
     const dx = plane.x - player.x;
@@ -572,21 +566,27 @@ function fireMachineGun() {
   player.machineGunAmmo--; // 🔻 reduce ammo
 }
 
-
 function fireAllyMachineGun(ally) {
   if (ally.machineGunAmmo <= 0) return;
+
+  const targetData = findNearestOpponent(ally.x, ally.y);
+  if (!targetData.target) return;
+
+  const predicted = predictTargetPosition(ally, targetData.target, 16); // 16 = bullet speed
+  const dx = predicted.x - ally.x;
+  const dy = predicted.y - ally.y;
+  const angle = Math.atan2(dy, dx);
 
   machineGunBullets.push({
     x: ally.x,
     y: ally.y,
-    angle: ally.angle,
+    angle,
     speed: 16,
     life: 60,
   });
 
   ally.machineGunAmmo--;
 }
-
 
 function fireAllyMissile(ally) {
   if (ally.missileAmmo <= 0) return;
@@ -605,15 +605,19 @@ function fireAllyMissile(ally) {
 
   if (!nearestOpponent) return;
 
-  const dx = nearestOpponent.x - ally.x;
-  const dy = nearestOpponent.y - ally.y;
+  const predicted = predictTargetPosition(ally, nearestOpponent, 4);
+  const dx = predicted.x - ally.x;
+  const dy = predicted.y - ally.y;
+
   const distance = Math.hypot(dx, dy);
   const minRange = 300;
   const maxRange = 900;
   if (distance < minRange || distance > maxRange) return;
 
   const targetAngle = Math.atan2(dy, dx);
-  const angleDiff = Math.abs(((ally.angle - targetAngle + Math.PI) % (2 * Math.PI)) - Math.PI);
+  const angleDiff = Math.abs(
+    ((ally.angle - targetAngle + Math.PI) % (2 * Math.PI)) - Math.PI
+  );
   const maxAngleOffset = Math.PI / 6; // ±30 degrees
   if (angleDiff > maxAngleOffset) return;
 
@@ -631,7 +635,13 @@ function fireAllyMissile(ally) {
 
 function fireMissile() {
   if (player.missileAmmo <= 0) {
-    createFloatingText("🚀 OUT OF MISSILES", player.x, player.y - 60, "gray", 16);
+    createFloatingText(
+      "🚀 OUT OF MISSILES",
+      player.x,
+      player.y - 60,
+      "gray",
+      16
+    );
     return;
   }
 
@@ -651,9 +661,11 @@ function fireMissile() {
 
   if (!nearestOpponent) return;
 
-  const dx = nearestOpponent.x - player.x;
-  const dy = nearestOpponent.y - player.y;
+  const predicted = predictTargetPosition(player, nearestOpponent, 4); // 4 = missile speed
+  const dx = predicted.x - player.x;
+  const dy = predicted.y - player.y;
   const targetAngle = Math.atan2(dy, dx);
+
   const distanceToTarget = Math.hypot(dx, dy);
 
   // === Custom range check
@@ -665,7 +677,9 @@ function fireMissile() {
   }
 
   // === Check if facing the target (±30 degrees)
-  const angleDiff = Math.abs(((player.angle - targetAngle + Math.PI) % (2 * Math.PI)) - Math.PI);
+  const angleDiff = Math.abs(
+    ((player.angle - targetAngle + Math.PI) % (2 * Math.PI)) - Math.PI
+  );
   const maxAngleOffset = Math.PI / 6; // 30 degrees
   if (angleDiff > maxAngleOffset) {
     createFloatingText("❌ NOT ALIGNED", player.x, player.y - 60, "gray", 16);
@@ -686,9 +700,6 @@ function fireMissile() {
   playerMissileLockTimer = 0;
 }
 
-
-
-
 function releaseFlaresFor(entity) {
   const flarePairs = 10; // 5 pairs = 10 total flares
   const flareSpacing = 20; // distance from center
@@ -697,11 +708,14 @@ function releaseFlaresFor(entity) {
 
   for (let i = 0; i < flarePairs; i++) {
     setTimeout(() => {
-      for (let dir of [-1, 1]) { // left (-1), right (+1)
-        const offsetX = entity.x +
-          Math.cos(entity.angle + dir * Math.PI / 2) * flareSpacing;
-        const offsetY = entity.y +
-          Math.sin(entity.angle + dir * Math.PI / 2) * flareSpacing;
+      for (let dir of [-1, 1]) {
+        // left (-1), right (+1)
+        const offsetX =
+          entity.x +
+          Math.cos(entity.angle + (dir * Math.PI) / 2) * flareSpacing;
+        const offsetY =
+          entity.y +
+          Math.sin(entity.angle + (dir * Math.PI) / 2) * flareSpacing;
         const spread = (Math.random() - 0.5) * 0.5;
 
         flares.push({
@@ -722,8 +736,6 @@ function releaseFlaresFor(entity) {
   }
 }
 
-
-
 // ====================
 // [6] Opponent AI
 // ====================
@@ -738,15 +750,20 @@ function updateOpponents() {
       opp.delayedTaxiStart--;
       continue; // ⏳ wait before taxiing
     }
-    
+
     if (!opp.hasStartedTaxi && opp.delayedTaxiStart <= 0) {
       opp.isTakingOff = true;
       opp.hasStartedTaxi = true;
       opp.taxiTimer = 90;
-      createFloatingText("🛫 Opponent Taking Off!", opp.x, opp.y - 50, "red", 14);
+      createFloatingText(
+        "🛫 Opponent Taking Off!",
+        opp.x,
+        opp.y - 50,
+        "red",
+        14
+      );
       continue;
-    }    
-    
+    }
 
     if (opp.isTakingOff) {
       opp.thrust = 0.5; // Taxi speed
@@ -755,14 +772,11 @@ function updateOpponents() {
       opp.taxiTimer--;
 
       if (opp.taxiTimer > 0) continue; // still taxiing
-opp.isTakingOff = false;
-opp.thrust = 5; // Ready for battle
-continue; // ✅ skip combat logic this frame
-
+      opp.isTakingOff = false;
+      opp.thrust = 5; // Ready for battle
+      continue; // ✅ skip combat logic this frame
     }
-    
-    
-    
+
     const { target, distance } = findNearestEnemy(opp.x, opp.y);
 
     const dx = target.x - opp.x;
@@ -823,15 +837,21 @@ function updateAllies() {
       ally.isTakingOff = true;
       ally.hasStartedTaxi = true; // ✅ Add flag
       ally.taxiTimer = 90;
-      createFloatingText("🛫 Ally Taking Off!", ally.x, ally.y - 50, "cyan", 14);
+      createFloatingText(
+        "🛫 Ally Taking Off!",
+        ally.x,
+        ally.y - 50,
+        "cyan",
+        14
+      );
       continue;
     }
-    
+
     if (!ally.isTakingOff && ally.delayedTaxiStart <= 0) {
       ally.isTakingOff = true;
       ally.taxiTimer = 90; // Reset taxiTimer if needed
     }
-    
+
     if (ally.health <= 0) {
       createExplosion(ally.x, ally.y, 100); // Optional explosion effect
       respawnPlane(ally, false); // false = isAlly
@@ -928,10 +948,18 @@ function updateOpponentBullets() {
 function fireOpponentMachineGun(opp) {
   if (opp.machineGunAmmo <= 0) return;
 
+  const targetData = findNearestEnemy(opp.x, opp.y); // target allies or player
+  if (!targetData.target) return;
+
+  const predicted = predictTargetPosition(opp, targetData.target, 12); // 12 = opponent bullet speed
+  const dx = predicted.x - opp.x;
+  const dy = predicted.y - opp.y;
+  const angle = Math.atan2(dy, dx);
+
   opponentBullets.push({
     x: opp.x,
     y: opp.y,
-    angle: opp.angle,
+    angle,
     speed: 12,
     life: 60,
   });
@@ -939,18 +967,21 @@ function fireOpponentMachineGun(opp) {
   opp.machineGunAmmo--;
 }
 
-
 function fireOpponentMissile(opp, target) {
   if (opp.missileAmmo <= 0) return;
-  const dx = target.x - opp.x;
-  const dy = target.y - opp.y;
+  const predicted = predictTargetPosition(opp, target, 4);
+  const dx = predicted.x - opp.x;
+  const dy = predicted.y - opp.y;
+
   const distance = Math.hypot(dx, dy);
   const minRange = 300;
   const maxRange = 900;
   if (distance < minRange || distance > maxRange) return;
 
   const targetAngle = Math.atan2(dy, dx);
-  const angleDiff = Math.abs(((opp.angle - targetAngle + Math.PI) % (2 * Math.PI)) - Math.PI);
+  const angleDiff = Math.abs(
+    ((opp.angle - targetAngle + Math.PI) % (2 * Math.PI)) - Math.PI
+  );
   const maxAngleOffset = Math.PI / 6; // ±30 degrees
   if (angleDiff > maxAngleOffset) return;
 
@@ -1031,17 +1062,23 @@ function updatePlayer() {
     player.thrust = 0.5; // Taxi slowly
     moveForward(player);
     createEngineParticles(player);
-  
+
     player.taxiTimer--;
     if (player.taxiTimer <= 0) {
       player.isTakingOff = false;
       player.thrust = 5.0; // 🚀 Go full speed after takeoff
-      createFloatingText("⚡ Full Throttle!", player.x, player.y - 50, "lime", 16);
-    }    
+      createFloatingText(
+        "⚡ Full Throttle!",
+        player.x,
+        player.y - 50,
+        "lime",
+        16
+      );
+    }
     updateCamera();
     return; // Skip rest of update during taxi
   }
-  
+
   if (player.health <= 0) {
     if (!playerDead) {
       createExplosion(player.x, player.y, 100);
@@ -1068,32 +1105,46 @@ function updatePlayer() {
   if (player.flareCooldown > 0) player.flareCooldown--;
   if (playerAIEnabled) {
     const { target, distance } = findNearestOpponent(player.x, player.y);
-  
+
     if (target) {
       const dx = target.x - player.x;
       const dy = target.y - player.y;
       const targetAngle = Math.atan2(dy, dx);
-  
+
       maybeDodge(player);
       rotateToward(player, targetAngle + player.dodgeOffset, 0.05);
       player.thrust = 5;
-  
+
       // ✅ Fire machine gun only if we have ammo
       if (player.machineGunAmmo > 0 && distance < 800 && Math.random() < 0.15) {
         fireMachineGun();
       }
-  
+
       // ✅ Fire missile only if we have ammo and lock is ready
+      let missileFired = false;
+
       if (
         player.missileAmmo > 0 &&
         playerMissileLockReady &&
         target.health > 30 &&
         Math.random() < 0.03
       ) {
+        const prevAmmo = player.missileAmmo;
         fireMissile();
+        if (player.missileAmmo < prevAmmo) missileFired = true;
+      }
+
+      // Fallback to machine gun if missile wasn't fired or failed
+      if (
+        (!missileFired || player.missileAmmo <= 0) &&
+        player.machineGunAmmo > 0 &&
+        distance < 800 &&
+        Math.random() < 0.1
+      ) {
+        fireMachineGun();
       }
     }
-  
+
     // ✅ Smart flares
     if (detectIncomingMissile(player) && player.flareCooldown <= 0) {
       releaseFlaresFor(player);
@@ -1101,13 +1152,24 @@ function updatePlayer() {
     }
 
     if (player.machineGunAmmo <= 0 && Math.random() < 0.01) {
-      createFloatingText("🔫 OUT OF BULLETS", player.x, player.y - 70, "gray", 14);
+      createFloatingText(
+        "🔫 OUT OF BULLETS",
+        player.x,
+        player.y - 70,
+        "gray",
+        14
+      );
     }
-    
+
     if (player.missileAmmo <= 0 && Math.random() < 0.01) {
-      createFloatingText("🚀 OUT OF MISSILES", player.x, player.y - 70, "gray", 14);
+      createFloatingText(
+        "🚀 OUT OF MISSILES",
+        player.x,
+        player.y - 70,
+        "gray",
+        14
+      );
     }
-    
   } else {
     if (joystickActive) {
       player.angle = joystickAngle;
@@ -1287,6 +1349,22 @@ function rotateToward(entity, targetAngle, speed, wiggle = 0) {
   angleDiff += (Math.random() - 0.5) * wiggle;
 
   entity.angle += Math.max(-speed, Math.min(speed, angleDiff));
+}
+
+function predictTargetPosition(shooter, target, projectileSpeed) {
+  const dx = target.x - shooter.x;
+  const dy = target.y - shooter.y;
+  const distance = Math.hypot(dx, dy);
+
+  const timeToImpact = distance / projectileSpeed;
+
+  // Assume target keeps moving at current velocity
+  const predictedX =
+    target.x + Math.cos(target.angle) * target.thrust * timeToImpact;
+  const predictedY =
+    target.y + Math.sin(target.angle) * target.thrust * timeToImpact;
+
+  return { x: predictedX, y: predictedY };
 }
 
 function updateBullets() {
@@ -1524,7 +1602,7 @@ function updateExplosions() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBackground();
-  drawAirport()
+  drawAirport();
   drawPlayer();
   drawAllies();
   drawOpponents();
@@ -1588,9 +1666,6 @@ function drawAirport() {
   }
 }
 
-
-
-
 function drawEntity(entity, img) {
   ctx.save();
   ctx.translate(entity.x - camera.x, entity.y - camera.y);
@@ -1619,7 +1694,7 @@ function drawEngineParticles(particles) {
     // Update and fade
     p.x -= Math.cos(p.angle) * 1;
     p.y -= Math.sin(p.angle) * 1;
-    p.alpha -= 0.40;
+    p.alpha -= 0.4;
 
     if (p.alpha <= 0) particles.splice(i, 1);
   }
@@ -1723,7 +1798,7 @@ function drawExplosions() {
       exp.y - exp.size / 2 - camera.y,
       exp.size,
       exp.size
-    );    
+    );
     ctx.restore();
   }
 }
@@ -1815,7 +1890,11 @@ function drawUI() {
   ctx.fillStyle = "white";
   ctx.font = "16px Arial";
   ctx.textAlign = "left";
-  ctx.fillText(`🔫 ${player.machineGunAmmo} | 🚀 ${player.missileAmmo}`, 20, 50);
+  ctx.fillText(
+    `🔫 ${player.machineGunAmmo} | 🚀 ${player.missileAmmo}`,
+    20,
+    50
+  );
 }
 
 function drawFloatingTexts() {
