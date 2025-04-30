@@ -25,7 +25,7 @@ resizeCanvas();
 
 // === Load Images ===
 const images = {
-  sky: loadImage("images/sky.jpeg"),
+  sky: loadImage("images/sky.jpg"),
   player: loadImage("images/player.png"),
   opponent: loadImage("images/opponent.png"),
   bullet: loadImage("images/bullet.png"),
@@ -275,6 +275,21 @@ function setupPlayerAIButton() {
       );
     }
   });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "k") {
+      const modes = ["balanced", "aggressive", "defensive"];
+      const currentIndex = modes.indexOf(autopilotMode);
+      autopilotMode = modes[(currentIndex + 1) % modes.length];
+      createFloatingText(
+        `🧠 Mode: ${autopilotMode.toUpperCase()}`,
+        player.x,
+        player.y - 80,
+        "yellow",
+        20
+      );
+    }
+  });
 }
 
 setupThrottleControls();
@@ -351,6 +366,7 @@ let playerRespawnCooldown = 0;
 let playerDead = false;
 
 let playerAIEnabled = false; // 🧠 Whether player AI is on
+let autopilotMode = "balanced"; // "balanced", "aggressive", "defensive"
 
 // === Lock Variables ===
 const PLAYER_LOCK_TIME = 60; // Player needs 1.5 seconds to lock (adjust this!)
@@ -661,7 +677,6 @@ function fireAllyMissile(ally) {
   const maxRange = 900;
   if (distance > maxRange) return; // ✅ Allow close range shots
 
-
   const targetAngle = Math.atan2(dy, dx);
   const angleDiff = Math.abs(
     ((ally.angle - targetAngle + Math.PI) % (2 * Math.PI)) - Math.PI
@@ -729,7 +744,7 @@ function fireMissile() {
       reason = "❌ TOO FAR";
     } else if (Math.abs(angleDiff) > Math.PI / 6) {
       reason = "❌ NOT ALIGNED";
-    }    
+    }
 
     createFloatingText(reason, player.x, player.y - 60, "gray", 16);
     return;
@@ -1039,7 +1054,6 @@ function fireOpponentMissile(opp, target) {
   const maxRange = 900;
   if (distance > maxRange) return;
 
-
   const targetAngle = Math.atan2(dy, dx);
   const angleDiff = Math.abs(
     ((opp.angle - targetAngle + Math.PI) % (2 * Math.PI)) - Math.PI
@@ -1179,6 +1193,106 @@ function update() {
   updateOpponentMissileLock();
 }
 
+function updatePlayerAutopilot() {
+  const { target, distance } = findNearestOpponent(player.x, player.y);
+
+  // === [1] Handle Evading First
+  const underFire = detectIncomingMissile(player) || detectIncomingFire(player);
+  if (underFire) {
+    maybeDodge(player);
+    adjustThrottle(player, 4.5);
+
+    if (autopilotMode !== "aggressive" && player.flareCooldown <= 0) {
+      releaseFlaresFor(player);
+      player.flareCooldown = 300;
+    }
+  }
+
+  // === [2] Avoid Crashing Into Others
+  for (const entity of [...opponents, ...allies]) {
+    if (entity.health <= 0) continue;
+    const dx = player.x - entity.x;
+    const dy = player.y - entity.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 80) {
+      const avoidAngle = Math.atan2(-dy, -dx);
+      rotateToward(player, avoidAngle, 0.08);
+      adjustThrottle(player, 4.5);
+      return;
+    }
+  }
+
+  // === [3] Patrol if No Target
+  if (!target || target.health <= 0) {
+    moveForward(player);
+    return;
+  }
+
+  const dx = target.x - player.x;
+  const dy = target.y - player.y;
+  const targetAngle = Math.atan2(dy, dx);
+
+  maybeDodge(player);
+
+  // 🛡️ In defensive mode, back away slowly instead of pursuing
+  if (autopilotMode === "defensive" && distance < 600) {
+    const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
+    rotateToward(player, retreatAngle + player.dodgeOffset, 0.05);
+  } else {
+    rotateToward(player, targetAngle + player.dodgeOffset, 0.05);
+  }
+
+  // === [4] Throttle Based on Mode
+  if (autopilotMode === "defensive") {
+    // 🛡️ If too close to enemy, back off
+    if (distance < 300) {
+      const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
+      rotateToward(player, retreatAngle, 0.05);
+      adjustThrottle(player, 4.5);
+      return;
+    }
+
+    // 🛡️ Use flares more reactively if missiles nearby
+    if (detectIncomingMissile(player) && player.flareCooldown <= 0) {
+      releaseFlaresFor(player);
+      player.flareCooldown = 300;
+    }
+
+    adjustThrottle(player, distance > 600 ? 2.5 : 1.5);
+  } else if (autopilotMode === "aggressive") {
+    adjustThrottle(player, 5);
+  } else {
+    adjustThrottle(player, distance > 1000 ? 5 : distance > 300 ? 3.5 : 2);
+  }
+
+  // === [5] Fire Logic
+  const angleToTarget = Math.atan2(dy, dx);
+  const aligned = isAngleAligned(player.angle, angleToTarget);
+
+  const tryFireMissile =
+    playerMissileLockReady &&
+    player.missileAmmo > 0 &&
+    aligned &&
+    distance < 900 &&
+    Math.random() < (autopilotMode === "aggressive" ? 0.05 : 0.02);
+
+  if (tryFireMissile) {
+    fireMissile();
+    return;
+  }
+
+  const tryFireGun =
+    autopilotMode !== "defensive" && // Don't fire in defensive mode
+    player.machineGunAmmo > 0 &&
+    aligned &&
+    distance < 800 &&
+    Math.random() < (autopilotMode === "defensive" ? 0.05 : 0.15);
+
+  if (tryFireGun) {
+    fireMachineGun();
+  }
+}
+
 function updatePlayer() {
   if (player.isTakingOff) {
     player.thrust = 0.5; // Taxi slowly
@@ -1226,116 +1340,7 @@ function updatePlayer() {
 
   if (player.flareCooldown > 0) player.flareCooldown--;
   if (playerAIEnabled) {
-    const { target, distance } = findNearestOpponent(player.x, player.y);
-
-    if (target) {
-      const dx = target.x - player.x;
-      const dy = target.y - player.y;
-      const targetAngle = Math.atan2(dy, dx);
-
-      maybeDodge(player);
-
-      // Avoid steering directly into an opponent
-      let avoided = false;
-      for (const opp of opponents) {
-        if (opp.health <= 0) continue;
-        const dx = opp.x - player.x;
-        const dy = opp.y - player.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < 100) {
-          const avoidAngle = Math.atan2(-dy, -dx); // opposite direction
-          rotateToward(player, avoidAngle, 0.08); // faster turning to escape
-          adjustThrottle(player, 4.5); // boost speed
-          avoided = true;
-          break;
-        }
-      }
-
-      if (!avoided) {
-        rotateToward(player, targetAngle + player.dodgeOffset, 0.05);
-      }
-
-      rotateToward(player, targetAngle + player.dodgeOffset, 0.05);
-      if (detectIncomingFire(player)) {
-        adjustThrottle(player, 4.5); // 🧠 Evade
-      } else if (distance > 1000) {
-        adjustThrottle(player, 5); // 🛫 Chase
-      } else if (distance > 300) {
-        adjustThrottle(player, 3.5); // 🎯 Aim
-      } else {
-        adjustThrottle(player, 2); // 🌀 Dogfight
-      }
-
-      // === Avoid collision with opponents
-      for (const opp of opponents) {
-        if (opp.health <= 0) continue;
-        const dx = player.x - opp.x;
-        const dy = player.y - opp.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < 80) {
-          const repelStrength = (80 - dist) * 0.03; // fine-tune this strength
-          const nx = dx / dist;
-          const ny = dy / dist;
-          player.x += nx * repelStrength;
-          player.y += ny * repelStrength;
-        }
-      }
-
-      // ✅ Fire machine gun only if we have ammo
-      if (player.machineGunAmmo > 0 && distance < 800 && Math.random() < 0.15) {
-        fireMachineGun();
-      }
-
-      // ✅ Fire missile only if we have ammo and lock is ready
-      let missileFired = false;
-
-      if (
-        player.missileAmmo > 0 &&
-        playerMissileLockReady &&
-        target.health > 30 &&
-        Math.random() < 0.03
-      ) {
-        const prevAmmo = player.missileAmmo;
-        fireMissile();
-        if (player.missileAmmo < prevAmmo) missileFired = true;
-      }
-
-      // Fallback to machine gun if missile wasn't fired or failed
-      if (
-        (!missileFired || player.missileAmmo <= 0) &&
-        player.machineGunAmmo > 0 &&
-        distance < 800 &&
-        Math.random() < 0.1
-      ) {
-        fireMachineGun();
-      }
-    }
-
-    // ✅ Smart flares
-    if (detectIncomingMissile(player) && player.flareCooldown <= 0) {
-      releaseFlaresFor(player);
-      player.flareCooldown = 300;
-    }
-
-    if (player.machineGunAmmo <= 0 && Math.random() < 0.01) {
-      createFloatingText(
-        "🔫 OUT OF BULLETS",
-        player.x,
-        player.y - 70,
-        "gray",
-        14
-      );
-    }
-
-    if (player.missileAmmo <= 0 && Math.random() < 0.01) {
-      createFloatingText(
-        "🚀 OUT OF MISSILES",
-        player.x,
-        player.y - 70,
-        "gray",
-        14
-      );
-    }
+    updatePlayerAutopilot();
   } else {
     if (joystickActive) {
       player.angle = joystickAngle;
