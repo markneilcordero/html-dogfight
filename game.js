@@ -352,7 +352,7 @@ function createPlane(x, y) {
     y,
     width: 60,
     height: 60,
-    speed: 0.5,
+    speed: 1,
     angle: 0,
     thrust: 1.0,
     health: 100,
@@ -494,7 +494,7 @@ function findNearestEnemy(x, y) {
 
   for (const ally of allies) {
     if (ally.health <= 0) continue;
-    const dist = Math.hypot(ally.x - x, ally.y - y);  
+    const dist = Math.hypot(ally.x - x, ally.y - y);
     if (dist < nearestDist) {
       nearest = ally;
       nearestDist = dist;
@@ -559,19 +559,23 @@ function isAngleAligned(angle1, angle2, tolerance = Math.PI / 6) {
   return Math.abs(diff) <= tolerance;
 }
 
-function isInMissileCone(player, target, maxRange = 900, coneAngle = Math.PI / 6) {
+function isInMissileCone(
+  player,
+  target,
+  maxRange = 900,
+  coneAngle = Math.PI / 6
+) {
   const dx = target.x - player.x;
   const dy = target.y - player.y;
   const distance = Math.hypot(dx, dy);
   if (distance > maxRange || distance < 300) return false;
 
   const angleToTarget = Math.atan2(dy, dx);
-  const angleDiff = ((angleToTarget - player.angle + Math.PI * 3) % (2 * Math.PI)) - Math.PI;
+  const angleDiff =
+    ((angleToTarget - player.angle + Math.PI * 3) % (2 * Math.PI)) - Math.PI;
 
   return Math.abs(angleDiff) <= coneAngle;
 }
-
-
 
 // ====================
 // [5] Player Actions
@@ -698,18 +702,17 @@ function fireMissile() {
     const dy = nearestOpponent.y - player.y;
     const dist = Math.hypot(dx, dy);
     const angleToTarget = Math.atan2(dy, dx);
-    const angleDiff = ((angleToTarget - player.angle + Math.PI * 3) % (2 * Math.PI)) - Math.PI;
-  
+    const angleDiff =
+      ((angleToTarget - player.angle + Math.PI * 3) % (2 * Math.PI)) - Math.PI;
+
     let reason = "❌ NOT IN RANGE";
     if (dist < 300) reason = "❌ TOO CLOSE";
     else if (dist > 900) reason = "❌ TOO FAR";
     else if (Math.abs(angleDiff) > Math.PI / 6) reason = "❌ NOT ALIGNED";
-  
+
     createFloatingText(reason, player.x, player.y - 60, "gray", 16);
     return;
   }
-  
-   
 
   missiles.push({
     x: player.x,
@@ -812,8 +815,9 @@ function updateOpponents() {
       const targetAngle =
         Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodgeOffset;
 
-      rotateToward(opp, targetAngle, 0.04);
+      avoidMapEdges(opp);
       opp.thrust = 5;
+      rotateToward(opp, targetAngle, 0.05);
       moveForward(opp);
       bounceOffWalls(opp);
       createEntityWingTrails(opp);
@@ -882,20 +886,21 @@ function updateAllies() {
       const dy = nearestOpponent.y - ally.y;
       const offset = Math.PI / 3;
       maybeDodge(ally);
-      const targetAngle = Math.atan2(dy, dx) + offset * ally.orbitDirection + ally.dodgeOffset;
-    
-      rotateToward(ally, targetAngle, 0.06);
+      const targetAngle =
+        Math.atan2(dy, dx) + offset * ally.orbitDirection + ally.dodgeOffset;
+
+      avoidMapEdges(ally);
       ally.thrust = 5;
+      rotateToward(ally, targetAngle, 0.05);
       moveForward(ally);
       bounceOffWalls(ally);
       createEntityWingTrails(ally);
       createEngineParticles(ally);
-    
+
       // Only fire when within range
       if (nearestDist < 600 && Math.random() < 0.04) fireAllyMachineGun(ally);
       if (nearestDist < 1000 && Math.random() < 0.01) fireAllyMissile(ally);
     }
-    
 
     // === Anti-stacking
     for (const other of allies) {
@@ -1034,7 +1039,6 @@ function updatePlayerMissileLock() {
     missileLockAnnounced = false;
   }
 }
-
 
 function updateOpponentMissileLock() {
   const dx = player.x - opponents[0].x;
@@ -1383,6 +1387,24 @@ function bounceOffWalls(entity) {
   if (entity.y <= 0 || entity.y >= WORLD_HEIGHT) {
     entity.angle = -entity.angle;
     entity.y = clamp(entity.y, 1, WORLD_HEIGHT - 1);
+  }
+}
+
+function avoidMapEdges(entity, buffer = 200, turnSpeed = 0.05) {
+  let turnAwayAngle = null;
+
+  if (entity.x < buffer) {
+    turnAwayAngle = 0; // Face right
+  } else if (entity.x > WORLD_WIDTH - buffer) {
+    turnAwayAngle = Math.PI; // Face left
+  } else if (entity.y < buffer) {
+    turnAwayAngle = Math.PI / 2; // Face down
+  } else if (entity.y > WORLD_HEIGHT - buffer) {
+    turnAwayAngle = -Math.PI / 2; // Face up
+  }
+
+  if (turnAwayAngle !== null) {
+    rotateToward(entity, turnAwayAngle, turnSpeed);
   }
 }
 
@@ -2031,7 +2053,6 @@ function drawMissileRangeGuide() {
   ctx.restore();
 }
 
-
 function drawLockOnLine() {
   if (!playerMissileLockReady) return;
 
@@ -2062,15 +2083,14 @@ function drawLockOnLine() {
   ctx.beginPath();
   ctx.moveTo(px, py);
   ctx.lineTo(ox, oy);
-  ctx.strokeStyle = "red";       // 🔴 Solid red line
+  ctx.strokeStyle = "red"; // 🔴 Solid red line
   ctx.lineWidth = 2.5;
-  ctx.setLineDash([5, 5]);            // ❌ Remove dashed line
-  ctx.shadowColor = "red";       // 🔥 Optional glow effect
+  ctx.setLineDash([5, 5]); // ❌ Remove dashed line
+  ctx.shadowColor = "red"; // 🔥 Optional glow effect
   ctx.shadowBlur = 10;
   ctx.stroke();
   ctx.restore();
 }
-
 
 function drawUI() {
   drawHealthBars();
