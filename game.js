@@ -958,7 +958,7 @@ function createEngineParticles(entity) {
 function createEntityWingTrails(entity) {
   if (entity.thrust < 0.5 * 5) return;
 
-  const offset = 20;
+  const offset = 25;
   entity.wingTrails.push({
     x: entity.x + Math.cos(entity.angle + Math.PI / 2) * offset,
     y: entity.y + Math.sin(entity.angle + Math.PI / 2) * offset,
