@@ -414,6 +414,8 @@ function createPlane(x, y) {
     flareCooldown: 0,
     machineGunAmmo: 200, // 🔫 New
     missileAmmo: 4, // 🚀 New
+    lockTimer: 0,
+    lockTarget: null,
   };
 }
 
@@ -981,12 +983,21 @@ function updateOpponents() {
 
       if (distance < 1000) {
         opp.lockTimer = (opp.lockTimer || 0) + 1;
+        opp.lockTarget = target;
         if (opp.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
+          createFloatingText(
+            "🚀 LOCKED",
+            target.x,
+            target.y - 50,
+            "red",
+            18
+          );
           fireOpponentMissile(opp, target);
           opp.lockTimer = 0;
         }
       } else {
         opp.lockTimer = Math.max(0, (opp.lockTimer || 0) - 1); // 📌 Do not reset to 0 instantly
+        opp.lockTarget = null;
       }
     }
   }
@@ -1113,7 +1124,24 @@ function updateAllies() {
         fireAllyMachineGun(ally);
       }
 
-      if (nearestDist < 1000 && Math.random() < 0.01) fireAllyMissile(ally);
+      if (nearestDist < 1000) {
+        ally.lockTimer = (ally.lockTimer || 0) + 1;
+        ally.lockTarget = nearestOpponent;
+        if (ally.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
+          createFloatingText(
+            "🚀 LOCKED",
+            nearestOpponent.x,
+            nearestOpponent.y - 50,
+            "cyan",
+            18
+          );
+          fireAllyMissile(ally);
+          ally.lockTimer = 0;
+        }
+      } else {
+        ally.lockTimer = Math.max(0, (ally.lockTimer || 0) - 1);
+        ally.lockTarget = null;
+      }
     }
 
     // === Anti-stacking
@@ -2467,6 +2495,39 @@ function drawOffscreenIndicators() {
   }
 }
 
+function drawAllyLockLines() {
+  for (const ally of allies) {
+    if (ally.health <= 0 || !ally.lockTarget) continue;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(ally.x - camera.x, ally.y - camera.y);
+    ctx.lineTo(ally.lockTarget.x - camera.x, ally.lockTarget.y - camera.y);
+    ctx.strokeStyle = "cyan";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawOpponentLockLines() {
+  for (const opp of opponents) {
+    if (opp.health <= 0 || !opp.lockTarget) continue;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(opp.x - camera.x, opp.y - camera.y);
+    ctx.lineTo(opp.lockTarget.x - camera.x, opp.lockTarget.y - camera.y);
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+
 function drawUI() {
   drawHealthBars();
   drawSpeedometer();
@@ -2474,6 +2535,9 @@ function drawUI() {
   drawWingTrails(player.wingTrails);
   drawMissileRangeGuide();
   drawLockOnLine();
+  drawAllyLockLines();
+  drawOpponentLockLines();
+
 
   // Show ammo count
   ctx.fillStyle = "white";
