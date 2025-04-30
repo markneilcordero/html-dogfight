@@ -673,7 +673,7 @@ function fireAllyMissile(ally) {
     x: ally.x,
     y: ally.y,
     angle: targetAngle,
-    speed: 4,
+    speed: 6,
     life: 180,
     target: nearestOpponent,
   });
@@ -735,7 +735,7 @@ function fireMissile() {
     x: player.x,
     y: player.y,
     angle: targetAngle,
-    speed: 4,
+    speed: 6,
     life: 800,
     target: nearestOpponent,
   });
@@ -1047,7 +1047,7 @@ function fireOpponentMissile(opp, target) {
     x: opp.x,
     y: opp.y,
     angle: targetAngle,
-    speed: 4,
+    speed: 6,
     life: 800,
   });
 
