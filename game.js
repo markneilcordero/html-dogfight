@@ -1951,11 +1951,50 @@ function drawSpeedometer() {
   );
 }
 
+function drawMissileRangeGuide() {
+  const minRange = 300;
+  const maxRange = 900;
+  const coneAngle = Math.PI / 20; // Smaller angle = sharper triangle
+
+  const px = player.x - camera.x;
+  const py = player.y - camera.y;
+  const angle = player.angle;
+
+  const left = {
+    x: px + Math.cos(angle - coneAngle) * maxRange,
+    y: py + Math.sin(angle - coneAngle) * maxRange,
+  };
+  const right = {
+    x: px + Math.cos(angle + coneAngle) * maxRange,
+    y: py + Math.sin(angle + coneAngle) * maxRange,
+  };
+
+  ctx.save();
+
+  // === Draw pointy cone ===
+  ctx.beginPath();
+  ctx.moveTo(px, py); // sharp tip at the nose of the plane
+  ctx.lineTo(left.x, left.y);
+  ctx.lineTo(right.x, right.y);
+  ctx.closePath();
+
+  ctx.fillStyle = "rgba(0, 255, 0, 0.06)";
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(0, 255, 0, 0.3)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+
 function drawUI() {
   drawHealthBars();
   drawSpeedometer();
   drawFloatingTexts();
   drawWingTrails(player.wingTrails);
+  drawMissileRangeGuide();
 
   // Show ammo count
   ctx.fillStyle = "white";
