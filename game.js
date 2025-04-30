@@ -812,7 +812,7 @@ function fireMissile() {
     y: player.y,
     angle: targetAngle,
     speed: 6,
-    life: 800,
+    life: 300,
     target: nearestOpponent,
   });
 
@@ -1206,7 +1206,7 @@ function fireOpponentMissile(opp, target) {
     y: opp.y,
     angle: targetAngle,
     speed: 6,
-    life: 800,
+    life: 300,
   });
 
   opp.missileAmmo--;
