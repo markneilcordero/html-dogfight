@@ -336,8 +336,8 @@ let playerDead = false;
 let playerAIEnabled = false; // 🧠 Whether player AI is on
 
 // === Lock Variables ===
-const PLAYER_LOCK_TIME = 300; // Player needs 1.5 seconds to lock (adjust this!)
-const OPPONENT_LOCK_TIME = 300; // Opponent needs 1.5 seconds to lock (adjust this!)
+const PLAYER_LOCK_TIME = 60; // Player needs 1.5 seconds to lock (adjust this!)
+const OPPONENT_LOCK_TIME = 60; // Opponent needs 1.5 seconds to lock (adjust this!)
 
 let playerMissileLockTimer = 0; // how long player has been locking onto opponent
 let playerMissileLockReady = false;
@@ -694,9 +694,21 @@ function fireMissile() {
   const targetAngle = Math.atan2(dy, dx);
 
   if (!isInMissileCone(player, nearestOpponent)) {
-    createFloatingText("❌ NOT IN RANGE", player.x, player.y - 60, "gray", 16);
+    const dx = nearestOpponent.x - player.x;
+    const dy = nearestOpponent.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    const angleToTarget = Math.atan2(dy, dx);
+    const angleDiff = ((angleToTarget - player.angle + Math.PI * 3) % (2 * Math.PI)) - Math.PI;
+  
+    let reason = "❌ NOT IN RANGE";
+    if (dist < 300) reason = "❌ TOO CLOSE";
+    else if (dist > 900) reason = "❌ TOO FAR";
+    else if (Math.abs(angleDiff) > Math.PI / 6) reason = "❌ NOT ALIGNED";
+  
+    createFloatingText(reason, player.x, player.y - 60, "gray", 16);
     return;
   }
+  
    
 
   missiles.push({
@@ -985,26 +997,44 @@ function fireOpponentMissile(opp, target) {
 function updatePlayerMissileLock() {
   let nearestOpponent = null;
   let nearestDist = Infinity;
+
   for (const opp of opponents) {
+    if (opp.health <= 0) continue;
+
     const dx = opp.x - player.x;
     const dy = opp.y - player.y;
     const dist = Math.hypot(dx, dy);
+
     if (dist < nearestDist) {
       nearestDist = dist;
       nearestOpponent = opp;
     }
   }
 
-  if (nearestOpponent && nearestDist < 1000) {
+  if (nearestOpponent && isInMissileCone(player, nearestOpponent)) {
     playerMissileLockTimer += 1;
+
     if (playerMissileLockTimer > PLAYER_LOCK_TIME) {
+      if (!playerMissileLockReady && !missileLockAnnounced) {
+        createFloatingText(
+          "🚀 LOCKED",
+          nearestOpponent.x,
+          nearestOpponent.y - 50,
+          "red",
+          18
+        );
+        missileLockAnnounced = true;
+      }
+
       playerMissileLockReady = true;
     }
   } else {
     playerMissileLockTimer = 0;
     playerMissileLockReady = false;
+    missileLockAnnounced = false;
   }
 }
+
 
 function updateOpponentMissileLock() {
   const dx = player.x - opponents[0].x;
@@ -2005,15 +2035,17 @@ function drawMissileRangeGuide() {
 function drawLockOnLine() {
   if (!playerMissileLockReady) return;
 
-  // Find nearest opponent
+  // Find nearest valid opponent within missile cone
   let nearestOpponent = null;
   let nearestDist = Infinity;
+
   for (const opp of opponents) {
     if (opp.health <= 0) continue;
     const dx = opp.x - player.x;
     const dy = opp.y - player.y;
     const dist = Math.hypot(dx, dy);
-    if (dist < nearestDist) {
+
+    if (dist < nearestDist && isInMissileCone(player, opp)) {
       nearestDist = dist;
       nearestOpponent = opp;
     }
@@ -2030,14 +2062,14 @@ function drawLockOnLine() {
   ctx.beginPath();
   ctx.moveTo(px, py);
   ctx.lineTo(ox, oy);
-  ctx.strokeStyle = "rgba(255, 0, 0, 0.4)";
-  ctx.lineWidth = 2;
-  ctx.setLineDash([5, 5]); // dashed line
+  ctx.strokeStyle = "red";       // 🔴 Solid red line
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([5, 5]);            // ❌ Remove dashed line
+  ctx.shadowColor = "red";       // 🔥 Optional glow effect
+  ctx.shadowBlur = 10;
   ctx.stroke();
-  ctx.setLineDash([]);
   ctx.restore();
 }
-
 
 
 function drawUI() {
@@ -2046,6 +2078,7 @@ function drawUI() {
   drawFloatingTexts();
   drawWingTrails(player.wingTrails);
   drawMissileRangeGuide();
+  drawLockOnLine();
 
   // Show ammo count
   ctx.fillStyle = "white";
