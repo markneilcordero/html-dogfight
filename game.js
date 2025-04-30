@@ -278,14 +278,21 @@ for (let i = 0; i < 10; i++) {
 }
 
 // === 9 Allies near the player (formation)
+// === 9 Allies at the bottom-right corner "airport"
 const allies = [];
+const startX = WORLD_WIDTH - 200;
+const startY = WORLD_HEIGHT - 200;
+
 for (let i = 0; i < 9; i++) {
-  const angle = (i / 9) * Math.PI * 2; // Spread in a circle
-  const radius = 150;
-  const x = player.x + Math.cos(angle) * radius;
-  const y = player.y + Math.sin(angle) * radius;
-  allies.push(createPlane(x, y));
+  const row = Math.floor(i / 3);
+  const col = i % 3;
+  const x = startX + col * 50;
+  const y = startY + row * 50;
+  const ally = createPlane(x, y);
+  ally.angle = -Math.PI / 2; // Pointing up
+  allies.push(ally);
 }
+
 
 let machineGunBullets = [],
   missiles = [],
@@ -345,8 +352,21 @@ function respawnPlane(plane, isOpponent = false) {
   let attempt = 0;
 
   while (!safe && attempt < 10) {
-    plane.x = Math.random() * WORLD_WIDTH;
-    plane.y = Math.random() * WORLD_HEIGHT;
+    if (isOpponent) {
+      plane.x = Math.random() * WORLD_WIDTH;
+      plane.y = Math.random() * WORLD_HEIGHT;
+    } else {
+      const offsetX = Math.floor(Math.random() * 3) * 50;
+      const offsetY = Math.floor(Math.random() * 3) * 50;
+      plane.x = WORLD_WIDTH - 200 + offsetX;
+      plane.y = WORLD_HEIGHT - 200 + offsetY;
+      plane.angle = -Math.PI / 2;
+    
+      plane.isTakingOff = true;
+      plane.taxiTimer = 120;
+    }
+    
+    
 
     // ✅ Stay away from player spawn (if not the player)
     const dx = plane.x - player.x;
@@ -729,6 +749,19 @@ function updateOpponents() {
 
 function updateAllies() {
   for (const ally of allies) {
+    // --- Taxiing and Takeoff logic ---
+    if (ally.isTakingOff) {
+      ally.thrust = 0.5; // Taxi slowly
+      moveForward(ally);
+      createEngineParticles(ally);
+
+      ally.taxiTimer--;
+      if (ally.taxiTimer <= 0) {
+        ally.isTakingOff = false;
+        ally.thrust = 1.0; // Start flying
+      }
+      continue; // Skip combat logic during taxi
+    }
     if (ally.health <= 0) {
       createExplosion(ally.x, ally.y, 100); // Optional explosion effect
       respawnPlane(ally, false); // false = isAlly
@@ -1400,6 +1433,7 @@ function updateExplosions() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBackground();
+  drawAirport()
   drawPlayer();
   drawAllies();
   drawOpponents();
@@ -1434,6 +1468,27 @@ function drawOpponents() {
     drawEntity(opp, images.opponent);
   }
 }
+
+function drawAirport() {
+  const airportX = WORLD_WIDTH - 250;
+  const airportY = WORLD_HEIGHT - 250;
+
+  // Runway pad
+  ctx.fillStyle = "#333";
+  ctx.fillRect(airportX - camera.x, airportY - camera.y, 200, 200);
+
+  // Runway lines
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    ctx.moveTo(airportX - camera.x + 20 + i * 40, airportY - camera.y);
+    ctx.lineTo(airportX - camera.x + 20 + i * 40, airportY - camera.y + 200);
+    ctx.stroke();
+  }
+}
+
+
 
 function drawEntity(entity, img) {
   ctx.save();
