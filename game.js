@@ -554,6 +554,25 @@ function checkCollision(entityA, entityB, threshold = 40) {
   return distance < threshold;
 }
 
+function isAngleAligned(angle1, angle2, tolerance = Math.PI / 6) {
+  let diff = ((angle1 - angle2 + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+  return Math.abs(diff) <= tolerance;
+}
+
+function isInMissileCone(player, target, maxRange = 900, coneAngle = Math.PI / 6) {
+  const dx = target.x - player.x;
+  const dy = target.y - player.y;
+  const distance = Math.hypot(dx, dy);
+  if (distance > maxRange || distance < 300) return false;
+
+  const angleToTarget = Math.atan2(dy, dx);
+  const angleDiff = ((angleToTarget - player.angle + Math.PI * 3) % (2 * Math.PI)) - Math.PI;
+
+  return Math.abs(angleDiff) <= coneAngle;
+}
+
+
+
 // ====================
 // [5] Player Actions
 // ====================
@@ -674,25 +693,11 @@ function fireMissile() {
   const dy = predicted.y - player.y;
   const targetAngle = Math.atan2(dy, dx);
 
-  const distanceToTarget = Math.hypot(dx, dy);
-
-  // === Custom range check
-  const minRange = 300;
-  const maxRange = 900;
-  if (distanceToTarget < minRange || distanceToTarget > maxRange) {
-    createFloatingText("🚫 OUT OF RANGE", player.x, player.y - 60, "gray", 16);
+  if (!isInMissileCone(player, nearestOpponent)) {
+    createFloatingText("❌ NOT IN RANGE", player.x, player.y - 60, "gray", 16);
     return;
   }
-
-  // === Check if facing the target (±30 degrees)
-  const angleDiff = Math.abs(
-    ((player.angle - targetAngle + Math.PI) % (2 * Math.PI)) - Math.PI
-  );
-  const maxAngleOffset = Math.PI / 6; // 30 degrees
-  if (angleDiff > maxAngleOffset) {
-    createFloatingText("❌ NOT ALIGNED", player.x, player.y - 60, "gray", 16);
-    return;
-  }
+   
 
   missiles.push({
     x: player.x,
@@ -1954,39 +1959,48 @@ function drawSpeedometer() {
 function drawMissileRangeGuide() {
   const minRange = 300;
   const maxRange = 900;
-  const coneAngle = Math.PI / 20; // Smaller angle = sharper triangle
+  const coneAngle = Math.PI / 6; // 30 degrees to match logic
 
   const px = player.x - camera.x;
   const py = player.y - camera.y;
   const angle = player.angle;
 
-  const left = {
+  // Outer cone lines (max range)
+  const leftOuter = {
     x: px + Math.cos(angle - coneAngle) * maxRange,
     y: py + Math.sin(angle - coneAngle) * maxRange,
   };
-  const right = {
+  const rightOuter = {
     x: px + Math.cos(angle + coneAngle) * maxRange,
     y: py + Math.sin(angle + coneAngle) * maxRange,
   };
 
-  ctx.save();
+  // Inner cone lines (min range)
+  const leftInner = {
+    x: px + Math.cos(angle - coneAngle) * minRange,
+    y: py + Math.sin(angle - coneAngle) * minRange,
+  };
+  const rightInner = {
+    x: px + Math.cos(angle + coneAngle) * minRange,
+    y: py + Math.sin(angle + coneAngle) * minRange,
+  };
 
-  // === Draw pointy cone ===
+  ctx.save();
   ctx.beginPath();
-  ctx.moveTo(px, py); // sharp tip at the nose of the plane
-  ctx.lineTo(left.x, left.y);
-  ctx.lineTo(right.x, right.y);
+  ctx.moveTo(leftInner.x, leftInner.y);
+  ctx.lineTo(leftOuter.x, leftOuter.y);
+  ctx.lineTo(rightOuter.x, rightOuter.y);
+  ctx.lineTo(rightInner.x, rightInner.y);
   ctx.closePath();
 
-  ctx.fillStyle = "rgba(0, 255, 0, 0.06)";
+  ctx.fillStyle = "rgba(0, 255, 0, 0.08)";
   ctx.fill();
-
   ctx.strokeStyle = "rgba(0, 255, 0, 0.3)";
   ctx.lineWidth = 1;
   ctx.stroke();
-
   ctx.restore();
 }
+
 
 function drawLockOnLine() {
   if (!playerMissileLockReady) return;
