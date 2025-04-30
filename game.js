@@ -553,6 +553,28 @@ function findNearestEnemy(x, y) {
   return { target: nearest, distance: nearestDist };
 }
 
+function findNearestEnemyFlare(x, y, ownerType) {
+  let nearest = null;
+  let nearestDist = Infinity;
+
+  for (const flare of flares) {
+    if ((ownerType === "ally" && allies.includes(flare.owner)) ||
+        (ownerType === "opponent" && opponents.includes(flare.owner))) {
+      continue; // 🚫 Skip flares from same team
+    }
+
+    const dx = flare.x - x;
+    const dy = flare.y - y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < nearestDist) {
+      nearest = flare;
+      nearestDist = dist;
+    }
+  }
+
+  return nearest;
+}
+
 function detectIncomingFire(entity) {
   for (const b of machineGunBullets) {
     const dx = b.x - entity.x;
@@ -595,6 +617,25 @@ function applyAntiStacking(allPlanes, minDistance = 80, strength = 0.05) {
     }
   }
 }
+
+// Avoid nearby allies or opponents (real-time adjustment)
+function avoidOthers(self, others, avoidDistance = 80, avoidStrength = 0.04) {
+  for (const other of others) {
+    if (self === other || other.health <= 0) continue;
+
+    const dx = self.x - other.x;
+    const dy = self.y - other.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < avoidDistance && dist > 0.01) {
+      const repel = (avoidDistance - dist) * avoidStrength;
+      const nx = dx / dist;
+      const ny = dy / dist;
+      self.x += nx * repel;
+      self.y += ny * repel;
+    }
+  }
+}
+
 
 function checkCollision(entityA, entityB, threshold = 100) {
   const dx = entityA.x - entityB.x;
@@ -805,6 +846,7 @@ function releaseFlaresFor(entity) {
           speed: 1 + Math.random() * 0.5,
           life: 180,
           size: 12 + Math.random() * 6,
+          owner: entity, // ✅ assign owner
         });
       }
 
@@ -919,6 +961,10 @@ function updateOpponents() {
 
       rotateToward(opp, targetAngle, 0.05);
       moveForward(opp);
+
+      avoidOthers(opp, opponents); // Avoid other opponents
+      avoidOthers(opp, allies);    // Avoid crashing into allies
+
       bounceOffWalls(opp);
       createEntityWingTrails(opp);
       createEngineParticles(opp);
@@ -1049,6 +1095,10 @@ function updateAllies() {
 
       rotateToward(ally, targetAngle, 0.05);
       moveForward(ally);
+
+      avoidOthers(ally, allies);     // Avoid other allies
+      avoidOthers(ally, opponents); // Avoid crashing into opponents
+
       bounceOffWalls(ally);
       createEntityWingTrails(ally);
       createEngineParticles(ally);
@@ -1832,7 +1882,7 @@ function updateMissiles() {
     const m = missiles[i];
   
     // === Redirect to flare if available
-    const flareTarget = findNearestFlare(m.x, m.y);
+    const flareTarget = findNearestEnemyFlare(m.x, m.y, "ally"); // 👈 skips ally flares
     let targetX, targetY;
   
     if (flareTarget) {
@@ -1905,7 +1955,7 @@ function updateMissiles() {
     let targetX, targetY;
 
     // === If there are flares, prefer chasing the nearest flare
-    const nearestFlare = findNearestFlare(m.x, m.y);
+    const nearestFlare = findNearestEnemyFlare(m.x, m.y, "opponent"); // ✅ Only chase player/allied flares
     if (nearestFlare) {
       targetX = nearestFlare.x;
       targetY = nearestFlare.y;
