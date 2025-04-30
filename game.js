@@ -1398,6 +1398,44 @@ function updatePlayer() {
   }
 
   if (player.flareCooldown > 0) player.flareCooldown--;
+  // === Ammo Regen Logic
+  if (player.machineGunAmmo <= 0) {
+    if (!player.ammoRegenTimer) player.ammoRegenTimer = 0;
+    player.ammoRegenTimer++;
+    if (player.ammoRegenTimer >= 120) {
+      // 2 seconds at 60 FPS
+      player.machineGunAmmo = 200;
+      createFloatingText(
+        "🔫 Ammo Refilled!",
+        player.x,
+        player.y - 60,
+        "lime",
+        16
+      );
+      player.ammoRegenTimer = 0;
+    }
+  } else {
+    player.ammoRegenTimer = 0; // reset timer if ammo is above 0
+  }
+
+  if (player.missileAmmo <= 0) {
+    if (!player.missileRegenTimer) player.missileRegenTimer = 0;
+    player.missileRegenTimer++;
+    if (player.missileRegenTimer >= 300) {
+      // 5 seconds at 60 FPS
+      player.missileAmmo = 2;
+      createFloatingText(
+        "🚀 Missile Refilled!",
+        player.x,
+        player.y - 80,
+        "orange",
+        16
+      );
+      player.missileRegenTimer = 0;
+    }
+  } else {
+    player.missileRegenTimer = 0;
+  }
   if (playerAIEnabled) {
     updatePlayerAutopilot();
   } else {
@@ -2167,9 +2205,9 @@ function drawMissileRangeGuide() {
 
   ctx.save();
   ctx.beginPath();
-  ctx.moveTo(px, py);             // Start at the player
-  ctx.lineTo(left.x, left.y);     // Draw to left edge
-  ctx.lineTo(right.x, right.y);   // Draw to right edge
+  ctx.moveTo(px, py); // Start at the player
+  ctx.lineTo(left.x, left.y); // Draw to left edge
+  ctx.lineTo(right.x, right.y); // Draw to right edge
   ctx.closePath();
 
   ctx.fillStyle = "rgba(0, 255, 0, 0.08)";
@@ -2179,7 +2217,6 @@ function drawMissileRangeGuide() {
   ctx.stroke();
   ctx.restore();
 }
-
 
 function drawLockOnLine() {
   if (!playerMissileLockReady) return;
