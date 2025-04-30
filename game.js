@@ -844,6 +844,43 @@ function updateOpponents() {
     const { target, distance } = findNearestEnemy(opp.x, opp.y);
 
     if (target) {
+      // === Ammo Regen for Opponents
+      if (opp.machineGunAmmo <= 0) {
+        if (!opp.ammoRegenTimer) opp.ammoRegenTimer = 0;
+        opp.ammoRegenTimer++;
+        if (opp.ammoRegenTimer >= 120) {
+          opp.machineGunAmmo = 200;
+          createFloatingText(
+            "🔫 Opponent Ammo Refilled!",
+            opp.x,
+            opp.y - 40,
+            "red",
+            14
+          );
+          opp.ammoRegenTimer = 0;
+        }
+      } else {
+        opp.ammoRegenTimer = 0;
+      }
+
+      if (opp.missileAmmo <= 0) {
+        if (!opp.missileRegenTimer) opp.missileRegenTimer = 0;
+        opp.missileRegenTimer++;
+        if (opp.missileRegenTimer >= 300) {
+          opp.missileAmmo = 2;
+          createFloatingText(
+            "🚀 Opponent Missile Refilled!",
+            opp.x,
+            opp.y - 60,
+            "red",
+            14
+          );
+          opp.missileRegenTimer = 0;
+        }
+      } else {
+        opp.missileRegenTimer = 0;
+      }
+
       const dx = target.x - opp.x;
       const dy = target.y - opp.y;
       const offset = Math.PI / 3;
@@ -937,6 +974,43 @@ function updateAllies() {
     }
 
     if (nearestOpponent) {
+      // === Ammo Regen for Allies
+      if (ally.machineGunAmmo <= 0) {
+        if (!ally.ammoRegenTimer) ally.ammoRegenTimer = 0;
+        ally.ammoRegenTimer++;
+        if (ally.ammoRegenTimer >= 120) {
+          ally.machineGunAmmo = 200;
+          createFloatingText(
+            "🔫 Ally Ammo Refilled!",
+            ally.x,
+            ally.y - 40,
+            "cyan",
+            14
+          );
+          ally.ammoRegenTimer = 0;
+        }
+      } else {
+        ally.ammoRegenTimer = 0;
+      }
+
+      if (ally.missileAmmo <= 0) {
+        if (!ally.missileRegenTimer) ally.missileRegenTimer = 0;
+        ally.missileRegenTimer++;
+        if (ally.missileRegenTimer >= 300) {
+          ally.missileAmmo = 2;
+          createFloatingText(
+            "🚀 Ally Missile Refilled!",
+            ally.x,
+            ally.y - 60,
+            "cyan",
+            14
+          );
+          ally.missileRegenTimer = 0;
+        }
+      } else {
+        ally.missileRegenTimer = 0;
+      }
+
       const dx = nearestOpponent.x - ally.x;
       const dy = nearestOpponent.y - ally.y;
       const offset = Math.PI / 3;
@@ -1737,57 +1811,76 @@ function updateMissiles() {
   }
 
   // === Update player missiles ===
+  let nearestOpponent = null;
   for (let i = missiles.length - 1; i >= 0; i--) {
     const m = missiles[i];
-
-    // Find nearest opponent
-    let nearestOpponent = null;
-    let nearestDist = Infinity;
-    for (const opp of opponents) {
-      const dx = opp.x - m.x;
-      const dy = opp.y - m.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < nearestDist) {
-        nearestDist = dist;
-        nearestOpponent = opp;
+  
+    // === Redirect to flare if available
+    const flareTarget = findNearestFlare(m.x, m.y);
+    let targetX, targetY;
+  
+    if (flareTarget) {
+      targetX = flareTarget.x;
+      targetY = flareTarget.y;
+    } else {
+      // Lock to nearest opponent
+      let nearestDist = Infinity;
+      for (const opp of opponents) {
+        const dx = opp.x - m.x;
+        const dy = opp.y - m.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestOpponent = opp;
+        }
       }
+      if (!nearestOpponent) continue;
+  
+      targetX = nearestOpponent.x;
+      targetY = nearestOpponent.y;
     }
-
-    if (nearestOpponent) {
-      const dx = nearestOpponent.x - m.x;
-      const dy = nearestOpponent.y - m.y;
-      const targetAngle = Math.atan2(dy, dx);
-
-      rotateToward(m, targetAngle, 0.05, 0.2);
-
-      m.x += Math.cos(m.angle) * m.speed;
-      m.y += Math.sin(m.angle) * m.speed;
-      m.life--;
-
-      // Missile trail
-      particles.push({
-        x: m.x,
-        y: m.y,
-        alpha: 0.5,
-        radius: 2 + Math.random() * 2,
-        angle: m.angle + (Math.random() * 0.2 - 0.1),
-        color: "white",
-      });
-
-      // Check hit
-      if (Math.hypot(dx, dy) < 40) {
+  
+    const dx = targetX - m.x;
+    const dy = targetY - m.y;
+    const targetAngle = Math.atan2(dy, dx);
+  
+    rotateToward(m, targetAngle, 0.05, 0.2);
+    m.x += Math.cos(m.angle) * m.speed;
+    m.y += Math.sin(m.angle) * m.speed;
+    m.life--;
+  
+    particles.push({
+      x: m.x,
+      y: m.y,
+      alpha: 0.5,
+      radius: 2 + Math.random() * 2,
+      angle: m.angle + (Math.random() * 0.2 - 0.1),
+      color: "white",
+    });
+  
+    // === Handle impact
+    if (flareTarget) {
+      if (Math.hypot(dx, dy) < 20) {
+        createExplosion(flareTarget.x, flareTarget.y);
+        missiles.splice(i, 1);
+        flares.splice(flares.indexOf(flareTarget), 1); // remove flare
+        continue;
+      }
+    } else {
+      if (nearestOpponent && Math.hypot(dx, dy) < 40) {
         nearestOpponent.health -= 25;
         createExplosion(nearestOpponent.x, nearestOpponent.y, 70);
         missiles.splice(i, 1);
         continue;
       }
-
-      if (m.life <= 0) {
-        createExplosion(m.x, m.y); // 💥 explode on timeout
-        missiles.splice(i, 1);
-      }
+    }
+  
+    if (m.life <= 0) {
+      createExplosion(m.x, m.y);
+      missiles.splice(i, 1);
     }
   }
+  
 
   // === Update opponent missiles ===
   for (let i = opponentMissiles.length - 1; i >= 0; i--) {
