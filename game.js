@@ -608,7 +608,7 @@ function fireMachineGun() {
     y: player.y,
     angle: player.angle,
     speed: 16,
-    life: 60,
+    life: 500,
   });
 
   player.machineGunAmmo--; // 🔻 reduce ammo
@@ -630,7 +630,7 @@ function fireAllyMachineGun(ally) {
     y: ally.y,
     angle,
     speed: 16,
-    life: 60,
+    life: 500,
   });
 
   ally.machineGunAmmo--;
@@ -1019,7 +1019,7 @@ function fireOpponentMachineGun(opp) {
     y: opp.y,
     angle,
     speed: 12,
-    life: 60,
+    life: 500,
   });
 
   opp.machineGunAmmo--;
