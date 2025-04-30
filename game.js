@@ -514,9 +514,9 @@ function fireAllyMachineGun(ally) {
 }
 
 function fireAllyMissile(ally) {
-  // Find nearest opponent
   let nearestOpponent = null;
   let nearestDist = Infinity;
+
   for (const opp of opponents) {
     const dx = opp.x - ally.x;
     const dy = opp.y - ally.y;
@@ -527,17 +527,28 @@ function fireAllyMissile(ally) {
     }
   }
 
-  if (nearestOpponent) {
-    missiles.push({
-      x: ally.x,
-      y: ally.y,
-      angle: Math.atan2(nearestOpponent.y - ally.y, nearestOpponent.x - ally.x),
-      speed: 4,
-      life: 180,
-      target: nearestOpponent, // Track this opponent
-    });
-  }
+  if (!nearestOpponent) return;
+
+  const dx = nearestOpponent.x - ally.x;
+  const dy = nearestOpponent.y - ally.y;
+  const distance = Math.hypot(dx, dy);
+  const minRange = 300;
+  const maxRange = 900;
+
+  if (distance < minRange || distance > maxRange) return; // Out of range
+
+  const angle = Math.atan2(dy, dx);
+
+  missiles.push({
+    x: ally.x,
+    y: ally.y,
+    angle: angle,
+    speed: 4,
+    life: 180,
+    target: nearestOpponent,
+  });
 }
+
 
 function fireMissile() {
   if (!playerMissileLockReady) {
@@ -798,15 +809,26 @@ function fireOpponentMachineGun(opp) {
   });
 }
 
-function fireOpponentMissile(opp) {
+function fireOpponentMissile(opp, target) {
+  const dx = target.x - opp.x;
+  const dy = target.y - opp.y;
+  const distance = Math.hypot(dx, dy);
+  const minRange = 300;
+  const maxRange = 900;
+
+  if (distance < minRange || distance > maxRange) return; // Out of range
+
+  const angle = Math.atan2(dy, dx);
+
   opponentMissiles.push({
     x: opp.x,
     y: opp.y,
-    angle: opp.angle,
+    angle: angle,
     speed: 4,
     life: 180,
   });
 }
+
 
 function updatePlayerMissileLock() {
   let nearestOpponent = null;
