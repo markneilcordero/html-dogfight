@@ -534,31 +534,28 @@ function fireAllyMissile(ally) {
   const distance = Math.hypot(dx, dy);
   const minRange = 300;
   const maxRange = 900;
+  if (distance < minRange || distance > maxRange) return;
 
-  if (distance < minRange || distance > maxRange) return; // Out of range
-
-  const angle = Math.atan2(dy, dx);
+  const targetAngle = Math.atan2(dy, dx);
+  const angleDiff = Math.abs(((ally.angle - targetAngle + Math.PI) % (2 * Math.PI)) - Math.PI);
+  const maxAngleOffset = Math.PI / 6; // ±30 degrees
+  if (angleDiff > maxAngleOffset) return;
 
   missiles.push({
     x: ally.x,
     y: ally.y,
-    angle: angle,
+    angle: targetAngle,
     speed: 4,
     life: 180,
     target: nearestOpponent,
   });
 }
 
-
 function fireMissile() {
-  if (!playerMissileLockReady) {
-    createFloatingText("LOCKING... 🔒", player.x, player.y - 80, "yellow", 18);
-    return;
-  }
-
   // === Find nearest opponent
   let nearestOpponent = null;
   let nearestDist = Infinity;
+
   for (const opp of opponents) {
     const dx = opp.x - player.x;
     const dy = opp.y - player.y;
@@ -579,7 +576,6 @@ function fireMissile() {
   // === Custom range check
   const minRange = 300;
   const maxRange = 900;
-
   if (distanceToTarget < minRange || distanceToTarget > maxRange) {
     createFloatingText("🚫 OUT OF RANGE", player.x, player.y - 60, "gray", 16);
     return;
@@ -588,7 +584,6 @@ function fireMissile() {
   // === Check if facing the target (±30 degrees)
   const angleDiff = Math.abs(((player.angle - targetAngle + Math.PI) % (2 * Math.PI)) - Math.PI);
   const maxAngleOffset = Math.PI / 6; // 30 degrees
-
   if (angleDiff > maxAngleOffset) {
     createFloatingText("❌ NOT ALIGNED", player.x, player.y - 60, "gray", 16);
     return;
@@ -607,7 +602,6 @@ function fireMissile() {
   playerMissileLockReady = false;
   playerMissileLockTimer = 0;
 }
-
 
 
 function releaseFlaresFor(entity) {
@@ -815,20 +809,21 @@ function fireOpponentMissile(opp, target) {
   const distance = Math.hypot(dx, dy);
   const minRange = 300;
   const maxRange = 900;
+  if (distance < minRange || distance > maxRange) return;
 
-  if (distance < minRange || distance > maxRange) return; // Out of range
-
-  const angle = Math.atan2(dy, dx);
+  const targetAngle = Math.atan2(dy, dx);
+  const angleDiff = Math.abs(((opp.angle - targetAngle + Math.PI) % (2 * Math.PI)) - Math.PI);
+  const maxAngleOffset = Math.PI / 6; // ±30 degrees
+  if (angleDiff > maxAngleOffset) return;
 
   opponentMissiles.push({
     x: opp.x,
     y: opp.y,
-    angle: angle,
+    angle: targetAngle,
     speed: 4,
     life: 180,
   });
 }
-
 
 function updatePlayerMissileLock() {
   let nearestOpponent = null;
