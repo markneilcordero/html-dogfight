@@ -898,9 +898,18 @@ function updatePlayer() {
     moveForward(player);
   
     // === Avoid getting stuck at wall
-    if (player.x <= 0 || player.x >= WORLD_WIDTH || player.y <= 0 || player.y >= WORLD_HEIGHT) {
-      player.angle += Math.PI;
-    }
+    // === Bounce off left/right walls
+if (player.x <= 0 || player.x >= WORLD_WIDTH) {
+  player.angle = Math.PI - player.angle;
+  player.x = clamp(player.x, 1, WORLD_WIDTH - 1); // prevent sticking
+}
+
+// === Bounce off top/bottom walls
+if (player.y <= 0 || player.y >= WORLD_HEIGHT) {
+  player.angle = -player.angle;
+  player.y = clamp(player.y, 1, WORLD_HEIGHT - 1); // prevent sticking
+}
+
   
     createEntityWingTrails(player);
     createEngineParticles(player);
