@@ -290,6 +290,7 @@ for (let i = 0; i < 10; i++) {
   opp.isTakingOff = false;
   opp.delayedTaxiStart = i * 90; // staggered takeoff
   opp.taxiTimer = 90;
+  opp.hasStartedTaxi = false;
 
   opponents.push(opp);
 }
@@ -385,6 +386,7 @@ function respawnPlane(plane, isOpponent = false) {
       plane.angle = Math.PI / 2; // Take off downward
       plane.isTakingOff = true;
       plane.taxiTimer = 90;
+      plane.hasStartedTaxi = false;
     } else {
       const offsetX = Math.floor(Math.random() * 3) * 50;
       const offsetY = Math.floor(Math.random() * 3) * 50;
@@ -735,10 +737,11 @@ function updateOpponents() {
     
     if (!opp.hasStartedTaxi && opp.delayedTaxiStart <= 0) {
       opp.isTakingOff = true;
-      opp.hasStartedTaxi = true; // 🟢 Add this flag
+      opp.hasStartedTaxi = true;
       opp.taxiTimer = 90;
+      createFloatingText("🛫 Opponent Taking Off!", opp.x, opp.y - 50, "red", 14);
       continue;
-    }
+    }    
     
 
     if (opp.isTakingOff) {
@@ -812,14 +815,12 @@ function updateAllies() {
       continue; // wait for its turn
     }
 
-    // === Begin taxiing
-    if (!ally.isTakingOff && ally.delayedTaxiStart <= 0) {
+    if (!ally.hasStartedTaxi && ally.delayedTaxiStart <= 0) {
       ally.isTakingOff = true;
-    }
-
-    if (!ally.isTakingOff && ally.delayedTaxiStart > 0) {
-      ally.delayedTaxiStart--;
-      continue; // Wait before taxiing
+      ally.hasStartedTaxi = true; // ✅ Add flag
+      ally.taxiTimer = 90;
+      createFloatingText("🛫 Ally Taking Off!", ally.x, ally.y - 50, "cyan", 14);
+      continue;
     }
     
     if (!ally.isTakingOff && ally.delayedTaxiStart <= 0) {
