@@ -577,20 +577,39 @@ function fireMissile() {
 }
 
 function releaseFlaresFor(entity) {
-  for (let i = 0; i < 8; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    flares.push({
-      x: entity.x,
-      y: entity.y,
-      angle: angle,
-      speed: 1 + Math.random(),
-      life: 180,
-      size: 12 + Math.random() * 6,
-    });
-  }
+  const flarePairs = 10; // 5 pairs = 10 total flares
+  const flareSpacing = 20; // distance from center
+  const baseAngle = entity.angle + Math.PI; // backwards
+  const delayBetweenPairs = 80; // in milliseconds
 
-  createFloatingText("🔥 Flares!", entity.x, entity.y - 60, "orange", 16);
+  for (let i = 0; i < flarePairs; i++) {
+    setTimeout(() => {
+      for (let dir of [-1, 1]) { // left (-1), right (+1)
+        const offsetX = entity.x +
+          Math.cos(entity.angle + dir * Math.PI / 2) * flareSpacing;
+        const offsetY = entity.y +
+          Math.sin(entity.angle + dir * Math.PI / 2) * flareSpacing;
+        const spread = (Math.random() - 0.5) * 0.5;
+
+        flares.push({
+          x: offsetX,
+          y: offsetY,
+          angle: baseAngle + spread,
+          speed: 1 + Math.random() * 0.5,
+          life: 180,
+          size: 12 + Math.random() * 6,
+        });
+      }
+
+      // Optional: create text on first pair only
+      if (i === 0) {
+        createFloatingText("🔥 Flares!", entity.x, entity.y - 60, "orange", 16);
+      }
+    }, i * delayBetweenPairs);
+  }
 }
+
+
 
 // ====================
 // [6] Opponent AI
