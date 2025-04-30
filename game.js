@@ -268,7 +268,11 @@ setupPlayerAIButton();
 // ====================
 // [3] Entity Definitions
 // ====================
-const player = createPlane(WORLD_WIDTH / 2, WORLD_HEIGHT / 2);
+const player = createPlane(WORLD_WIDTH - 150, WORLD_HEIGHT - 150);
+player.angle = -Math.PI / 2; // Point upward
+player.isTakingOff = true;
+player.taxiTimer = 120;
+
 // === 10 Opponents randomly placed on map
 const opponents = [];
 for (let i = 0; i < 10; i++) {
@@ -364,7 +368,7 @@ function respawnPlane(plane, isOpponent = false) {
     
       plane.isTakingOff = true;
       plane.taxiTimer = 120;
-    }
+    }    
     
     
 
@@ -957,6 +961,19 @@ function update() {
 }
 
 function updatePlayer() {
+  if (player.isTakingOff) {
+    player.thrust = 0.5; // Taxi slowly
+    moveForward(player);
+    createEngineParticles(player);
+  
+    player.taxiTimer--;
+    if (player.taxiTimer <= 0) {
+      player.isTakingOff = false;
+      player.thrust = 1.0; // Start flying
+    }
+    return; // Skip rest of update during taxi
+  }
+  
   if (player.health <= 0) {
     if (!playerDead) {
       createExplosion(player.x, player.y, 100);
