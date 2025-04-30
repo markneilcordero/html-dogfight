@@ -545,7 +545,7 @@ function fireMissile() {
     return;
   }
 
-  // Find nearest opponent
+  // === Find nearest opponent
   let nearestOpponent = null;
   let nearestDist = Infinity;
   for (const opp of opponents) {
@@ -558,23 +558,36 @@ function fireMissile() {
     }
   }
 
-  if (nearestOpponent) {
-    missiles.push({
-      x: player.x,
-      y: player.y,
-      angle: Math.atan2(
-        nearestOpponent.y - player.y,
-        nearestOpponent.x - player.x
-      ),
-      speed: 4,
-      life: 180,
-      target: nearestOpponent, // Track this opponent
-    });
+  if (!nearestOpponent) return;
+
+  // === Calculate angle between player and opponent
+  const dx = nearestOpponent.x - player.x;
+  const dy = nearestOpponent.y - player.y;
+  const targetAngle = Math.atan2(dy, dx);
+
+  // === Check if facing within a small cone (e.g., 30 degrees)
+  const angleDiff = Math.abs(((player.angle - targetAngle + Math.PI) % (2 * Math.PI)) - Math.PI);
+  const maxAngleOffset = Math.PI / 6; // 30 degrees in radians
+
+  if (angleDiff > maxAngleOffset) {
+    createFloatingText("❌ NOT ALIGNED", player.x, player.y - 60, "gray", 16);
+    return;
   }
+
+  // === Fire missile
+  missiles.push({
+    x: player.x,
+    y: player.y,
+    angle: targetAngle,
+    speed: 4,
+    life: 180,
+    target: nearestOpponent,
+  });
 
   playerMissileLockReady = false;
   playerMissileLockTimer = 0;
 }
+
 
 function releaseFlaresFor(entity) {
   const flarePairs = 10; // 5 pairs = 10 total flares
