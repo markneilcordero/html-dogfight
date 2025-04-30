@@ -830,7 +830,7 @@ function updatePlayer() {
   if (player.health <= 0) {
     if (!playerDead) {
       playerDead = true;
-      playerRespawnCooldown = 180;
+      playerRespawnCooldown = 60;
     } else {
       playerRespawnCooldown--;
       if (playerRespawnCooldown === 0) {
@@ -1364,7 +1364,7 @@ function drawEngineParticles(particles) {
     // Update and fade
     p.x -= Math.cos(p.angle) * 1;
     p.y -= Math.sin(p.angle) * 1;
-    p.alpha -= 0.10;
+    p.alpha -= 0.40;
 
     if (p.alpha <= 0) particles.splice(i, 1);
   }
