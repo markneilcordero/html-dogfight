@@ -1128,7 +1128,7 @@ function updateAllies() {
         ally.lockTimer = (ally.lockTimer || 0) + 1;
       }
 
-      if (nearestDist < 1000) {
+      if (isInMissileCone(ally, nearestOpponent)) {
         ally.lockTimer = (ally.lockTimer || 0) + 1;
         ally.lockTarget = nearestOpponent;
         if (ally.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
@@ -1286,20 +1286,29 @@ function updatePlayerMissileLock() {
 }
 
 function updateOpponentMissileLock() {
-  const dx = player.x - opponents[0].x;
-  const dy = player.y - opponents[0].y;
-  const dist = Math.hypot(dx, dy);
+  for (const opp of opponents) {
+    if (opp.health <= 0) continue;
 
-  if (dist < 1000) {
-    opponentMissileLockTimer++;
-    if (opponentMissileLockTimer > OPPONENT_LOCK_TIME) {
-      opponentMissileLockReady = true;
+    const dx = player.x - opp.x;
+    const dy = player.y - opp.y;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist < 1000 && isInMissileCone(opp, player)) {
+      opp.lockTimer = (opp.lockTimer || 0) + 1;
+      opp.lockTarget = player;
+
+      if (opp.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
+        createFloatingText("🚀 LOCKED", player.x, player.y - 50, "red", 18);
+        fireOpponentMissile(opp, player);
+        opp.lockTimer = 0;
+      }
+    } else {
+      opp.lockTimer = Math.max(0, (opp.lockTimer || 0) - 1);
+      opp.lockTarget = null;
     }
-  } else {
-    opponentMissileLockTimer = 0;
-    opponentMissileLockReady = false;
   }
 }
+
 
 // ====================
 // [7] Update Functions
