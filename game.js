@@ -1301,25 +1301,44 @@ function bounceOffWalls(entity) {
 function maybeDodge(entity) {
   if (entity.dodgeCooldown > 0) {
     entity.dodgeCooldown--;
-    return;
+  } else {
+    // === Dodge incoming bullets
+    const underFire = detectIncomingFire(entity);
+
+    // === Dodge nearby missiles
+    const beingChased = opponentMissiles.some((m) => {
+      const dx = m.x - entity.x;
+      const dy = m.y - entity.y;
+      return Math.hypot(dx, dy) < 250;
+    });
+
+    if ((underFire || beingChased) && Math.random() < 0.4) {
+      entity.dodgeOffset = (Math.random() < 0.5 ? -1 : 1) * (Math.PI / 3); // 60°
+      entity.dodgeCooldown = 45 + Math.floor(Math.random() * 45);
+    }
   }
 
-  // 10% chance to dodge every check
-  if (Math.random() < 0.1) {
-    entity.dodgeOffset = (Math.random() < 0.5 ? -1 : 1) * (Math.PI / 4); // 45 degrees left/right
-    entity.dodgeCooldown = 60 + Math.floor(Math.random() * 60); // cooldown 1–2 seconds
+  // === Flare release (if targeted by missiles)
+  if (entity.flareCooldown <= 0) {
+    const lockedMissile = opponentMissiles.some((m) => {
+      const dx = entity.x - m.x;
+      const dy = entity.y - m.y;
+      return Math.hypot(dx, dy) < 200;
+    });
+
+    if (lockedMissile && Math.random() < 0.1) {
+      releaseFlaresFor(entity);
+      entity.flareCooldown = 300;
+    }
   }
 
-  if (detectIncomingFire(entity) && Math.random() < 0.2) {
-    entity.dodgeOffset = (Math.random() < 0.5 ? -1 : 1) * (Math.PI / 4);
-    entity.dodgeCooldown = 60 + Math.floor(Math.random() * 60);
-  }
-
+  // === Gradually clear dodge offset
   if (entity.dodgeOffset !== 0) {
-    entity.dodgeOffset *= 0.95; // fade out
+    entity.dodgeOffset *= 0.9;
     if (Math.abs(entity.dodgeOffset) < 0.01) entity.dodgeOffset = 0;
   }
 }
+
 
 function maybeDeployFlares(planes) {
   for (const plane of planes) {
