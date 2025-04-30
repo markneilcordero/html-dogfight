@@ -396,25 +396,24 @@ function createTrail(x, y, color) {
 }
 
 function findNearestOpponent(x, y) {
-    let nearest = null;
-    let nearestDist = Infinity;
-  
-    for (const opp of opponents) {
-      if (opp.health <= 0) continue; // ignore dead opponents
-  
-      const dx = opp.x - x;
-      const dy = opp.y - y;
-      const dist = Math.hypot(dx, dy);
-  
-      if (dist < nearestDist) {
-        nearest = opp;
-        nearestDist = dist;
-      }
+  let nearest = null;
+  let nearestDist = Infinity;
+
+  for (const opp of opponents) {
+    if (opp.health <= 0) continue; // ignore dead opponents
+
+    const dx = opp.x - x;
+    const dy = opp.y - y;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist < nearestDist) {
+      nearest = opp;
+      nearestDist = dist;
     }
-  
-    return { target: nearest, distance: nearestDist };
   }
-  
+
+  return { target: nearest, distance: nearestDist };
+}
 
 function findNearestFlare(x, y) {
   let nearest = null;
@@ -459,15 +458,14 @@ function detectIncomingFire(entity) {
 }
 
 function detectIncomingMissile(entity) {
-    for (const m of opponentMissiles) {
-      const dx = m.x - entity.x;
-      const dy = m.y - entity.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < 300) return true; // missile within danger zone
-    }
-    return false;
+  for (const m of opponentMissiles) {
+    const dx = m.x - entity.x;
+    const dy = m.y - entity.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 300) return true; // missile within danger zone
   }
-  
+  return false;
+}
 
 function applyAntiStacking(allPlanes, minDistance = 80, strength = 0.05) {
   for (let i = 0; i < allPlanes.length; i++) {
@@ -620,8 +618,7 @@ function updateOpponents() {
 
     moveForward(opp);
     // ✅ Keep opponent inside the world
-    opp.x = clamp(opp.x, 0, WORLD_WIDTH);
-    opp.y = clamp(opp.y, 0, WORLD_HEIGHT);
+    bounceOffWalls(opp);
     createEntityWingTrails(opp);
     createEngineParticles(opp);
 
@@ -688,8 +685,7 @@ function updateAllies() {
 
       moveForward(ally);
 
-      ally.x = clamp(ally.x, 0, WORLD_WIDTH);
-      ally.y = clamp(ally.y, 0, WORLD_HEIGHT);
+      bounceOffWalls(ally);
 
       createEntityWingTrails(ally);
       createEngineParticles(ally);
@@ -831,97 +827,107 @@ function update() {
 }
 
 function updatePlayer() {
-    if (player.health <= 0) {
-      if (!playerDead) {
-        playerDead = true;
-        playerRespawnCooldown = 180;
-      } else {
-        playerRespawnCooldown--;
-        if (playerRespawnCooldown === 0) {
-          respawnPlane(player, false);
-          createFloatingText("🛬 Player Respawned!", player.x, player.y - 60, "cyan", 18);
-          updateCamera();
-          playerDead = false;
-        }
-      }
-      return;
-    }
-  
-    if (player.flareCooldown > 0) player.flareCooldown--;
-  
-    if (playerAIEnabled) {
-      const { target, distance } = findNearestOpponent(player.x, player.y); // <-- hunting real enemies now
-      if (target) {
-        const dx = target.x - player.x;
-        const dy = target.y - player.y;
-        const offset = Math.PI / 3;
-        maybeDodge(player);
-        const targetAngle = Math.atan2(dy, dx) + offset * player.orbitDirection + player.dodgeOffset;
-        rotateToward(player, targetAngle, 0.05);
-        player.thrust = 5;
-  
-        // === Smart Fire Machine Gun
-        if (distance < 600 && target.health > 20 && Math.random() < 0.1) {
-          fireMachineGun();
-        }
-  
-        // === Smart Fire Missile
-        if (playerMissileLockReady && distance < 800 && target.health > 40 && Math.random() < 0.02) {
-          fireMissile();
-        }
-      }
-  
-      // === Smart Drop Flares
-      if (detectIncomingMissile(player) && player.flareCooldown <= 0) {
-        releaseFlaresFor(player);
-        player.flareCooldown = 300; // 5 seconds cooldown
-      }
+  if (player.health <= 0) {
+    if (!playerDead) {
+      playerDead = true;
+      playerRespawnCooldown = 180;
     } else {
-      if (joystickActive) {
-        player.angle = joystickAngle;
-      } else {
-        if (keys["ArrowLeft"] || keys["a"]) player.angle -= 0.05;
-        if (keys["ArrowRight"] || keys["d"]) player.angle += 0.05;
-      }
-  
-      if (keys["w"] || keys["ArrowUp"]) {
-        player.thrust += 0.1;
-        if (player.thrust > 5) player.thrust = 5;
-      }
-  
-      if (keys["s"] || keys["ArrowDown"]) {
-        player.thrust -= 0.05;
-        if (player.thrust < 1.0) player.thrust = 1.0;
+      playerRespawnCooldown--;
+      if (playerRespawnCooldown === 0) {
+        respawnPlane(player, false);
+        createFloatingText(
+          "🛬 Player Respawned!",
+          player.x,
+          player.y - 60,
+          "cyan",
+          18
+        );
+        updateCamera();
+        playerDead = false;
       }
     }
-  
-    moveForward(player);
-  
-    // === Avoid getting stuck at wall
-    // === Bounce off left/right walls
-if (player.x <= 0 || player.x >= WORLD_WIDTH) {
-  player.angle = Math.PI - player.angle;
-  player.x = clamp(player.x, 1, WORLD_WIDTH - 1); // prevent sticking
-}
-
-// === Bounce off top/bottom walls
-if (player.y <= 0 || player.y >= WORLD_HEIGHT) {
-  player.angle = -player.angle;
-  player.y = clamp(player.y, 1, WORLD_HEIGHT - 1); // prevent sticking
-}
-
-  
-    createEntityWingTrails(player);
-    createEngineParticles(player);
-  
-    player.x = clamp(player.x, 0, WORLD_WIDTH);
-    player.y = clamp(player.y, 0, WORLD_HEIGHT);
-  
-    updateCamera();
+    return;
   }
-  
-  
-  
+
+  if (player.flareCooldown > 0) player.flareCooldown--;
+
+  if (playerAIEnabled) {
+    const { target, distance } = findNearestOpponent(player.x, player.y); // <-- hunting real enemies now
+    if (target) {
+      const dx = target.x - player.x;
+      const dy = target.y - player.y;
+      const offset = Math.PI / 3;
+      maybeDodge(player);
+      const targetAngle =
+        Math.atan2(dy, dx) +
+        offset * player.orbitDirection +
+        player.dodgeOffset;
+      rotateToward(player, targetAngle, 0.05);
+      player.thrust = 5;
+
+      // === Smart Fire Machine Gun
+      if (distance < 600 && target.health > 20 && Math.random() < 0.1) {
+        fireMachineGun();
+      }
+
+      // === Smart Fire Missile
+      if (
+        playerMissileLockReady &&
+        distance < 800 &&
+        target.health > 40 &&
+        Math.random() < 0.02
+      ) {
+        fireMissile();
+      }
+    }
+
+    // === Smart Drop Flares
+    if (detectIncomingMissile(player) && player.flareCooldown <= 0) {
+      releaseFlaresFor(player);
+      player.flareCooldown = 300; // 5 seconds cooldown
+    }
+  } else {
+    if (joystickActive) {
+      player.angle = joystickAngle;
+    } else {
+      if (keys["ArrowLeft"] || keys["a"]) player.angle -= 0.05;
+      if (keys["ArrowRight"] || keys["d"]) player.angle += 0.05;
+    }
+
+    if (keys["w"] || keys["ArrowUp"]) {
+      player.thrust += 0.1;
+      if (player.thrust > 5) player.thrust = 5;
+    }
+
+    if (keys["s"] || keys["ArrowDown"]) {
+      player.thrust -= 0.05;
+      if (player.thrust < 1.0) player.thrust = 1.0;
+    }
+  }
+
+  moveForward(player);
+
+  // === Avoid getting stuck at wall
+  // === Bounce off left/right walls
+  if (player.x <= 0 || player.x >= WORLD_WIDTH) {
+    player.angle = Math.PI - player.angle;
+    player.x = clamp(player.x, 1, WORLD_WIDTH - 1); // prevent sticking
+  }
+
+  // === Bounce off top/bottom walls
+  if (player.y <= 0 || player.y >= WORLD_HEIGHT) {
+    player.angle = -player.angle;
+    player.y = clamp(player.y, 1, WORLD_HEIGHT - 1); // prevent sticking
+  }
+
+  createEntityWingTrails(player);
+  createEngineParticles(player);
+
+  player.x = clamp(player.x, 0, WORLD_WIDTH);
+  player.y = clamp(player.y, 0, WORLD_HEIGHT);
+
+  updateCamera();
+}
 
 function createEngineParticles(entity) {
   if (entity.thrust / 5 < 0.7) return;
@@ -990,10 +996,23 @@ function updateCamera() {
 }
 
 function moveForward(entity) {
-    entity.x += Math.cos(entity.angle) * entity.thrust * entity.speed;
-    entity.y += Math.sin(entity.angle) * entity.thrust * entity.speed;
+  entity.x += Math.cos(entity.angle) * entity.thrust * entity.speed;
+  entity.y += Math.sin(entity.angle) * entity.thrust * entity.speed;
+}
+
+function bounceOffWalls(entity) {
+  // Bounce horizontally
+  if (entity.x <= 0 || entity.x >= WORLD_WIDTH) {
+    entity.angle = Math.PI - entity.angle;
+    entity.x = clamp(entity.x, 1, WORLD_WIDTH - 1);
   }
-  
+
+  // Bounce vertically
+  if (entity.y <= 0 || entity.y >= WORLD_HEIGHT) {
+    entity.angle = -entity.angle;
+    entity.y = clamp(entity.y, 1, WORLD_HEIGHT - 1);
+  }
+}
 
 function maybeDodge(entity) {
   if (entity.dodgeCooldown > 0) {
