@@ -759,6 +759,7 @@ function updateOpponentBullets() {
     if (hit) continue;
 
     if (b.life <= 0) {
+      createExplosion(b.x, b.y, 15);
       opponentBullets.splice(i, 1);
     }
   }
@@ -1109,6 +1110,7 @@ function updateBullets() {
     }
 
     if (b.life <= 0) {
+      createExplosion(b.x, b.y, 15);
       machineGunBullets.splice(i, 1);
     }
   }
