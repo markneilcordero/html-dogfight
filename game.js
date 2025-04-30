@@ -385,7 +385,7 @@ let playerAIEnabled = false; // 🧠 Whether player AI is on
 let autopilotMode = "balanced"; // "balanced", "aggressive", "defensive"
 
 // === Lock Variables ===
-const PLAYER_LOCK_TIME = 60; // Player needs 1.5 seconds to lock (adjust this!)
+const PLAYER_LOCK_TIME = 10; // Player needs 1.5 seconds to lock (adjust this!)
 const OPPONENT_LOCK_TIME = 60; // Opponent needs 1.5 seconds to lock (adjust this!)
 
 let playerMissileLockTimer = 0; // how long player has been locking onto opponent
@@ -1890,20 +1890,25 @@ function updateMissiles() {
       targetY = flareTarget.y;
     } else {
       // Lock to nearest opponent
-      let nearestDist = Infinity;
-      for (const opp of opponents) {
-        const dx = opp.x - m.x;
-        const dy = opp.y - m.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < nearestDist) {
-          nearestDist = dist;
-          nearestOpponent = opp;
+      if (m.target && m.target.health > 0) {
+        targetX = m.target.x;
+        targetY = m.target.y;
+      } else {
+        // fallback to nearest opponent if target is invalid
+        let nearestDist = Infinity;
+        for (const opp of opponents) {
+          const dx = opp.x - m.x;
+          const dy = opp.y - m.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < nearestDist) {
+            nearestDist = dist;
+            m.target = opp; // reassign target
+          }
         }
-      }
-      if (!nearestOpponent) continue;
-  
-      targetX = nearestOpponent.x;
-      targetY = nearestOpponent.y;
+        if (!m.target) continue;
+        targetX = m.target.x;
+        targetY = m.target.y;
+      }      
     }
   
     const dx = targetX - m.x;
