@@ -948,7 +948,7 @@ function createEngineParticles(entity) {
       alpha: 1,
       radius: 3 + Math.random() * 2,
       angle: entity.angle + (Math.random() * 0.3 - 0.15),
-      color: "lightgray",
+      color: "white",
     });
 
     if (entity.engineParticles.length > 40) entity.engineParticles.splice(0, 1);
@@ -1364,7 +1364,7 @@ function drawEngineParticles(particles) {
     // Update and fade
     p.x -= Math.cos(p.angle) * 1;
     p.y -= Math.sin(p.angle) * 1;
-    p.alpha -= 0.02;
+    p.alpha -= 0.10;
 
     if (p.alpha <= 0) particles.splice(i, 1);
   }
@@ -1489,9 +1489,9 @@ function drawHealthBars() {
   // === Opponents' Health Bars (above each opponent)
   for (const opp of opponents) {
     const oppHealthPercent = opp.health / opp.maxHealth;
-    ctx.fillStyle = "red";
+    ctx.fillStyle = "gray";
     ctx.fillRect(opp.x - 30 - camera.x, opp.y - 50 - camera.y, 60, 6);
-    ctx.fillStyle = "lime";
+    ctx.fillStyle = "red";
     ctx.fillRect(
       opp.x - 30 - camera.x,
       opp.y - 50 - camera.y,
@@ -1505,9 +1505,9 @@ function drawHealthBars() {
   // === Allies' Health Bars (above each ally)
   for (const ally of allies) {
     const allyHealthPercent = ally.health / ally.maxHealth;
-    ctx.fillStyle = "red";
+    ctx.fillStyle = "gray";
     ctx.fillRect(ally.x - 30 - camera.x, ally.y - 50 - camera.y, 60, 6);
-    ctx.fillStyle = "cyan";
+    ctx.fillStyle = "lime";
     ctx.fillRect(
       ally.x - 30 - camera.x,
       ally.y - 50 - camera.y,
