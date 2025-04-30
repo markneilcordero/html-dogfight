@@ -981,7 +981,7 @@ function updateOpponents() {
         fireOpponentMachineGun(opp);
       }
 
-      if (distance < 1000) {
+      if (isInMissileCone(opp, target)) {
         opp.lockTimer = (opp.lockTimer || 0) + 1;
         opp.lockTarget = target;
         if (opp.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
@@ -1122,6 +1122,10 @@ function updateAllies() {
         Math.random() < 0.04
       ) {
         fireAllyMachineGun(ally);
+      }
+
+      if (isInMissileCone(ally, nearestOpponent) && Math.random() < 0.01) {
+        ally.lockTimer = (ally.lockTimer || 0) + 1;
       }
 
       if (nearestDist < 1000) {
