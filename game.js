@@ -2436,6 +2436,29 @@ function drawMissileRangeGuide() {
   ctx.restore();
 }
 
+function drawGunRangeGuide() {
+  const maxRange = 600; // How far the guide line goes
+
+  const px = player.x - camera.x;
+  const py = player.y - camera.y;
+  const angle = player.angle;
+
+  const endX = px + Math.cos(angle) * maxRange;
+  const endY = py + Math.sin(angle) * maxRange;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(px, py);
+  ctx.lineTo(endX, endY);
+  ctx.strokeStyle = "rgba(255, 255, 0, 0.6)"; // Yellow line
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]); // Optional: dashed line
+  ctx.stroke();
+  ctx.restore();
+}
+
+
+
 function drawLockOnLine() {
   if (!playerMissileLockReady) return;
 
@@ -2562,6 +2585,7 @@ function drawUI() {
   drawLockOnLine();
   drawAllyLockLines();
   drawOpponentLockLines();
+  drawGunRangeGuide();
 
   // Show ammo count
   ctx.fillStyle = "white";
