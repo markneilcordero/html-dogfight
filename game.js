@@ -1979,9 +1979,9 @@ function updateMissiles() {
         continue;
       }
     } else {
-      if (nearestOpponent && Math.hypot(dx, dy) < 40) {
-        nearestOpponent.health -= 25;
-        createExplosion(nearestOpponent.x, nearestOpponent.y, 70);
+      if (m.target && Math.hypot(dx, dy) < 40) {
+        m.target.health -= 25;
+        createExplosion(m.target.x, m.target.y, 70);
         missiles.splice(i, 1);
         continue;
       }
