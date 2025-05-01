@@ -397,8 +397,9 @@ let playerMissileLockReady = false;
 let opponentMissileLockTimer = 0; // how long opponent has been locking onto player
 let opponentMissileLockReady = false;
 
-let allyMode = "defensive"; // or "balanced", "aggressive"
-let opponentMode = "defensive"; // or "balanced", "aggressive"
+const modes = ["defensive", "balanced", "aggressive"];
+let allyMode = modes[Math.floor(Math.random() * modes.length)];
+let opponentMode = modes[Math.floor(Math.random() * modes.length)];
 
 // Inside createPlane():
 function createPlane(x, y) {
