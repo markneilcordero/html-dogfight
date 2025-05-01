@@ -1397,7 +1397,7 @@ function updatePlayerAutopilot() {
   if (underFire) {
     if (autopilotMode !== "aggressive") {
       maybeDodge(player);
-      adjustThrottle(player, 4.5);
+      adjustThrottle(player, 5);
     }
     // Always release flares if missile is incoming and cooldown is ready
     if (player.flareCooldown <= 0 && detectIncomingMissile(player)) {
@@ -1451,7 +1451,7 @@ function updatePlayerAutopilot() {
       // 🚨 Low health — disengage
       const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
       rotateToward(player, retreatAngle, player.maxTurnRate || 0.02);
-      adjustThrottle(player, 4.5);
+      adjustThrottle(player, 5);
       return;
     }
 
@@ -1461,7 +1461,7 @@ function updatePlayerAutopilot() {
       const orbitAngle =
         targetAngle + (player.orbitDirection || 1) * (Math.PI / 2);
       rotateToward(player, orbitAngle, player.maxTurnRate || 0.02, 0);
-      adjustThrottle(player, 3);
+      adjustThrottle(player, 5);
       return;
     }
 
@@ -1483,7 +1483,7 @@ function updatePlayerAutopilot() {
     if (distance < 300) {
       const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
       rotateToward(player, retreatAngle, player.maxTurnRate || 0.02);
-      adjustThrottle(player, 3.5);
+      adjustThrottle(player, 5);
       return;
     }
 
@@ -1493,15 +1493,15 @@ function updatePlayerAutopilot() {
       player.flareCooldown = 300;
     }
 
-    adjustThrottle(player, distance > 600 ? 2.5 : 1.5);
+    adjustThrottle(player, distance > 600 ? 5 : 5);
   } else if (autopilotMode === "aggressive") {
-    adjustThrottle(player, 3.5);
+    adjustThrottle(player, 5);
   } else {
     if (autopilotMode === "balanced") {
       if (underFire) {
-        adjustThrottle(player, 4); // escape if under fire
+        adjustThrottle(player, 5); // escape if under fire
       } else {
-        adjustThrottle(player, distance > 800 ? 4.5 : distance > 400 ? 3 : 2.5);
+        adjustThrottle(player, distance > 800 ? 5 : distance > 400 ? 5 : 5);
       }
     }
   }
