@@ -324,6 +324,7 @@ const player = createPlane(WORLD_WIDTH - 150, WORLD_HEIGHT - 150);
 player.angle = -Math.PI / 2; // Point upward
 player.isTakingOff = true;
 player.taxiTimer = 120;
+player.killCount = 0;
 updateCamera();
 
 // === 10 Opponents randomly placed on map
@@ -916,10 +917,15 @@ function releaseFlaresFor(entity) {
 function updateOpponents() {
   for (const opp of opponents) {
     if (opp.health <= 0) {
+      if (opp.lastAttacker === player) {
+        player.killCount++;
+        createFloatingText(`☠️ Kills: ${player.killCount}`, player.x, player.y - 100, "lime", 20);
+      }
+    
       createExplosion(opp.x, opp.y, 100);
       respawnPlane(opp, true);
       continue;
-    }
+    }    
 
     if (!opp.isTakingOff && opp.delayedTaxiStart > 0) {
       opp.delayedTaxiStart--;
@@ -2614,6 +2620,7 @@ function drawUI() {
     20,
     50
   );
+  ctx.fillText(`☠️ Kills: ${player.killCount}`, 20, 70);
 }
 
 function drawFloatingTexts() {
