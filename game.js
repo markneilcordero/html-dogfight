@@ -395,7 +395,7 @@ let autopilotMode = "balanced"; // "balanced", "aggressive", "defensive"
 
 // === Lock Variables ===
 const PLAYER_LOCK_TIME = 10; // Player needs 1.5 seconds to lock (adjust this!)
-const OPPONENT_LOCK_TIME = 60; // Opponent needs 1.5 seconds to lock (adjust this!)
+const OPPONENT_LOCK_TIME = 10; // Opponent needs 1.5 seconds to lock (adjust this!)
 
 let playerMissileLockTimer = 0; // how long player has been locking onto opponent
 let playerMissileLockReady = false;
@@ -2510,8 +2510,8 @@ function drawLockOnLine() {
   ctx.moveTo(px, py);
   ctx.lineTo(ox, oy);
   ctx.strokeStyle = "red"; // 🔴 Solid red line
-  ctx.lineWidth = 2.5;
-  ctx.setLineDash([5, 5]); // ❌ Remove dashed line
+  ctx.lineWidth = 0.5;
+  ctx.setLineDash([1, 1]); // ❌ Remove dashed line
   ctx.shadowColor = "red"; // 🔥 Optional glow effect
   ctx.shadowBlur = 10;
   ctx.stroke();
@@ -2573,8 +2573,8 @@ function drawAllyLockLines() {
     ctx.moveTo(ally.x - camera.x, ally.y - camera.y);
     ctx.lineTo(ally.lockTarget.x - camera.x, ally.lockTarget.y - camera.y);
     ctx.strokeStyle = "cyan";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([1, 1]);
     ctx.stroke();
     ctx.restore();
   }
@@ -2589,8 +2589,8 @@ function drawOpponentLockLines() {
     ctx.moveTo(opp.x - camera.x, opp.y - camera.y);
     ctx.lineTo(opp.lockTarget.x - camera.x, opp.lockTarget.y - camera.y);
     ctx.strokeStyle = "red";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.setLineDash([1, 1]);
     ctx.stroke();
     ctx.restore();
   }
