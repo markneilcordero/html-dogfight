@@ -428,6 +428,7 @@ function createPlane(x, y) {
     lockTarget: null,
     collisionCooldown: 0,
     mode: "balanced",
+    missileCooldown: 0,
   };
 }
 
@@ -1603,33 +1604,32 @@ function updatePlayerAutopilot() {
 
   const aligned = isAngleAligned(player.angle, angleToTarget);
 
+  let gunFireChance = 1.0;
+  if (autopilotMode === "defensive") gunFireChance = 1.0;
+  else if (autopilotMode === "balanced") gunFireChance = 1.0;
+  
   const tryFireGun =
-    autopilotMode !== "defensive" &&
-    player.machineGunAmmo > 0 &&
-    aligned &&
-    distance < 600 &&
-    (player.machineGunAmmo > 50 ? Math.random() < 0.25 : Math.random() < 0.08);
+  player.machineGunAmmo > 0 &&
+  aligned &&
+  distance < 600;
+
+
 
   const inCone = isInMissileCone(player, target);
-  let missileFireChance = 0.03; // Default for defensive
-
-  if (autopilotMode === "aggressive") {
-    missileFireChance = 0.15;
-  } else if (autopilotMode === "balanced") {
-    missileFireChance = distance < 500 ? 0.12 : 0.06;
-  }
 
   const tryFireMissile =
-    playerMissileLockReady &&
-    player.missileAmmo > 0 &&
-    aligned &&
-    inCone &&
-    distance < 1000 &&
-    target.health > 40 &&
-    Math.random() < missileFireChance;
+  playerMissileLockReady &&
+  player.missileAmmo > 0 &&
+  aligned &&
+  inCone &&
+  distance < 1000 &&
+  target.health > 40 &&
+  player.missileCooldown <= 0;
+
 
   if (tryFireMissile) {
     fireMissile();
+    player.missileCooldown = 60;
     createFloatingText(
       "🚀 AUTOPILOT FIRED",
       player.x,
@@ -1689,6 +1689,7 @@ function updatePlayer() {
   }
 
   if (player.flareCooldown > 0) player.flareCooldown--;
+  if (player.missileCooldown > 0) player.missileCooldown--;
   // === Ammo Regen Logic
   if (player.machineGunAmmo <= 0) {
     if (!player.ammoRegenTimer) player.ammoRegenTimer = 0;
