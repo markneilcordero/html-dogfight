@@ -589,6 +589,16 @@ function findNearestEnemyFlare(x, y, ownerType) {
   return nearest;
 }
 
+function findAggroTarget(entity, defaultFinder) {
+  const now = performance.now(); // use timestamp
+  if (entity.lastAttacker && entity.lastAttacker.health > 0) {
+    if (!entity.lastAttackedTime || now - entity.lastAttackedTime < 5000) {
+      return { target: entity.lastAttacker, distance: Math.hypot(entity.x - entity.lastAttacker.x, entity.y - entity.lastAttacker.y) };
+    }
+  }
+  return defaultFinder(entity.x, entity.y);
+}
+
 function detectIncomingFire(entity) {
   for (const b of machineGunBullets) {
     const dx = b.x - entity.x;
@@ -695,6 +705,7 @@ function fireMachineGun() {
     angle: player.angle,
     speed: 16,
     life: 500,
+    owner: player
   });
 
   player.machineGunAmmo--; // 🔻 reduce ammo
@@ -717,6 +728,7 @@ function fireAllyMachineGun(ally) {
     angle,
     speed: 16,
     life: 500,
+    owner: ally
   });
 
   ally.machineGunAmmo--;
@@ -761,6 +773,7 @@ function fireAllyMissile(ally) {
     speed: 6,
     life: 180,
     target: nearestOpponent,
+    owner: ally
   });
 
   ally.missileAmmo--;
@@ -827,6 +840,7 @@ function fireMissile() {
     speed: 6,
     life: 180,
     target: nearestOpponent,
+    owner: player
   });
 
   player.missileAmmo--;
@@ -912,7 +926,7 @@ function updateOpponents() {
       continue; // ✅ skip combat logic this frame
     }
 
-    const { target, distance } = findNearestEnemy(opp.x, opp.y);
+    const { target, distance } = findAggroTarget(opp, findNearestEnemy);
 
     if (target) {
       // 🔁 Dynamic opponent mode switching
@@ -923,6 +937,7 @@ function updateOpponents() {
         if (Math.random() < 0.1) {
           opp.mode = "aggressive";
           createFloatingText("⚔️ AGGRESSIVE MODE", opp.x, opp.y - 50, "lime", 14);
+          createFloatingText("🎯 I'm coming for you!", opp.x, opp.y - 70, "white", 14);
         }
       } else if (opp.health >= 60 && opp.health <= 80 && opp.mode !== "balanced") {
         opp.mode = "balanced";
@@ -1064,18 +1079,8 @@ function updateAllies() {
       respawnPlane(ally, false); // false = isAlly
       continue; // Skip this frame after respawn
     }
-    let nearestOpponent = null;
-    let nearestDist = Infinity;
-    for (const opp of opponents) {
-      const dx = opp.x - ally.x;
-      const dy = opp.y - ally.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < nearestDist) {
-        nearestDist = dist;
-        nearestOpponent = opp;
-      }
-    }
-
+    
+    const { target: nearestOpponent, distance: nearestDist } = findAggroTarget(ally, findNearestOpponent);
     if (nearestOpponent) {
       // 🔁 Dynamic ally mode switching
       if (ally.health < 60 && ally.mode !== "defensive") {
@@ -1085,6 +1090,7 @@ function updateAllies() {
         if (Math.random() < 0.1) {
           ally.mode = "aggressive";
           createFloatingText("⚔️ AGGRESSIVE MODE", ally.x, ally.y - 50, "lime", 14);
+          createFloatingText("🎯 I'm coming for you!", ally.x, ally.y - 70, "white", 14);
         }
       } else if (ally.health >= 60 && ally.health <= 80 && ally.mode !== "balanced") {
         ally.mode = "balanced";
@@ -1240,6 +1246,8 @@ function updateOpponentBullets() {
       if (dist < 30) {
         t.health -= 10;
         createExplosion(t.x, t.y);
+        t.lastAttacker = b.owner || null;
+        t.lastAttackedTime = performance.now();
         opponentBullets.splice(i, 1);
         hit = true;
         break;
@@ -1271,6 +1279,7 @@ function fireOpponentMachineGun(opp) {
     angle,
     speed: 12,
     life: 500,
+    owner: opp
   });
 
   opp.machineGunAmmo--;
@@ -1939,6 +1948,8 @@ function updateBullets() {
         // hit radius
         opp.health -= 10;
         createExplosion(opp.x, opp.y, 20);
+        opp.lastAttacker = b.owner || player;
+        opp.lastAttackedTime = performance.now();
         machineGunBullets.splice(i, 1);
         break; // Stop checking after hit
       }
@@ -2052,6 +2063,8 @@ function updateMissiles() {
     } else {
       if (m.target && Math.hypot(dx, dy) < 40) {
         m.target.health -= 100;
+        m.target.lastAttacker = m.owner || player;
+        m.target.lastAttackedTime = performance.now();
         createExplosion(m.target.x, m.target.y, 70);
         missiles.splice(i, 1);
         continue;
