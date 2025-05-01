@@ -499,16 +499,40 @@ function respawnPlane(plane, isOpponent = false) {
 }
 
 function resetLockFor(entity) {
-  entity.lockTarget = null;
-  entity.lockTimer = 0;
+  // === Decay lock timer instead of full reset
+  if (entity.lockTimer > 0) {
+    entity.lockTimer = Math.max(0, entity.lockTimer - 1); // Slow decay
+  }
 
-  // Additional reset for player
+  // === If target is dead or too far, clear it completely
+  if (
+    !entity.lockTarget ||
+    entity.lockTarget.health <= 0 ||
+    Math.hypot(entity.lockTarget.x - entity.x, entity.lockTarget.y - entity.y) > 1000
+  ) {
+    entity.lockTarget = null;
+    entity.lockTimer = 0;
+  }
+
+  // === Special handling for player
   if (entity === player) {
-    playerMissileLockReady = false;
-    playerMissileLockTimer = 0;
-    missileLockAnnounced = false;
+    if (playerMissileLockTimer > 0) {
+      playerMissileLockTimer = Math.max(0, playerMissileLockTimer - 1);
+    }
+
+    if (
+      !playerLockTarget ||
+      playerLockTarget.health <= 0 ||
+      Math.hypot(playerLockTarget.x - player.x, playerLockTarget.y - player.y) > 1000
+    ) {
+      playerLockTarget = null;
+      playerMissileLockReady = false;
+      playerMissileLockTimer = 0;
+      missileLockAnnounced = false;
+    }
   }
 }
+
 
 // ====================
 // [4] Utility Functions
@@ -811,6 +835,7 @@ function fireAllyMissile(ally) {
     life: 250,
     target: nearestOpponent,
     owner: ally,
+    divertedToFlare: false,
   });
 
   ally.missileAmmo--;
@@ -878,6 +903,7 @@ function fireMissile() {
     life: 250,
     target: nearestOpponent,
     owner: player,
+    divertedToFlare: false,
   });
 
   player.missileAmmo--;
@@ -1303,6 +1329,7 @@ function fireOpponentMissile(opp, target) {
     angle: targetAngle,
     speed: 6,
     life: 250,
+    divertedToFlare: false,
   });
 
   opp.missileAmmo--;
@@ -1964,31 +1991,44 @@ function updateMissiles() {
     const flareTarget = findNearestEnemyFlare(m.x, m.y, "ally"); // 👈 skips ally flares
     let targetX, targetY;
 
-    if (flareTarget) {
+    if (flareTarget && Math.random() < 0.8) {
+      // 🎯 80% chance to chase the flare
       targetX = flareTarget.x;
       targetY = flareTarget.y;
-    } else {
-      // Lock to nearest opponent
-      if (m.target && m.target.health > 0) {
-        targetX = m.target.x;
-        targetY = m.target.y;
-      } else {
-        // fallback to nearest opponent if target is invalid
-        let nearestDist = Infinity;
-        for (const opp of opponents) {
-          const dx = opp.x - m.x;
-          const dy = opp.y - m.y;
-          const dist = Math.hypot(dx, dy);
-          if (dist < nearestDist) {
-            nearestDist = dist;
-            m.target = opp; // reassign target
-          }
+    } else if (m.target && m.target.health > 0) {
+      // ✅ Continue homing on original target
+      targetX = m.target.x;
+      targetY = m.target.y;
+    } else if (!m.target) {
+      // 🎯 Assign initial target once
+      let nearest = null;
+      let nearestDist = Infinity;
+    
+      for (const opp of opponents) {
+        if (opp.health <= 0) continue;
+        const dx = opp.x - m.x;
+        const dy = opp.y - m.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < nearestDist) {
+          nearest = opp;
+          nearestDist = dist;
         }
-        if (!m.target) continue;
-        targetX = m.target.x;
-        targetY = m.target.y;
       }
-    }
+    
+      if (nearest) {
+        m.target = nearest;
+        targetX = nearest.x;
+        targetY = nearest.y;
+      } else {
+        // 🛫 No target at all, fly straight
+        targetX = m.x + Math.cos(m.angle) * 100;
+        targetY = m.y + Math.sin(m.angle) * 100;
+      }
+    } else {
+      // ☠️ Target is dead, fly straight
+      targetX = m.x + Math.cos(m.angle) * 100;
+      targetY = m.y + Math.sin(m.angle) * 100;
+    }    
 
     const dx = targetX - m.x;
     const dy = targetY - m.y;
@@ -2040,14 +2080,27 @@ function updateMissiles() {
     let targetX, targetY;
 
     // === If there are flares, prefer chasing the nearest flare
-    const nearestFlare = findNearestEnemyFlare(m.x, m.y, "opponent"); // ✅ Only chase player/allied flares
-    if (nearestFlare) {
-      targetX = nearestFlare.x;
-      targetY = nearestFlare.y;
-    } else {
-      targetX = player.x;
-      targetY = player.y;
-    }
+    const nearestFlare = findNearestEnemyFlare(m.x, m.y, "opponent");
+
+if (nearestFlare && !m.divertedToFlare && Math.random() < 0.8) {
+  // 🎯 Divert once with 80% chance
+  m.divertedToFlare = true;
+  m.target = null; // stop tracking player
+  targetX = nearestFlare.x;
+  targetY = nearestFlare.y;
+} else if (m.divertedToFlare && nearestFlare) {
+  // Continue chasing flare if already diverted
+  targetX = nearestFlare.x;
+  targetY = nearestFlare.y;
+} else if (player.health > 0) {
+  targetX = player.x;
+  targetY = player.y;
+} else {
+  // Fly straight if nothing
+  targetX = m.x + Math.cos(m.angle) * 100;
+  targetY = m.y + Math.sin(m.angle) * 100;
+}
+
 
     const dx = targetX - m.x;
     const dy = targetY - m.y;
