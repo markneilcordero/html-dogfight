@@ -429,6 +429,7 @@ function createPlane(x, y) {
     collisionCooldown: 0,
     mode: "balanced",
     missileCooldown: 0,
+    maxTurnRate: 0.01
   };
 }
 
@@ -1235,7 +1236,7 @@ function updateAllies() {
             ally.y - nearestOpponent.y,
             ally.x - nearestOpponent.x
           );
-          rotateToward(ally, retreatAngle + ally.dodgeOffset, 0.015);
+          rotateToward(ally, retreatAngle + ally.dodgeOffset, ally.maxTurnRate || 0.015);
           adjustThrottle(ally, 4);
         } else {
           adjustThrottle(ally, 2.5);
@@ -1249,7 +1250,7 @@ function updateAllies() {
         );
       }
 
-      rotateToward(ally, targetAngle, 0.015, 0);
+      rotateToward(ally, targetAngle, ally.maxTurnRate || 0.015, 0);
       moveForward(ally);
 
       avoidOthers(ally, allies); // Avoid other allies
@@ -1524,23 +1525,23 @@ function updatePlayerAutopilot() {
     predicted.y - player.y,
     predicted.x - player.x
   );
-  rotateToward(player, interceptAngle + player.dodgeOffset, 0.02, 0);
+  rotateToward(player, interceptAngle + player.dodgeOffset, player.maxTurnRate || 0.02, 0);
 
   const targetAngle = Math.atan2(target.y - player.y, target.x - player.x);
 
   // 🛡️ In defensive mode, back away slowly instead of pursuing
   if (autopilotMode === "defensive" && distance < 600) {
     const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
-    rotateToward(player, retreatAngle + player.dodgeOffset, 0.02, 0);
+    rotateToward(player, retreatAngle + player.dodgeOffset, player.maxTurnRate || 0.02, 0);
   } else if (autopilotMode === "aggressive") {
     const strafeOffset = (player.orbitDirection || 1) * (Math.PI / 3); // 60° strafe
     const strafeAngle = targetAngle + strafeOffset + player.dodgeOffset;
-    rotateToward(player, strafeAngle, 0.02, 0);
+    rotateToward(player, strafeAngle, player.maxTurnRate || 0.02, 0);
   } else if (autopilotMode === "balanced") {
     if (player.health < 30) {
       // 🚨 Low health — disengage
       const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
-      rotateToward(player, retreatAngle, 0.02);
+      rotateToward(player, retreatAngle, player.maxTurnRate || 0.02);
       adjustThrottle(player, 4.5);
       return;
     }
@@ -1550,7 +1551,7 @@ function updatePlayerAutopilot() {
       // 🕊️ No ammo — fly evasively
       const orbitAngle =
         targetAngle + (player.orbitDirection || 1) * (Math.PI / 2);
-      rotateToward(player, orbitAngle, 0.02, 0);
+      rotateToward(player, orbitAngle, player.maxTurnRate || 0.02, 0);
       adjustThrottle(player, 3);
       return;
     }
@@ -1559,11 +1560,11 @@ function updatePlayerAutopilot() {
       // 🧠 Strafe around the target at mid-range
       const strafeOffset = (player.orbitDirection || 1) * (Math.PI / 4); // 45° strafe
       const strafeAngle = targetAngle + strafeOffset + player.dodgeOffset;
-      rotateToward(player, strafeAngle, 0.08);
+      rotateToward(player, strafeAngle, player.maxTurnRate || 0.02);
     } else {
       // 📡 Close in or reposition with predictive aim
       const aimAngle = targetAngle + player.dodgeOffset + Math.random() * 0.05;
-      rotateToward(player, aimAngle, 0.06, 0);
+      rotateToward(player, aimAngle, player.maxTurnRate || 0.02, 0);
     }
   }
 
@@ -1572,7 +1573,7 @@ function updatePlayerAutopilot() {
     // 🛡️ If too close to enemy, back off
     if (distance < 300) {
       const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
-      rotateToward(player, retreatAngle, 0.02);
+      rotateToward(player, retreatAngle, player.maxTurnRate || 0.02);
       adjustThrottle(player, 3.5);
       return;
     }
