@@ -2588,7 +2588,66 @@ function drawOpponentLockLines() {
     ctx.stroke();
     ctx.restore();
   }
+
+    // Ally missile cone guide (if locking on)
+    for (const ally of allies) {
+      if (ally.health > 0 && ally.lockTarget) {
+        drawMissileRangeGuideFor(ally, "rgba(0, 255, 255, 0.08)"); // cyan-ish
+      }
+    }
+  
+    // Opponent missile cone guide (if locking on)
+    for (const opp of opponents) {
+      if (opp.health > 0 && opp.lockTarget) {
+        drawMissileRangeGuideFor(opp, "rgba(255, 0, 0, 0.08)"); // red-ish
+      }
+    }
+  
 }
+
+function drawTargetLockIcon(entity) {
+  const iconX = entity.x - camera.x;
+  const iconY = entity.y - camera.y - 50;
+
+  ctx.save();
+  ctx.fillStyle = "yellow";
+  ctx.font = "18px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("🎯", iconX, iconY);
+  ctx.restore();
+}
+
+
+function drawMissileRangeGuideFor(entity, color = "rgba(0, 255, 0, 0.08)") {
+  const maxRange = 900;
+  const coneAngle = Math.PI / 6; // 30 degrees
+
+  const px = entity.x - camera.x;
+  const py = entity.y - camera.y;
+  const angle = entity.angle;
+
+  const left = {
+    x: px + Math.cos(angle - coneAngle) * maxRange,
+    y: py + Math.sin(angle - coneAngle) * maxRange,
+  };
+  const right = {
+    x: px + Math.cos(angle + coneAngle) * maxRange,
+    y: py + Math.sin(angle + coneAngle) * maxRange,
+  };
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(px, py);
+  ctx.lineTo(left.x, left.y);
+  ctx.lineTo(right.x, right.y);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = color.replace("0.08", "0.3");
+  ctx.stroke();
+  ctx.restore();
+}
+
 
 function drawUI() {
   drawHealthBars();
@@ -2605,6 +2664,30 @@ function drawUI() {
   if (playerAIEnabled && playerMissileLockReady) {
     drawLockOnLine();
   }
+  
+  // Ally missile cone guide (only when halfway to lock)
+for (const ally of allies) {
+  if (
+    ally.health > 0 &&
+    ally.lockTarget &&
+    ally.lockTimer >= OPPONENT_LOCK_TIME / 2
+  ) {
+    drawMissileRangeGuideFor(ally, "rgba(0, 255, 255, 0.08)"); // cyan-ish
+  }
+}
+
+// Opponent missile cone guide (only when halfway to lock)
+for (const opp of opponents) {
+  if (
+    opp.health > 0 &&
+    opp.lockTarget &&
+    opp.lockTimer >= OPPONENT_LOCK_TIME / 2
+  ) {
+    drawMissileRangeGuideFor(opp, "rgba(255, 0, 0, 0.08)"); // red-ish
+  }
+}
+
+
 
   // Show ammo count
   ctx.fillStyle = "white";
