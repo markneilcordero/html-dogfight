@@ -234,12 +234,18 @@ function setupWeaponControls() {
   });
 
   // === Flare Button (click) ===
-  btnFlare.addEventListener("click", () => {
-    if (player.flareCooldown <= 0) {
-      releaseFlaresFor(player);
-      player.flareCooldown = 300; // reset cooldown
-    }
-  });
+  btnFlare.addEventListener(
+    "touchstart",
+    (e) => {
+      e.preventDefault(); // <--- allow touch even if joystick is active
+      if (player.flareCooldown <= 0) {
+        releaseFlaresFor(player);
+        player.flareCooldown = 300;
+      }
+    },
+    { passive: false }
+  );
+  
 
   window.addEventListener("keydown", (e) => {
     if (e.key === "h" && player.flareCooldown <= 0) {
