@@ -717,17 +717,22 @@ function fireMachineGun() {
     return;
   }
 
+  // 🔥 Add small random angle spread (±2.5 degrees)
+  const spread = (Math.random() - 0.5) * (Math.PI / 36); // ≈ ±5 degrees
+  const bulletAngle = player.angle + spread;
+
   machineGunBullets.push({
     x: player.x,
     y: player.y,
-    angle: player.angle,
+    angle: bulletAngle,
     speed: 16,
     life: 500,
     owner: player,
   });
 
-  player.machineGunAmmo--; // 🔻 reduce ammo
+  player.machineGunAmmo--;
 }
+
 
 function fireAllyMachineGun(ally) {
   if (ally.machineGunAmmo <= 0) return;
