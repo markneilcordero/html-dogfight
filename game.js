@@ -1336,7 +1336,7 @@ function updateOpponentBullets() {
       const dist = Math.hypot(dx, dy);
       if (dist < 30) {
         t.health -= 1;
-        createExplosion(t.x, t.y);
+        createExplosion(t.x, t.y, 20);
         t.lastAttacker = b.owner || null;
         t.lastAttackedTime = performance.now();
         opponentBullets.splice(i, 1);
