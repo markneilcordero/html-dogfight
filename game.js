@@ -1019,7 +1019,7 @@ function updateOpponents() {
         adjustThrottle(opp, distance > 800 ? 4 : distance > 400 ? 3 : 2.5);
       }
 
-      rotateToward(opp, targetAngle, 0.05);
+      rotateToward(opp, targetAngle, 0.05, 0);
       moveForward(opp);
 
       // avoidOthers(opp, opponents); // Avoid other opponents
@@ -1176,7 +1176,7 @@ function updateAllies() {
         );
       }
 
-      rotateToward(ally, targetAngle, 0.05);
+      rotateToward(ally, targetAngle, 0.05, 0);
       moveForward(ally);
 
       avoidOthers(ally, allies); // Avoid other allies
@@ -1433,18 +1433,18 @@ function updatePlayerAutopilot() {
     predicted.y - player.y,
     predicted.x - player.x
   );
-  rotateToward(player, interceptAngle + player.dodgeOffset, 0.08);
+  rotateToward(player, interceptAngle + player.dodgeOffset, 0.08, 0);
 
   const targetAngle = Math.atan2(target.y - player.y, target.x - player.x);
 
   // 🛡️ In defensive mode, back away slowly instead of pursuing
   if (autopilotMode === "defensive" && distance < 600) {
     const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
-    rotateToward(player, retreatAngle + player.dodgeOffset, 0.05);
+    rotateToward(player, retreatAngle + player.dodgeOffset, 0.05, 0);
   } else if (autopilotMode === "aggressive") {
     const strafeOffset = (player.orbitDirection || 1) * (Math.PI / 3); // 60° strafe
     const strafeAngle = targetAngle + strafeOffset + player.dodgeOffset;
-    rotateToward(player, strafeAngle, 0.08);
+    rotateToward(player, strafeAngle, 0.08, 0);
   } else if (autopilotMode === "balanced") {
     if (player.health < 30) {
       // 🚨 Low health — disengage
@@ -1459,7 +1459,7 @@ function updatePlayerAutopilot() {
       // 🕊️ No ammo — fly evasively
       const orbitAngle =
         targetAngle + (player.orbitDirection || 1) * (Math.PI / 2);
-      rotateToward(player, orbitAngle, 0.05);
+      rotateToward(player, orbitAngle, 0.05, 0);
       adjustThrottle(player, 3);
       return;
     }
@@ -1472,7 +1472,7 @@ function updatePlayerAutopilot() {
     } else {
       // 📡 Close in or reposition with predictive aim
       const aimAngle = targetAngle + player.dodgeOffset + Math.random() * 0.05;
-      rotateToward(player, aimAngle, 0.06);
+      rotateToward(player, aimAngle, 0.06, 0);
     }
   }
 
