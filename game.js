@@ -1520,11 +1520,13 @@ function updatePlayerAutopilot() {
     distance < 600 &&
     (player.machineGunAmmo > 50 ? Math.random() < 0.25 : Math.random() < 0.08);
 
-  const tryFireMissile =
-    playerMissileLockReady &&
-    player.missileAmmo > 0 &&
-    aligned &&
-    distance < 1000 &&
+    const inCone = isInMissileCone(player, target);
+    const tryFireMissile =
+      playerMissileLockReady &&
+      player.missileAmmo > 0 &&
+      aligned &&
+      inCone &&
+      distance < 1000 &&
     target.health > 40 &&
     Math.random() <
       (autopilotMode === "aggressive"
