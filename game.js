@@ -419,6 +419,7 @@ function createPlane(x, y) {
     missileAmmo: 4, // 🚀 New
     lockTimer: 0,
     lockTarget: null,
+    collisionCooldown: 0,
   };
 }
 
@@ -472,6 +473,8 @@ function respawnPlane(plane, isOpponent = false) {
 
   plane.machineGunAmmo = 200;
   plane.missileAmmo = 4;
+
+  plane.collisionCooldown = 60; // 1 second cooldown
 
   createFloatingText(
     "✈️ Respawned!",
@@ -1014,6 +1017,7 @@ function updateOpponents() {
         opp.lockTarget = null;
       }
     }
+    if (opp.collisionCooldown > 0) opp.collisionCooldown--;
   }
 }
 
@@ -1184,6 +1188,7 @@ function updateAllies() {
         ally.y += (dy2 / dist2) * repelStrength;
       }
     }
+    if (ally.collisionCooldown > 0) ally.collisionCooldown--;
   }
 }
 
@@ -1337,26 +1342,23 @@ function updateOpponentMissileLock() {
 // ====================
 // [7] Update Functions
 // ====================
-function update() {
-  maybeDeployFlares(opponents);
-  maybeDeployFlares(allies);
-  updatePlayer();
-  updateBullets();
-  updateOpponentBullets();
-  updateMissiles();
-  updateOpponents();
-  updateAllies();
 
-  // === Check Ally-Opponent Collision
+function handleCollisions() {
   for (const ally of allies) {
+    if (ally.health <= 0 || ally.collisionCooldown > 0) continue;
+
     for (const opp of opponents) {
-      if (ally.health > 0 && opp.health > 0 && checkCollision(ally, opp, 100)) {
-        // 💥 Explosion on both
+      if (opp.health <= 0 || opp.collisionCooldown > 0) continue;
+
+      if (checkCollision(ally, opp, 60)) {
         createExplosion(ally.x, ally.y, 100);
         createExplosion(opp.x, opp.y, 100);
         ally.health = 0;
         opp.health = 0;
-        createFloatingText("💥 COLLISION!", ally.x, ally.y - 60, "orange", 18);
+        ally.collisionCooldown = 60;
+        opp.collisionCooldown = 60;
+
+        createFloatingText("💥 COLLISION!", (ally.x + opp.x) / 2, (ally.y + opp.y) / 2, "orange", 18);
       }
     }
   }
@@ -1388,6 +1390,19 @@ function update() {
       );
     }
   }
+}
+
+function update() {
+  maybeDeployFlares(opponents);
+  maybeDeployFlares(allies);
+  updatePlayer();
+  updateBullets();
+  updateOpponentBullets();
+  updateMissiles();
+  updateOpponents();
+  updateAllies();
+
+  handleCollisions();
 
   applyAntiStacking([...opponents, ...allies]);
   updateFlares();
