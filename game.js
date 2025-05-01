@@ -1836,15 +1836,30 @@ function maybeDeployFlares(planes) {
   }
 }
 
-function rotateToward(entity, targetAngle, speed, wiggle = 0) {
-  let angleDiff =
-    ((targetAngle - entity.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+function rotateToward(entity, targetAngle, maxTurnRate = 0.03, wiggle = 0) {
+  let angleDiff = ((targetAngle - entity.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
 
-  // === Add random wiggle (optional)
+  // Add optional wiggle
   angleDiff += (Math.random() - 0.5) * wiggle;
 
-  entity.angle += Math.max(-speed, Math.min(speed, angleDiff));
+  // === Apply inertia (smooth turning) ===
+  if (typeof entity.turnSpeed === "undefined") {
+    entity.turnSpeed = 0;
+  }
+
+  // 🔧 Make acceleration smaller to prevent overshooting
+  entity.turnSpeed += angleDiff * 0.05;
+
+  // 🔧 Clamp smaller max turn speed to reduce snapping
+  entity.turnSpeed = clamp(entity.turnSpeed, -maxTurnRate, maxTurnRate);
+
+  // 🔧 Apply stronger damping/friction to slow turning oscillations
+  entity.turnSpeed *= 0.85;
+
+  // Update angle
+  entity.angle += entity.turnSpeed;
 }
+
 
 function predictTargetPosition(shooter, target, projectileSpeed) {
   const dx = target.x - shooter.x;
