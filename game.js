@@ -126,9 +126,9 @@ function setupThrottleControls() {
     () => {
       if (throttleIntervalUp) return;
       throttleIntervalUp = setInterval(() => {
-        player.thrust += 0.1;
+        player.thrust += 0.2;
         if (player.thrust > 5) player.thrust = 5;
-      }, 100);
+      }, 50);
     },
     { passive: true }
   );
@@ -149,9 +149,9 @@ function setupThrottleControls() {
     () => {
       if (throttleIntervalDown) return;
       throttleIntervalDown = setInterval(() => {
-        player.thrust -= 0.05;
+        player.thrust -= 0.2;
         if (player.thrust < 1.0) player.thrust = 1.0;
-      }, 100);
+      }, 50);
     },
     { passive: true }
   );
