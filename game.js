@@ -1015,7 +1015,6 @@ function updateOpponents() {
       moveForward(opp);
 
       avoidOthers(opp, opponents); // Avoid other opponents
-      avoidOthers(opp, allies); // Avoid crashing into allies
 
       bounceOffWalls(opp);
       createEntityWingTrails(opp);
@@ -1173,7 +1172,6 @@ function updateAllies() {
       moveForward(ally);
 
       avoidOthers(ally, allies); // Avoid other allies
-      avoidOthers(ally, opponents); // Avoid crashing into opponents
 
       bounceOffWalls(ally);
       createEntityWingTrails(ally);
@@ -1383,59 +1381,49 @@ function updateOpponentMissileLock() {
 // ====================
 
 function handleCollisions() {
-  for (const ally of allies) {
-    if (ally.health <= 0 || ally.collisionCooldown > 0) continue;
+  const allPlanes = [player, ...allies, ...opponents];
 
-    for (const opp of opponents) {
-      if (opp.health <= 0 || opp.collisionCooldown > 0) continue;
+  for (let i = 0; i < allPlanes.length; i++) {
+    const a = allPlanes[i];
+    if (a.health <= 0 || a.collisionCooldown > 0) continue;
 
-      if (checkCollision(ally, opp, 60)) {
-        createExplosion(ally.x, ally.y, 100);
-        createExplosion(opp.x, opp.y, 100);
-        ally.health = 0;
-        opp.health = 0;
-        ally.collisionCooldown = 60;
-        opp.collisionCooldown = 60;
+    for (let j = i + 1; j < allPlanes.length; j++) {
+      const b = allPlanes[j];
+      if (b.health <= 0 || b.collisionCooldown > 0) continue;
 
-        createFloatingText(
-          "💥 COLLISION!",
-          (ally.x + opp.x) / 2,
-          (ally.y + opp.y) / 2,
-          "orange",
-          18
-        );
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist < 50 && dist > 0.01) {
+        const nx = dx / dist;
+        const ny = dy / dist;
+
+        // Push apart slightly to prevent overlap
+        const overlap = 50 - dist;
+        a.x -= nx * overlap / 2;
+        a.y -= ny * overlap / 2;
+        b.x += nx * overlap / 2;
+        b.y += ny * overlap / 2;
+
+        // Bounce: reflect each angle based on collision normal
+        const aIncoming = Math.atan2(Math.sin(a.angle), Math.cos(a.angle));
+        const bIncoming = Math.atan2(Math.sin(b.angle), Math.cos(b.angle));
+
+        const normalAngle = Math.atan2(ny, nx);
+
+        // Reflect angle = 2 * normal - incoming
+        a.angle = 2 * normalAngle - aIncoming + Math.PI;
+        b.angle = 2 * (normalAngle + Math.PI) - bIncoming;
+
+        a.collisionCooldown = 30;
+        b.collisionCooldown = 30;
       }
     }
   }
-
-  // === Check Player-Opponent Collision
-  for (const opp of opponents) {
-    if (
-      player.health > 0 &&
-      opp.health > 0 &&
-      checkCollision(player, opp, 40)
-    ) {
-      createExplosion(player.x, player.y, 100);
-      createExplosion(opp.x, opp.y, 100);
-      player.health = 0;
-      opp.health = 0;
-      createFloatingText(
-        "💥 Player Crashed!",
-        player.x,
-        player.y - 60,
-        "red",
-        20
-      );
-      createFloatingText(
-        "💥 Opponent Crashed!",
-        opp.x,
-        opp.y - 60,
-        "orange",
-        16
-      );
-    }
-  }
 }
+
+
 
 function update() {
   maybeDeployFlares(opponents);
