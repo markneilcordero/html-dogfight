@@ -1041,11 +1041,11 @@ function updateOpponents() {
       if (isInMissileCone(opp, target)) {
         opp.lockTimer = (opp.lockTimer || 0) + 1;
         opp.lockTarget = target;
-        if (opp.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
+        if (opp.lockTimer > OPPONENT_LOCK_TIME) {
           createFloatingText("🚀 LOCKED", target.x, target.y - 50, "red", 18);
           fireOpponentMissile(opp, target);
           opp.lockTimer = 0;
-        }
+        }        
       } else {
         opp.lockTimer = Math.max(0, (opp.lockTimer || 0) - 1); // 📌 Do not reset to 0 instantly
         opp.lockTarget = null;
@@ -1202,7 +1202,7 @@ function updateAllies() {
       if (isInMissileCone(ally, nearestOpponent)) {
         ally.lockTimer = (ally.lockTimer || 0) + 1;
         ally.lockTarget = nearestOpponent;
-        if (ally.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
+        if (ally.lockTimer > OPPONENT_LOCK_TIME) {
           createFloatingText(
             "🚀 LOCKED",
             nearestOpponent.x,
@@ -1212,7 +1212,7 @@ function updateAllies() {
           );
           fireAllyMissile(ally);
           ally.lockTimer = 0;
-        }
+        }        
       } else {
         ally.lockTimer = Math.max(0, (ally.lockTimer || 0) - 1);
         ally.lockTarget = null;
@@ -2436,12 +2436,12 @@ function drawMissileRangeGuide() {
   ctx.restore();
 }
 
-function drawGunRangeGuide() {
-  const maxRange = 600; // How far the guide line goes
+function drawGunRangeGuide(entity) {
+  const maxRange = 600;
 
-  const px = player.x - camera.x;
-  const py = player.y - camera.y;
-  const angle = player.angle;
+  const px = entity.x - camera.x;
+  const py = entity.y - camera.y;
+  const angle = entity.angle;
 
   const endX = px + Math.cos(angle) * maxRange;
   const endY = py + Math.sin(angle) * maxRange;
@@ -2450,13 +2450,12 @@ function drawGunRangeGuide() {
   ctx.beginPath();
   ctx.moveTo(px, py);
   ctx.lineTo(endX, endY);
-  ctx.strokeStyle = "rgba(255, 255, 0, 0.6)"; // Yellow line
+  ctx.strokeStyle = "rgba(255, 255, 0, 0.6)";
   ctx.lineWidth = 2;
-  ctx.setLineDash([6, 4]); // Optional: dashed line
+  ctx.setLineDash([6, 4]);
   ctx.stroke();
   ctx.restore();
 }
-
 
 
 function drawLockOnLine() {
@@ -2585,7 +2584,9 @@ function drawUI() {
   drawLockOnLine();
   drawAllyLockLines();
   drawOpponentLockLines();
-  drawGunRangeGuide();
+  if (playerAIEnabled) {
+    drawGunRangeGuide(player);
+  }  
 
   // Show ammo count
   ctx.fillStyle = "white";
