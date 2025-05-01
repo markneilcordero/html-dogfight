@@ -1437,7 +1437,7 @@ function update() {
 
   handleCollisions();
 
-  applyAntiStacking([...opponents, ...allies]);
+  applyAntiStacking([player, ...opponents, ...allies]);
   updateFlares();
   updateParticles();
   updateFloatingTexts();
@@ -1447,6 +1447,7 @@ function update() {
 }
 
 function updatePlayerAutopilot() {
+  avoidOthers(player, [...opponents, ...allies]);
   const { target, distance } = findNearestOpponent(player.x, player.y);
 
   // === [1] Handle Evading First
@@ -1730,6 +1731,8 @@ function updatePlayer() {
 
   player.x = clamp(player.x, 0, WORLD_WIDTH);
   player.y = clamp(player.y, 0, WORLD_HEIGHT);
+
+  avoidOthers(player, [...opponents, ...allies]);
 
   updateCamera();
 }
