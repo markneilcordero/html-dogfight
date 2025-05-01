@@ -394,6 +394,9 @@ let playerMissileLockReady = false;
 let opponentMissileLockTimer = 0; // how long opponent has been locking onto player
 let opponentMissileLockReady = false;
 
+let allyMode = "defensive";     // or "balanced", "aggressive"
+let opponentMode = "defensive"; // or "balanced", "aggressive"
+
 // Inside createPlane():
 function createPlane(x, y) {
   return {
@@ -952,14 +955,25 @@ function updateOpponents() {
       const underFire = detectIncomingFire(opp);
 
       if (underFire) {
-        adjustThrottle(opp, 4.5); // 🧠 Evade if under fire
-      } else if (distance > 1000) {
-        adjustThrottle(opp, 5); // 🛫 Chase
-      } else if (distance > 300) {
-        adjustThrottle(opp, 3.5); // 🎯 Aim
-      } else {
-        adjustThrottle(opp, 2); // 🌀 Dogfight
+        maybeDodge(opp);
+        if (opponentMode !== "aggressive") adjustThrottle(opp, 4.5);
       }
+      
+      if (opponentMode === "defensive") {
+        if (distance < 400) {
+          const retreatAngle = Math.atan2(opp.y - target.y, opp.x - target.x);
+          rotateToward(opp, retreatAngle + opp.dodgeOffset, 0.05);
+          adjustThrottle(opp, 4);
+        } else {
+          adjustThrottle(opp, 2.5);
+        }
+      } else if (opponentMode === "aggressive") {
+        adjustThrottle(opp, 5);
+      } else {
+        // Balanced
+        adjustThrottle(opp, distance > 800 ? 4 : distance > 400 ? 3 : 2.5);
+      }
+      
 
       rotateToward(opp, targetAngle, 0.05);
       moveForward(opp);
@@ -1095,14 +1109,24 @@ function updateAllies() {
       const underFire = detectIncomingFire(ally);
 
       if (underFire) {
-        adjustThrottle(ally, 4.5); // 🧠 Evade if under fire
-      } else if (nearestDist > 1000) {
-        adjustThrottle(ally, 5); // 🛫 Chase at full speed
-      } else if (nearestDist > 300) {
-        adjustThrottle(ally, 3.5); // 🎯 Aim and hover
-      } else {
-        adjustThrottle(ally, 2); // 🌀 Close-range dogfight
+        maybeDodge(ally);
+        if (allyMode !== "aggressive") adjustThrottle(ally, 4.5);
       }
+      
+      if (allyMode === "defensive") {
+        if (nearestDist < 400) {
+          const retreatAngle = Math.atan2(ally.y - nearestOpponent.y, ally.x - nearestOpponent.x);
+          rotateToward(ally, retreatAngle + ally.dodgeOffset, 0.05);
+          adjustThrottle(ally, 4);
+        } else {
+          adjustThrottle(ally, 2.5);
+        }
+      } else if (allyMode === "aggressive") {
+        adjustThrottle(ally, 5);
+      } else {
+        adjustThrottle(ally, nearestDist > 800 ? 4 : nearestDist > 400 ? 3 : 2.5);
+      }
+      
 
       rotateToward(ally, targetAngle, 0.05);
       moveForward(ally);
