@@ -257,7 +257,7 @@ function setupPlayerAIButton() {
     const modes = ["balanced", "aggressive", "defensive"];
     const currentIndex = modes.indexOf(autopilotMode);
     autopilotMode = modes[(currentIndex + 1) % modes.length];
-  
+
     createFloatingText(
       `🧠 Mode: ${autopilotMode.toUpperCase()}`,
       player.x,
@@ -266,7 +266,6 @@ function setupPlayerAIButton() {
       20
     );
   });
-  
 
   btnAI.addEventListener("click", () => {
     playerAIEnabled = !playerAIEnabled;
@@ -339,7 +338,7 @@ for (let i = 0; i < 10; i++) {
   opp.taxiTimer = 90;
   opp.hasStartedTaxi = false;
 
-  opp.mode = Math.random() < 0.1 ? "aggressive" : "defensive";
+  opp.mode = Math.random() < 0.5 ? "aggressive" : "defensive";
 
   opponents.push(opp);
 }
@@ -363,7 +362,7 @@ for (let i = 0; i < 9; i++) {
   ally.delayedTaxiStart = i * 60; // stagger each ally by 60 frames (1 second)
   ally.taxiTimer = 90; // actual taxi time once started
 
-  ally.mode = Math.random() < 0.1 ? "aggressive" : "defensive"; // or randomized
+  ally.mode = Math.random() < 0.5 ? "aggressive" : "defensive"; // or randomized
 
   allies.push(ally);
 }
@@ -398,7 +397,7 @@ let playerMissileLockReady = false;
 let opponentMissileLockTimer = 0; // how long opponent has been locking onto player
 let opponentMissileLockReady = false;
 
-let allyMode = "defensive";     // or "balanced", "aggressive"
+let allyMode = "defensive"; // or "balanced", "aggressive"
 let opponentMode = "defensive"; // or "balanced", "aggressive"
 
 // Inside createPlane():
@@ -424,7 +423,7 @@ function createPlane(x, y) {
     lockTimer: 0,
     lockTarget: null,
     collisionCooldown: 0,
-    mode: "balanced"
+    mode: "balanced",
   };
 }
 
@@ -571,8 +570,10 @@ function findNearestEnemyFlare(x, y, ownerType) {
   let nearestDist = Infinity;
 
   for (const flare of flares) {
-    if ((ownerType === "ally" && allies.includes(flare.owner)) ||
-        (ownerType === "opponent" && opponents.includes(flare.owner))) {
+    if (
+      (ownerType === "ally" && allies.includes(flare.owner)) ||
+      (ownerType === "opponent" && opponents.includes(flare.owner))
+    ) {
       continue; // 🚫 Skip flares from same team
     }
 
@@ -648,7 +649,6 @@ function avoidOthers(self, others, avoidDistance = 80, avoidStrength = 0.04) {
     }
   }
 }
-
 
 function checkCollision(entityA, entityB, threshold = 100) {
   const dx = entityA.x - entityB.x;
@@ -915,6 +915,20 @@ function updateOpponents() {
     const { target, distance } = findNearestEnemy(opp.x, opp.y);
 
     if (target) {
+      // 🔁 Dynamic opponent mode switching
+      if (opp.health < 60 && opp.mode !== "defensive") {
+        opp.mode = "defensive";
+        createFloatingText("🛡️ DEFENSIVE MODE", opp.x, opp.y - 50, "orange", 14);
+      } else if (opp.health > 80 && opp.mode !== "aggressive") {
+        if (Math.random() < 0.1) {
+          opp.mode = "aggressive";
+          createFloatingText("⚔️ AGGRESSIVE MODE", opp.x, opp.y - 50, "lime", 14);
+        }
+      } else if (opp.health >= 60 && opp.health <= 80 && opp.mode !== "balanced") {
+        opp.mode = "balanced";
+        createFloatingText("⚖️ BALANCED MODE", opp.x, opp.y - 50, "white", 14);
+      }      
+
       // === Ammo Regen for Opponents
       if (opp.machineGunAmmo <= 0) {
         if (!opp.ammoRegenTimer) opp.ammoRegenTimer = 0;
@@ -966,7 +980,7 @@ function updateOpponents() {
         maybeDodge(opp);
         if (opponentMode !== "aggressive") adjustThrottle(opp, 4.5);
       }
-      
+
       if (opp.mode === "defensive") {
         if (distance < 400) {
           const retreatAngle = Math.atan2(opp.y - target.y, opp.x - target.x);
@@ -981,13 +995,12 @@ function updateOpponents() {
         // Balanced
         adjustThrottle(opp, distance > 800 ? 4 : distance > 400 ? 3 : 2.5);
       }
-      
 
       rotateToward(opp, targetAngle, 0.05);
       moveForward(opp);
 
       avoidOthers(opp, opponents); // Avoid other opponents
-      avoidOthers(opp, allies);    // Avoid crashing into allies
+      avoidOthers(opp, allies); // Avoid crashing into allies
 
       bounceOffWalls(opp);
       createEntityWingTrails(opp);
@@ -1007,13 +1020,7 @@ function updateOpponents() {
         opp.lockTimer = (opp.lockTimer || 0) + 1;
         opp.lockTarget = target;
         if (opp.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
-          createFloatingText(
-            "🚀 LOCKED",
-            target.x,
-            target.y - 50,
-            "red",
-            18
-          );
+          createFloatingText("🚀 LOCKED", target.x, target.y - 50, "red", 18);
           fireOpponentMissile(opp, target);
           opp.lockTimer = 0;
         }
@@ -1070,6 +1077,20 @@ function updateAllies() {
     }
 
     if (nearestOpponent) {
+      // 🔁 Dynamic ally mode switching
+      if (ally.health < 60 && ally.mode !== "defensive") {
+        ally.mode = "defensive";
+        createFloatingText("🛡️ DEFENSIVE MODE", ally.x, ally.y - 50, "orange", 14);
+      } else if (ally.health > 80 && ally.mode !== "aggressive") {
+        if (Math.random() < 0.1) {
+          ally.mode = "aggressive";
+          createFloatingText("⚔️ AGGRESSIVE MODE", ally.x, ally.y - 50, "lime", 14);
+        }
+      } else if (ally.health >= 60 && ally.health <= 80 && ally.mode !== "balanced") {
+        ally.mode = "balanced";
+        createFloatingText("⚖️ BALANCED MODE", ally.x, ally.y - 50, "white", 14);
+      }      
+
       // === Ammo Regen for Allies
       if (ally.machineGunAmmo <= 0) {
         if (!ally.ammoRegenTimer) ally.ammoRegenTimer = 0;
@@ -1121,10 +1142,13 @@ function updateAllies() {
         maybeDodge(ally);
         if (allyMode !== "aggressive") adjustThrottle(ally, 4.5);
       }
-      
+
       if (ally.mode === "defensive") {
         if (nearestDist < 400) {
-          const retreatAngle = Math.atan2(ally.y - nearestOpponent.y, ally.x - nearestOpponent.x);
+          const retreatAngle = Math.atan2(
+            ally.y - nearestOpponent.y,
+            ally.x - nearestOpponent.x
+          );
           rotateToward(ally, retreatAngle + ally.dodgeOffset, 0.05);
           adjustThrottle(ally, 4);
         } else {
@@ -1133,14 +1157,16 @@ function updateAllies() {
       } else if (ally.mode === "aggressive") {
         adjustThrottle(ally, 5);
       } else {
-        adjustThrottle(ally, nearestDist > 800 ? 4 : nearestDist > 400 ? 3 : 2.5);
+        adjustThrottle(
+          ally,
+          nearestDist > 800 ? 4 : nearestDist > 400 ? 3 : 2.5
+        );
       }
-      
 
       rotateToward(ally, targetAngle, 0.05);
       moveForward(ally);
 
-      avoidOthers(ally, allies);     // Avoid other allies
+      avoidOthers(ally, allies); // Avoid other allies
       avoidOthers(ally, opponents); // Avoid crashing into opponents
 
       bounceOffWalls(ally);
@@ -1343,7 +1369,6 @@ function updateOpponentMissileLock() {
   }
 }
 
-
 // ====================
 // [7] Update Functions
 // ====================
@@ -1363,7 +1388,13 @@ function handleCollisions() {
         ally.collisionCooldown = 60;
         opp.collisionCooldown = 60;
 
-        createFloatingText("💥 COLLISION!", (ally.x + opp.x) / 2, (ally.y + opp.y) / 2, "orange", 18);
+        createFloatingText(
+          "💥 COLLISION!",
+          (ally.x + opp.x) / 2,
+          (ally.y + opp.y) / 2,
+          "orange",
+          18
+        );
       }
     }
   }
@@ -1961,11 +1992,11 @@ function updateMissiles() {
   let nearestOpponent = null;
   for (let i = missiles.length - 1; i >= 0; i--) {
     const m = missiles[i];
-  
+
     // === Redirect to flare if available
     const flareTarget = findNearestEnemyFlare(m.x, m.y, "ally"); // 👈 skips ally flares
     let targetX, targetY;
-  
+
     if (flareTarget) {
       targetX = flareTarget.x;
       targetY = flareTarget.y;
@@ -1989,18 +2020,18 @@ function updateMissiles() {
         if (!m.target) continue;
         targetX = m.target.x;
         targetY = m.target.y;
-      }      
+      }
     }
-  
+
     const dx = targetX - m.x;
     const dy = targetY - m.y;
     const targetAngle = Math.atan2(dy, dx);
-  
+
     rotateToward(m, targetAngle, 0.05, 0.2);
     m.x += Math.cos(m.angle) * m.speed;
     m.y += Math.sin(m.angle) * m.speed;
     m.life--;
-  
+
     particles.push({
       x: m.x,
       y: m.y,
@@ -2009,7 +2040,7 @@ function updateMissiles() {
       angle: m.angle + (Math.random() * 0.2 - 0.1),
       color: "white",
     });
-  
+
     // === Handle impact
     if (flareTarget) {
       if (Math.hypot(dx, dy) < 20) {
@@ -2026,13 +2057,12 @@ function updateMissiles() {
         continue;
       }
     }
-  
+
     if (m.life <= 0) {
       createExplosion(m.x, m.y);
       missiles.splice(i, 1);
     }
   }
-  
 
   // === Update opponent missiles ===
   for (let i = opponentMissiles.length - 1; i >= 0; i--) {
@@ -2580,7 +2610,6 @@ function drawOpponentLockLines() {
   }
 }
 
-
 function drawUI() {
   drawHealthBars();
   drawSpeedometer();
@@ -2590,7 +2619,6 @@ function drawUI() {
   drawLockOnLine();
   drawAllyLockLines();
   drawOpponentLockLines();
-
 
   // Show ammo count
   ctx.fillStyle = "white";
