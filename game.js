@@ -1328,7 +1328,7 @@ function updateOpponentBullets() {
       const dy = t.y - b.y;
       const dist = Math.hypot(dx, dy);
       if (dist < 30) {
-        t.health -= 10;
+        t.health -= 1;
         createExplosion(t.x, t.y);
         t.lastAttacker = b.owner || null;
         t.lastAttackedTime = performance.now();
@@ -1991,7 +1991,7 @@ function updateBullets() {
       const dist = Math.hypot(dx, dy);
       if (dist < 30) {
         // hit radius
-        opp.health -= 10;
+        opp.health -= 1;
         createExplosion(opp.x, opp.y, 20);
         opp.lastAttacker = b.owner || player;
         opp.lastAttackedTime = performance.now();
