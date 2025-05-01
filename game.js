@@ -963,8 +963,7 @@ function updateOpponents() {
           14
         );
       } else if (opp.health > 80 && opp.mode !== "aggressive") {
-        if (Math.random() < 0.1) {
-          opp.mode = "aggressive";
+        opp.mode = "aggressive";
           createFloatingText(
             "⚔️ AGGRESSIVE MODE",
             opp.x,
@@ -979,7 +978,6 @@ function updateOpponents() {
             "white",
             14
           );
-        }
       } else if (
         opp.health >= 60 &&
         opp.health <= 80 &&
@@ -1151,8 +1149,7 @@ function updateAllies() {
           14
         );
       } else if (ally.health > 80 && ally.mode !== "aggressive") {
-        if (Math.random() < 0.1) {
-          ally.mode = "aggressive";
+        ally.mode = "aggressive";
           createFloatingText(
             "⚔️ AGGRESSIVE MODE",
             ally.x,
@@ -1167,7 +1164,6 @@ function updateAllies() {
             "white",
             14
           );
-        }
       } else if (
         ally.health >= 60 &&
         ally.health <= 80 &&
