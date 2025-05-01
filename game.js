@@ -1150,7 +1150,7 @@ function updateAllies() {
       // === Ammo Regen
       if (ally.machineGunAmmo <= 0) {
         ally.ammoRegenTimer = (ally.ammoRegenTimer || 0) + 1;
-        if (ally.ammoRegenTimer >= 120) {
+        if (ally.ammoRegenTimer >= 100) {
           ally.machineGunAmmo = 200;
           createFloatingText(
             "🔫 Ally Ammo Refilled!",
@@ -1167,7 +1167,7 @@ function updateAllies() {
 
       if (ally.missileAmmo <= 0) {
         ally.missileRegenTimer = (ally.missileRegenTimer || 0) + 1;
-        if (ally.missileRegenTimer >= 300) {
+        if (ally.missileRegenTimer >= 100) {
           ally.missileAmmo = 4;
           ally.lockTarget = null;
           ally.lockTimer = 0;
@@ -1235,7 +1235,7 @@ function updateAllies() {
             "🚀 LOCKED",
             nearestOpponent.x,
             nearestOpponent.y - 50,
-            "cyan",
+            "lime",
             18
           );
           fireAllyMissile(ally);
@@ -1631,7 +1631,7 @@ function updatePlayer() {
     player.ammoRegenTimer++;
     if (player.ammoRegenTimer >= 120) {
       // 2 seconds at 60 FPS
-      player.machineGunAmmo = 200;
+      player.machineGunAmmo = 100;
       createFloatingText(
         "🔫 Ammo Refilled!",
         player.x,
@@ -1648,7 +1648,7 @@ function updatePlayer() {
   if (player.missileAmmo <= 0) {
     if (!player.missileRegenTimer) player.missileRegenTimer = 0;
     player.missileRegenTimer++;
-    if (player.missileRegenTimer >= 300) {
+    if (player.missileRegenTimer >= 100) {
       // 5 seconds at 60 FPS
       player.missileAmmo = 4;
       playerMissileLockReady = false;
@@ -2615,7 +2615,7 @@ function drawOffscreenIndicators() {
     ctx.lineTo(6, 8);
     ctx.closePath();
 
-    ctx.fillStyle = opponents.includes(entity) ? "red" : "cyan";
+    ctx.fillStyle = opponents.includes(entity) ? "red" : "lime";
     ctx.fill();
     ctx.restore();
   }
@@ -2629,7 +2629,7 @@ function drawAllyLockLines() {
     ctx.beginPath();
     ctx.moveTo(ally.x - camera.x, ally.y - camera.y);
     ctx.lineTo(ally.lockTarget.x - camera.x, ally.lockTarget.y - camera.y);
-    ctx.strokeStyle = "cyan";
+    ctx.strokeStyle = "lime";
     ctx.lineWidth = 1;
     ctx.setLineDash([1, 1]);
     ctx.stroke();
