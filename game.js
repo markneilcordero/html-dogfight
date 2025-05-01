@@ -432,6 +432,7 @@ function createPlane(x, y) {
     mode: "balanced",
     missileCooldown: 0,
     maxTurnRate: 0.01,
+    gunCooldown: 0,
   };
 }
 
@@ -1531,20 +1532,16 @@ function updatePlayerAutopilot() {
     target.health > 1 &&
     player.missileCooldown <= 0;
 
-  if (tryFireMissile) {
-    fireMissile();
-    player.missileCooldown = 60;
-    createFloatingText(
-      "🚀 AUTOPILOT FIRED",
-      player.x,
-      player.y - 60,
-      "yellow",
-      16
-    );
-    return; // 🔥 missile takes priority
-  } else if (tryFireGun) {
-    fireMachineGun();
-  }
+    if (tryFireMissile) {
+      fireMissile();
+      player.missileCooldown = 60;
+      createFloatingText("🚀 AUTOPILOT FIRED", player.x, player.y - 60, "yellow", 16);
+      return;
+    } else if (tryFireGun && player.gunCooldown <= 0) {
+      fireMachineGun();
+      player.gunCooldown = 6; // 🔫 fire every 6 frames (~100ms at 60FPS)
+    }
+    if (player.gunCooldown > 0) player.gunCooldown--;
 }
 
 function updatePlayer() {
