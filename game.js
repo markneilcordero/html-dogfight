@@ -394,6 +394,9 @@ const OPPONENT_LOCK_TIME = 60; // Opponent needs 1.5 seconds to lock (adjust thi
 let playerMissileLockTimer = 0; // how long player has been locking onto opponent
 let playerMissileLockReady = false;
 
+let playerLockTarget = null;
+let playerLockTimer = 0;
+
 let opponentMissileLockTimer = 0; // how long opponent has been locking onto player
 let opponentMissileLockReady = false;
 
@@ -594,7 +597,13 @@ function findAggroTarget(entity, defaultFinder) {
   const now = performance.now(); // use timestamp
   if (entity.lastAttacker && entity.lastAttacker.health > 0) {
     if (!entity.lastAttackedTime || now - entity.lastAttackedTime < 5000) {
-      return { target: entity.lastAttacker, distance: Math.hypot(entity.x - entity.lastAttacker.x, entity.y - entity.lastAttacker.y) };
+      return {
+        target: entity.lastAttacker,
+        distance: Math.hypot(
+          entity.x - entity.lastAttacker.x,
+          entity.y - entity.lastAttacker.y
+        ),
+      };
     }
   }
   return defaultFinder(entity.x, entity.y);
@@ -667,7 +676,6 @@ function avoidOthers(self, others, avoidDistance = 80, avoidStrength = 0.02) {
   self.y += offsetY;
 }
 
-
 function checkCollision(entityA, entityB, threshold = 100) {
   const dx = entityA.x - entityB.x;
   const dy = entityA.y - entityB.y;
@@ -713,7 +721,7 @@ function fireMachineGun() {
     angle: player.angle,
     speed: 16,
     life: 500,
-    owner: player
+    owner: player,
   });
 
   player.machineGunAmmo--; // 🔻 reduce ammo
@@ -736,7 +744,7 @@ function fireAllyMachineGun(ally) {
     angle,
     speed: 16,
     life: 500,
-    owner: ally
+    owner: ally,
   });
 
   ally.machineGunAmmo--;
@@ -781,7 +789,7 @@ function fireAllyMissile(ally) {
     speed: 6,
     life: 180,
     target: nearestOpponent,
-    owner: ally
+    owner: ally,
   });
 
   ally.missileAmmo--;
@@ -848,7 +856,7 @@ function fireMissile() {
     speed: 6,
     life: 180,
     target: nearestOpponent,
-    owner: player
+    owner: player,
   });
 
   player.missileAmmo--;
@@ -940,17 +948,39 @@ function updateOpponents() {
       // 🔁 Dynamic opponent mode switching
       if (opp.health < 60 && opp.mode !== "defensive") {
         opp.mode = "defensive";
-        createFloatingText("🛡️ DEFENSIVE MODE", opp.x, opp.y - 50, "orange", 14);
+        createFloatingText(
+          "🛡️ DEFENSIVE MODE",
+          opp.x,
+          opp.y - 50,
+          "orange",
+          14
+        );
       } else if (opp.health > 80 && opp.mode !== "aggressive") {
         if (Math.random() < 0.1) {
           opp.mode = "aggressive";
-          createFloatingText("⚔️ AGGRESSIVE MODE", opp.x, opp.y - 50, "lime", 14);
-          createFloatingText("🎯 I'm coming for you!", opp.x, opp.y - 70, "white", 14);
+          createFloatingText(
+            "⚔️ AGGRESSIVE MODE",
+            opp.x,
+            opp.y - 50,
+            "lime",
+            14
+          );
+          createFloatingText(
+            "🎯 I'm coming for you!",
+            opp.x,
+            opp.y - 70,
+            "white",
+            14
+          );
         }
-      } else if (opp.health >= 60 && opp.health <= 80 && opp.mode !== "balanced") {
+      } else if (
+        opp.health >= 60 &&
+        opp.health <= 80 &&
+        opp.mode !== "balanced"
+      ) {
         opp.mode = "balanced";
         createFloatingText("⚖️ BALANCED MODE", opp.x, opp.y - 50, "white", 14);
-      }      
+      }
 
       // === Ammo Regen for Opponents
       if (opp.machineGunAmmo <= 0) {
@@ -1039,15 +1069,20 @@ function updateOpponents() {
       }
 
       if (isInMissileCone(opp, target)) {
-        opp.lockTimer = (opp.lockTimer || 0) + 1;
-        opp.lockTarget = target;
+        if (opp.lockTarget === target) {
+          opp.lockTimer += 1;
+        } else {
+          opp.lockTarget = target;
+          opp.lockTimer = 1;
+        }
+
         if (opp.lockTimer > OPPONENT_LOCK_TIME) {
           createFloatingText("🚀 LOCKED", target.x, target.y - 50, "red", 18);
           fireOpponentMissile(opp, target);
           opp.lockTimer = 0;
-        }        
+        }
       } else {
-        opp.lockTimer = Math.max(0, (opp.lockTimer || 0) - 1); // 📌 Do not reset to 0 instantly
+        opp.lockTimer = Math.max(0, opp.lockTimer - 1);
         opp.lockTarget = null;
       }
     }
@@ -1086,23 +1121,54 @@ function updateAllies() {
       respawnPlane(ally, false); // false = isAlly
       continue; // Skip this frame after respawn
     }
-    
-    const { target: nearestOpponent, distance: nearestDist } = findAggroTarget(ally, findNearestOpponent);
+
+    const { target: nearestOpponent, distance: nearestDist } = findAggroTarget(
+      ally,
+      findNearestOpponent
+    );
     if (nearestOpponent) {
       // 🔁 Dynamic ally mode switching
       if (ally.health < 60 && ally.mode !== "defensive") {
         ally.mode = "defensive";
-        createFloatingText("🛡️ DEFENSIVE MODE", ally.x, ally.y - 50, "orange", 14);
+        createFloatingText(
+          "🛡️ DEFENSIVE MODE",
+          ally.x,
+          ally.y - 50,
+          "orange",
+          14
+        );
       } else if (ally.health > 80 && ally.mode !== "aggressive") {
         if (Math.random() < 0.1) {
           ally.mode = "aggressive";
-          createFloatingText("⚔️ AGGRESSIVE MODE", ally.x, ally.y - 50, "lime", 14);
-          createFloatingText("🎯 I'm coming for you!", ally.x, ally.y - 70, "white", 14);
+          createFloatingText(
+            "⚔️ AGGRESSIVE MODE",
+            ally.x,
+            ally.y - 50,
+            "lime",
+            14
+          );
+          createFloatingText(
+            "🎯 I'm coming for you!",
+            ally.x,
+            ally.y - 70,
+            "white",
+            14
+          );
         }
-      } else if (ally.health >= 60 && ally.health <= 80 && ally.mode !== "balanced") {
+      } else if (
+        ally.health >= 60 &&
+        ally.health <= 80 &&
+        ally.mode !== "balanced"
+      ) {
         ally.mode = "balanced";
-        createFloatingText("⚖️ BALANCED MODE", ally.x, ally.y - 50, "white", 14);
-      }      
+        createFloatingText(
+          "⚖️ BALANCED MODE",
+          ally.x,
+          ally.y - 50,
+          "white",
+          14
+        );
+      }
 
       // === Ammo Regen for Allies
       if (ally.machineGunAmmo <= 0) {
@@ -1196,12 +1262,22 @@ function updateAllies() {
       }
 
       if (isInMissileCone(ally, nearestOpponent) && Math.random() < 0.01) {
-        ally.lockTimer = (ally.lockTimer || 0) + 1;
+        if (ally.lockTarget === nearestOpponent) {
+          ally.lockTimer += 1;
+        } else {
+          ally.lockTarget = nearestOpponent;
+          ally.lockTimer = 1;
+        }
       }
 
       if (isInMissileCone(ally, nearestOpponent)) {
-        ally.lockTimer = (ally.lockTimer || 0) + 1;
-        ally.lockTarget = nearestOpponent;
+        if (ally.lockTarget === nearestOpponent) {
+          ally.lockTimer += 1;
+        } else {
+          ally.lockTarget = nearestOpponent;
+          ally.lockTimer = 1;
+        }
+
         if (ally.lockTimer > OPPONENT_LOCK_TIME) {
           createFloatingText(
             "🚀 LOCKED",
@@ -1212,9 +1288,9 @@ function updateAllies() {
           );
           fireAllyMissile(ally);
           ally.lockTimer = 0;
-        }        
+        }
       } else {
-        ally.lockTimer = Math.max(0, (ally.lockTimer || 0) - 1);
+        ally.lockTimer = Math.max(0, ally.lockTimer - 1);
         ally.lockTarget = null;
       }
     }
@@ -1273,7 +1349,7 @@ function fireOpponentMachineGun(opp) {
     angle,
     speed: 12,
     life: 500,
-    owner: opp
+    owner: opp,
   });
 
   opp.machineGunAmmo--;
@@ -1325,9 +1401,14 @@ function updatePlayerMissileLock() {
   }
 
   if (nearestOpponent && isInMissileCone(player, nearestOpponent)) {
-    playerMissileLockTimer += 1;
+    if (playerLockTarget === nearestOpponent) {
+      playerLockTimer += 1;
+    } else {
+      playerLockTarget = nearestOpponent;
+      playerLockTimer = 1;
+    }
 
-    if (playerMissileLockTimer > PLAYER_LOCK_TIME) {
+    if (playerLockTimer > PLAYER_LOCK_TIME) {
       if (!playerMissileLockReady && !missileLockAnnounced) {
         createFloatingText(
           "🚀 LOCKED",
@@ -1342,7 +1423,8 @@ function updatePlayerMissileLock() {
       playerMissileLockReady = true;
     }
   } else {
-    playerMissileLockTimer = 0;
+    playerLockTimer = Math.max(0, playerLockTimer - 1);
+    playerLockTarget = null;
     playerMissileLockReady = false;
     missileLockAnnounced = false;
   }
@@ -1352,17 +1434,13 @@ function updateOpponentMissileLock() {
   for (const opp of opponents) {
     if (opp.health <= 0) continue;
 
-    const dx = player.x - opp.x;
-    const dy = player.y - opp.y;
-    const dist = Math.hypot(dx, dy);
-
-    if (dist < 1000 && isInMissileCone(opp, player)) {
+    const { target, distance } = findNearestEnemy(opp.x, opp.y);
+    if (target && isInMissileCone(opp, target)) {
       opp.lockTimer = (opp.lockTimer || 0) + 1;
-      opp.lockTarget = player;
-
+      opp.lockTarget = target;
       if (opp.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
-        createFloatingText("🚀 LOCKED", player.x, player.y - 50, "red", 18);
-        fireOpponentMissile(opp, player);
+        createFloatingText("🚀 LOCKED", target.x, target.y - 50, "red", 18);
+        fireOpponentMissile(opp, target);
         opp.lockTimer = 0;
       }
     } else {
@@ -1520,13 +1598,13 @@ function updatePlayerAutopilot() {
     distance < 600 &&
     (player.machineGunAmmo > 50 ? Math.random() < 0.25 : Math.random() < 0.08);
 
-    const inCone = isInMissileCone(player, target);
-    const tryFireMissile =
-      playerMissileLockReady &&
-      player.missileAmmo > 0 &&
-      aligned &&
-      inCone &&
-      distance < 1000 &&
+  const inCone = isInMissileCone(player, target);
+  const tryFireMissile =
+    playerMissileLockReady &&
+    player.missileAmmo > 0 &&
+    aligned &&
+    inCone &&
+    distance < 1000 &&
     target.health > 40 &&
     Math.random() <
       (autopilotMode === "aggressive"
@@ -1837,7 +1915,8 @@ function maybeDeployFlares(planes) {
 }
 
 function rotateToward(entity, targetAngle, maxTurnRate = 0.03, wiggle = 0) {
-  let angleDiff = ((targetAngle - entity.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+  let angleDiff =
+    ((targetAngle - entity.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
 
   // Add optional wiggle
   angleDiff += (Math.random() - 0.5) * wiggle;
@@ -1859,7 +1938,6 @@ function rotateToward(entity, targetAngle, maxTurnRate = 0.03, wiggle = 0) {
   // Update angle
   entity.angle += entity.turnSpeed;
 }
-
 
 function predictTargetPosition(shooter, target, projectileSpeed) {
   const dx = target.x - shooter.x;
@@ -2472,7 +2550,6 @@ function drawGunRangeGuide(entity) {
   ctx.restore();
 }
 
-
 function drawLockOnLine() {
   if (!playerMissileLockReady) return;
 
@@ -2589,20 +2666,19 @@ function drawOpponentLockLines() {
     ctx.restore();
   }
 
-    // Ally missile cone guide (if locking on)
-    for (const ally of allies) {
-      if (ally.health > 0 && ally.lockTarget) {
-        drawMissileRangeGuideFor(ally, "rgba(0, 255, 255, 0.08)"); // cyan-ish
-      }
+  // Ally missile cone guide (if locking on)
+  for (const ally of allies) {
+    if (ally.health > 0 && ally.lockTarget) {
+      drawMissileRangeGuideFor(ally, "rgba(0, 255, 255, 0.08)"); // cyan-ish
     }
-  
-    // Opponent missile cone guide (if locking on)
-    for (const opp of opponents) {
-      if (opp.health > 0 && opp.lockTarget) {
-        drawMissileRangeGuideFor(opp, "rgba(255, 0, 0, 0.08)"); // red-ish
-      }
+  }
+
+  // Opponent missile cone guide (if locking on)
+  for (const opp of opponents) {
+    if (opp.health > 0 && opp.lockTarget) {
+      drawMissileRangeGuideFor(opp, "rgba(255, 0, 0, 0.08)"); // red-ish
     }
-  
+  }
 }
 
 function drawTargetLockIcon(entity) {
@@ -2616,7 +2692,6 @@ function drawTargetLockIcon(entity) {
   ctx.fillText("🎯", iconX, iconY);
   ctx.restore();
 }
-
 
 function drawMissileRangeGuideFor(entity, color = "rgba(0, 255, 0, 0.08)") {
   const maxRange = 900;
@@ -2648,7 +2723,6 @@ function drawMissileRangeGuideFor(entity, color = "rgba(0, 255, 0, 0.08)") {
   ctx.restore();
 }
 
-
 function drawUI() {
   drawHealthBars();
   drawSpeedometer();
@@ -2664,30 +2738,28 @@ function drawUI() {
   if (playerAIEnabled && playerMissileLockReady) {
     drawLockOnLine();
   }
-  
+
   // Ally missile cone guide (only when halfway to lock)
-for (const ally of allies) {
-  if (
-    ally.health > 0 &&
-    ally.lockTarget &&
-    ally.lockTimer >= OPPONENT_LOCK_TIME / 2
-  ) {
-    drawMissileRangeGuideFor(ally, "rgba(0, 255, 255, 0.08)"); // cyan-ish
+  for (const ally of allies) {
+    if (
+      ally.health > 0 &&
+      ally.lockTarget &&
+      ally.lockTimer >= OPPONENT_LOCK_TIME / 2
+    ) {
+      drawMissileRangeGuideFor(ally, "rgba(0, 255, 255, 0.08)"); // cyan-ish
+    }
   }
-}
 
-// Opponent missile cone guide (only when halfway to lock)
-for (const opp of opponents) {
-  if (
-    opp.health > 0 &&
-    opp.lockTarget &&
-    opp.lockTimer >= OPPONENT_LOCK_TIME / 2
-  ) {
-    drawMissileRangeGuideFor(opp, "rgba(255, 0, 0, 0.08)"); // red-ish
+  // Opponent missile cone guide (only when halfway to lock)
+  for (const opp of opponents) {
+    if (
+      opp.health > 0 &&
+      opp.lockTarget &&
+      opp.lockTimer >= OPPONENT_LOCK_TIME / 2
+    ) {
+      drawMissileRangeGuideFor(opp, "rgba(255, 0, 0, 0.08)"); // red-ish
+    }
   }
-}
-
-
 
   // Show ammo count
   ctx.fillStyle = "white";
