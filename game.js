@@ -2472,9 +2472,9 @@ function drawGunRangeGuide(entity) {
   ctx.beginPath();
   ctx.moveTo(px, py);
   ctx.lineTo(endX, endY);
-  ctx.strokeStyle = "rgba(255, 255, 0, 0.6)";
-  ctx.lineWidth = 2;
-  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = "rgba(255, 0, 0, 1)";
+  ctx.lineWidth = 0.8;
+  ctx.setLineDash([1, 1]);
   ctx.stroke();
   ctx.restore();
 }
