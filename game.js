@@ -498,6 +498,18 @@ function respawnPlane(plane, isOpponent = false) {
   );
 }
 
+function resetLockFor(entity) {
+  entity.lockTarget = null;
+  entity.lockTimer = 0;
+
+  // Additional reset for player
+  if (entity === player) {
+    playerMissileLockReady = false;
+    playerMissileLockTimer = 0;
+    missileLockAnnounced = false;
+  }
+}
+
 // ====================
 // [4] Utility Functions
 // ====================
@@ -1204,8 +1216,7 @@ function updateAllies() {
           ally.lockTimer = 0;
         }
       } else {
-        ally.lockTimer = Math.max(0, ally.lockTimer - 1);
-        ally.lockTarget = null;
+        resetLockFor(ally);
       }
     }
 
@@ -1337,10 +1348,7 @@ function updatePlayerMissileLock() {
       playerMissileLockReady = true;
     }
   } else {
-    playerLockTimer = Math.max(0, playerLockTimer - 1);
-    playerLockTarget = null;
-    playerMissileLockReady = false;
-    missileLockAnnounced = false;
+    resetLockFor(player);
   }
 }
 
@@ -1358,8 +1366,7 @@ function updateOpponentMissileLock() {
         opp.lockTimer = 0;
       }
     } else {
-      opp.lockTimer = Math.max(0, (opp.lockTimer || 0) - 1);
-      opp.lockTarget = null;
+      resetLockFor(opp);
     }
   }
 }
@@ -2507,7 +2514,7 @@ function drawLockOnLine() {
   ctx.moveTo(px, py);
   ctx.lineTo(ox, oy);
   ctx.strokeStyle = "red"; // 🔴 Solid red line
-  ctx.lineWidth = 0.5;
+  ctx.lineWidth = 1;
   ctx.setLineDash([1, 1]); // ❌ Remove dashed line
   ctx.shadowColor = "red"; // 🔥 Optional glow effect
   ctx.shadowBlur = 10;
@@ -2570,7 +2577,7 @@ function drawAllyLockLines() {
     ctx.moveTo(ally.x - camera.x, ally.y - camera.y);
     ctx.lineTo(ally.lockTarget.x - camera.x, ally.lockTarget.y - camera.y);
     ctx.strokeStyle = "cyan";
-    ctx.lineWidth = 0.5;
+    ctx.lineWidth = 1;
     ctx.setLineDash([1, 1]);
     ctx.stroke();
     ctx.restore();
