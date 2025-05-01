@@ -1076,7 +1076,13 @@ function updateOpponents() {
           opp.lockTimer = 1;
         }
 
-        if (opp.lockTimer > OPPONENT_LOCK_TIME) {
+        const shouldFireMissile =
+          opp.lockTimer > OPPONENT_LOCK_TIME &&
+          opp.missileAmmo > 0 &&
+          isAngleAligned(opp.angle, Math.atan2(dy, dx)) &&
+          Math.random() < (opp.mode === "defensive" ? 0.03 : 0.1);
+
+        if (shouldFireMissile) {
           createFloatingText("🚀 LOCKED", target.x, target.y - 50, "red", 18);
           fireOpponentMissile(opp, target);
           opp.lockTimer = 0;
@@ -1278,7 +1284,13 @@ function updateAllies() {
           ally.lockTimer = 1;
         }
 
-        if (ally.lockTimer > OPPONENT_LOCK_TIME) {
+        const shouldFireMissile =
+          ally.lockTimer > OPPONENT_LOCK_TIME &&
+          ally.missileAmmo > 0 &&
+          isAngleAligned(ally.angle, Math.atan2(dy, dx)) &&
+          Math.random() < (ally.mode === "defensive" ? 0.03 : 0.1); // Lower chance for defensive
+
+        if (shouldFireMissile) {
           createFloatingText(
             "🚀 LOCKED",
             nearestOpponent.x,
@@ -1599,6 +1611,14 @@ function updatePlayerAutopilot() {
     (player.machineGunAmmo > 50 ? Math.random() < 0.25 : Math.random() < 0.08);
 
   const inCone = isInMissileCone(player, target);
+  let missileFireChance = 0.03; // Default for defensive
+
+  if (autopilotMode === "aggressive") {
+    missileFireChance = 0.15;
+  } else if (autopilotMode === "balanced") {
+    missileFireChance = distance < 500 ? 0.12 : 0.06;
+  }
+
   const tryFireMissile =
     playerMissileLockReady &&
     player.missileAmmo > 0 &&
@@ -1606,17 +1626,17 @@ function updatePlayerAutopilot() {
     inCone &&
     distance < 1000 &&
     target.health > 40 &&
-    Math.random() <
-      (autopilotMode === "aggressive"
-        ? 0.15
-        : autopilotMode === "balanced"
-        ? distance < 500
-          ? 0.12
-          : 0.06
-        : 0.03);
+    Math.random() < missileFireChance;
 
   if (tryFireMissile) {
     fireMissile();
+    createFloatingText(
+      "🚀 AUTOPILOT FIRED",
+      player.x,
+      player.y - 60,
+      "yellow",
+      16
+    );
     return; // 🔥 missile takes priority
   } else if (tryFireGun) {
     fireMachineGun();
