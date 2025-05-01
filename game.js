@@ -1852,11 +1852,7 @@ function maybeDeployFlares(planes) {
       continue;
     }
 
-    const isChased = missiles.some((m) => {
-      const dx = plane.x - m.x;
-      const dy = plane.y - m.y;
-      return Math.hypot(dx, dy) < 250;
-    });
+    const isChased = missiles.some((m) => m.target === plane);
 
     if (isChased && Math.random() < 0.02) {
       releaseFlaresFor(plane);
