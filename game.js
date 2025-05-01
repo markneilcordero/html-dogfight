@@ -2667,18 +2667,18 @@ function drawOpponentLockLines() {
   }
 
   // Ally missile cone guide (if locking on)
-  for (const ally of allies) {
-    if (ally.health > 0 && ally.lockTarget) {
-      drawMissileRangeGuideFor(ally, "rgba(0, 255, 255, 0.08)"); // cyan-ish
-    }
-  }
+  // for (const ally of allies) {
+  //   if (ally.health > 0 && ally.lockTarget) {
+  //     drawMissileRangeGuideFor(ally, "rgba(0, 255, 255, 0.08)"); // cyan-ish
+  //   }
+  // }
 
-  // Opponent missile cone guide (if locking on)
-  for (const opp of opponents) {
-    if (opp.health > 0 && opp.lockTarget) {
-      drawMissileRangeGuideFor(opp, "rgba(255, 0, 0, 0.08)"); // red-ish
-    }
-  }
+  // // Opponent missile cone guide (if locking on)
+  // for (const opp of opponents) {
+  //   if (opp.health > 0 && opp.lockTarget) {
+  //     drawMissileRangeGuideFor(opp, "rgba(255, 0, 0, 0.08)"); // red-ish
+  //   }
+  // }
 }
 
 function drawTargetLockIcon(entity) {
@@ -2732,33 +2732,12 @@ function drawUI() {
   drawLockOnLine();
   drawAllyLockLines();
   drawOpponentLockLines();
+  drawGunRangeGuide(player);
   if (playerAIEnabled) {
     drawGunRangeGuide(player);
   }
   if (playerAIEnabled && playerMissileLockReady) {
     drawLockOnLine();
-  }
-
-  // Ally missile cone guide (only when halfway to lock)
-  for (const ally of allies) {
-    if (
-      ally.health > 0 &&
-      ally.lockTarget &&
-      ally.lockTimer >= OPPONENT_LOCK_TIME / 2
-    ) {
-      drawMissileRangeGuideFor(ally, "rgba(0, 255, 255, 0.08)"); // cyan-ish
-    }
-  }
-
-  // Opponent missile cone guide (only when halfway to lock)
-  for (const opp of opponents) {
-    if (
-      opp.health > 0 &&
-      opp.lockTarget &&
-      opp.lockTimer >= OPPONENT_LOCK_TIME / 2
-    ) {
-      drawMissileRangeGuideFor(opp, "rgba(255, 0, 0, 0.08)"); // red-ish
-    }
   }
 
   // Show ammo count
