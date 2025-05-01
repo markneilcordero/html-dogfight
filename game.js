@@ -1980,7 +1980,7 @@ function updateMissiles() {
       }
     } else {
       if (m.target && Math.hypot(dx, dy) < 40) {
-        m.target.health -= 25;
+        m.target.health -= 100;
         createExplosion(m.target.x, m.target.y, 70);
         missiles.splice(i, 1);
         continue;
@@ -2041,7 +2041,7 @@ function updateMissiles() {
     } else {
       // === Hit player
       if (Math.hypot(dx, dy) < 40) {
-        player.health -= 25;
+        player.health -= 100;
         createExplosion(player.x, player.y, 70);
         opponentMissiles.splice(i, 1);
         continue;
