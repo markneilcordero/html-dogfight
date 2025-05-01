@@ -643,7 +643,9 @@ function applyAntiStacking(allPlanes, minDistance = 80, strength = 0.05) {
 }
 
 // Avoid nearby allies or opponents (real-time adjustment)
-function avoidOthers(self, others, avoidDistance = 80, avoidStrength = 0.04) {
+function avoidOthers(self, others, avoidDistance = 80, avoidStrength = 0.02) {
+  let offsetX = 0;
+  let offsetY = 0;
   for (const other of others) {
     if (self === other || other.health <= 0) continue;
 
@@ -651,14 +653,19 @@ function avoidOthers(self, others, avoidDistance = 80, avoidStrength = 0.04) {
     const dy = self.y - other.y;
     const dist = Math.hypot(dx, dy);
     if (dist < avoidDistance && dist > 0.01) {
-      const repel = (avoidDistance - dist) * avoidStrength;
+      const force = (avoidDistance - dist) / avoidDistance; // 0 to 1
       const nx = dx / dist;
       const ny = dy / dist;
-      self.x += nx * repel;
-      self.y += ny * repel;
+      offsetX += nx * force * avoidStrength * 60;
+      offsetY += ny * force * avoidStrength * 60;
     }
   }
+
+  // Apply total offset softly
+  self.x += offsetX;
+  self.y += offsetY;
 }
+
 
 function checkCollision(entityA, entityB, threshold = 100) {
   const dx = entityA.x - entityB.x;
@@ -1014,7 +1021,7 @@ function updateOpponents() {
       rotateToward(opp, targetAngle, 0.05);
       moveForward(opp);
 
-      avoidOthers(opp, opponents); // Avoid other opponents
+      // avoidOthers(opp, opponents); // Avoid other opponents
 
       bounceOffWalls(opp);
       createEntityWingTrails(opp);
@@ -1211,18 +1218,6 @@ function updateAllies() {
       }
     }
 
-    // === Anti-stacking
-    for (const other of allies) {
-      if (ally === other) continue;
-      const dx2 = ally.x - other.x;
-      const dy2 = ally.y - other.y;
-      const dist2 = Math.hypot(dx2, dy2);
-      if (dist2 < 80) {
-        const repelStrength = (80 - dist2) * 0.02;
-        ally.x += (dx2 / dist2) * repelStrength;
-        ally.y += (dy2 / dist2) * repelStrength;
-      }
-    }
     if (ally.collisionCooldown > 0) ally.collisionCooldown--;
   }
 }
@@ -1380,51 +1375,6 @@ function updateOpponentMissileLock() {
 // [7] Update Functions
 // ====================
 
-function handleCollisions() {
-  const allPlanes = [player, ...allies, ...opponents];
-
-  for (let i = 0; i < allPlanes.length; i++) {
-    const a = allPlanes[i];
-    if (a.health <= 0 || a.collisionCooldown > 0) continue;
-
-    for (let j = i + 1; j < allPlanes.length; j++) {
-      const b = allPlanes[j];
-      if (b.health <= 0 || b.collisionCooldown > 0) continue;
-
-      const dx = b.x - a.x;
-      const dy = b.y - a.y;
-      const dist = Math.hypot(dx, dy);
-
-      if (dist < 50 && dist > 0.01) {
-        const nx = dx / dist;
-        const ny = dy / dist;
-
-        // Push apart slightly to prevent overlap
-        const overlap = 50 - dist;
-        a.x -= nx * overlap / 2;
-        a.y -= ny * overlap / 2;
-        b.x += nx * overlap / 2;
-        b.y += ny * overlap / 2;
-
-        // Bounce: reflect each angle based on collision normal
-        const aIncoming = Math.atan2(Math.sin(a.angle), Math.cos(a.angle));
-        const bIncoming = Math.atan2(Math.sin(b.angle), Math.cos(b.angle));
-
-        const normalAngle = Math.atan2(ny, nx);
-
-        // Reflect angle = 2 * normal - incoming
-        a.angle = 2 * normalAngle - aIncoming + Math.PI;
-        b.angle = 2 * (normalAngle + Math.PI) - bIncoming;
-
-        a.collisionCooldown = 30;
-        b.collisionCooldown = 30;
-      }
-    }
-  }
-}
-
-
-
 function update() {
   maybeDeployFlares(opponents);
   maybeDeployFlares(allies);
@@ -1435,9 +1385,9 @@ function update() {
   updateOpponents();
   updateAllies();
 
-  handleCollisions();
+  // handleCollisions();
 
-  applyAntiStacking([player, ...opponents, ...allies]);
+  // applyAntiStacking([player, ...opponents, ...allies]);
   updateFlares();
   updateParticles();
   updateFloatingTexts();
@@ -1447,7 +1397,7 @@ function update() {
 }
 
 function updatePlayerAutopilot() {
-  avoidOthers(player, [...opponents, ...allies]);
+  // avoidOthers(player, [...opponents, ...allies]);
   const { target, distance } = findNearestOpponent(player.x, player.y);
 
   // === [1] Handle Evading First
@@ -1461,20 +1411,6 @@ function updatePlayerAutopilot() {
     if (player.flareCooldown <= 0 && detectIncomingMissile(player)) {
       releaseFlaresFor(player);
       player.flareCooldown = 300;
-    }
-  }
-
-  // === [2] Avoid Crashing Into Others
-  for (const entity of [...opponents, ...allies]) {
-    if (entity.health <= 0) continue;
-    const dx = player.x - entity.x;
-    const dy = player.y - entity.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist < 80) {
-      const avoidAngle = Math.atan2(-dy, -dx);
-      rotateToward(player, avoidAngle, 0.08);
-      adjustThrottle(player, 4.5);
-      return;
     }
   }
 
