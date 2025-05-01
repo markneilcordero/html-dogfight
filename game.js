@@ -1482,7 +1482,7 @@ function updatePlayerAutopilot() {
     if (distance < 300) {
       const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
       rotateToward(player, retreatAngle, 0.05);
-      adjustThrottle(player, 4.5);
+      adjustThrottle(player, 3.5);
       return;
     }
 
@@ -1494,7 +1494,7 @@ function updatePlayerAutopilot() {
 
     adjustThrottle(player, distance > 600 ? 2.5 : 1.5);
   } else if (autopilotMode === "aggressive") {
-    adjustThrottle(player, 5);
+    adjustThrottle(player, 3.5);
   } else {
     if (autopilotMode === "balanced") {
       if (underFire) {
@@ -2586,7 +2586,10 @@ function drawUI() {
   drawOpponentLockLines();
   if (playerAIEnabled) {
     drawGunRangeGuide(player);
-  }  
+  }
+  if (playerAIEnabled && playerMissileLockReady) {
+    drawLockOnLine();
+  }
 
   // Show ammo count
   ctx.fillStyle = "white";
