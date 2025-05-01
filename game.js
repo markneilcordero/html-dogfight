@@ -339,6 +339,8 @@ for (let i = 0; i < 10; i++) {
   opp.taxiTimer = 90;
   opp.hasStartedTaxi = false;
 
+  opp.mode = Math.random() < 0.1 ? "aggressive" : "defensive";
+
   opponents.push(opp);
 }
 
@@ -360,6 +362,8 @@ for (let i = 0; i < 9; i++) {
   ally.isTakingOff = false;
   ally.delayedTaxiStart = i * 60; // stagger each ally by 60 frames (1 second)
   ally.taxiTimer = 90; // actual taxi time once started
+
+  ally.mode = Math.random() < 0.1 ? "aggressive" : "defensive"; // or randomized
 
   allies.push(ally);
 }
@@ -420,6 +424,7 @@ function createPlane(x, y) {
     lockTimer: 0,
     lockTarget: null,
     collisionCooldown: 0,
+    mode: "balanced"
   };
 }
 
@@ -962,7 +967,7 @@ function updateOpponents() {
         if (opponentMode !== "aggressive") adjustThrottle(opp, 4.5);
       }
       
-      if (opponentMode === "defensive") {
+      if (opp.mode === "defensive") {
         if (distance < 400) {
           const retreatAngle = Math.atan2(opp.y - target.y, opp.x - target.x);
           rotateToward(opp, retreatAngle + opp.dodgeOffset, 0.05);
@@ -970,7 +975,7 @@ function updateOpponents() {
         } else {
           adjustThrottle(opp, 2.5);
         }
-      } else if (opponentMode === "aggressive") {
+      } else if (opp.mode === "aggressive") {
         adjustThrottle(opp, 5);
       } else {
         // Balanced
@@ -1117,7 +1122,7 @@ function updateAllies() {
         if (allyMode !== "aggressive") adjustThrottle(ally, 4.5);
       }
       
-      if (allyMode === "defensive") {
+      if (ally.mode === "defensive") {
         if (nearestDist < 400) {
           const retreatAngle = Math.atan2(ally.y - nearestOpponent.y, ally.x - nearestOpponent.x);
           rotateToward(ally, retreatAngle + ally.dodgeOffset, 0.05);
@@ -1125,7 +1130,7 @@ function updateAllies() {
         } else {
           adjustThrottle(ally, 2.5);
         }
-      } else if (allyMode === "aggressive") {
+      } else if (ally.mode === "aggressive") {
         adjustThrottle(ally, 5);
       } else {
         adjustThrottle(ally, nearestDist > 800 ? 4 : nearestDist > 400 ? 3 : 2.5);
