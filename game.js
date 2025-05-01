@@ -245,7 +245,6 @@ function setupWeaponControls() {
     },
     { passive: false }
   );
-  
 
   window.addEventListener("keydown", (e) => {
     if (e.key === "h" && player.flareCooldown <= 0) {
@@ -432,7 +431,7 @@ function createPlane(x, y) {
     collisionCooldown: 0,
     mode: "balanced",
     missileCooldown: 0,
-    maxTurnRate: 0.01
+    maxTurnRate: 0.01,
   };
 }
 
@@ -736,7 +735,6 @@ function fireMachineGun() {
   player.machineGunAmmo--;
 }
 
-
 function fireAllyMachineGun(ally) {
   if (ally.machineGunAmmo <= 0) return;
 
@@ -919,13 +917,19 @@ function updateOpponents() {
     if (opp.health <= 0) {
       if (opp.lastAttacker === player) {
         player.killCount++;
-        createFloatingText(`☠️ Kills: ${player.killCount}`, player.x, player.y - 100, "lime", 20);
+        createFloatingText(
+          `☠️ Kills: ${player.killCount}`,
+          player.x,
+          player.y - 100,
+          "lime",
+          20
+        );
       }
-    
+
       createExplosion(opp.x, opp.y, 100);
       respawnPlane(opp, true);
       continue;
-    }    
+    }
 
     if (!opp.isTakingOff && opp.delayedTaxiStart > 0) {
       opp.delayedTaxiStart--;
@@ -936,7 +940,13 @@ function updateOpponents() {
       opp.isTakingOff = true;
       opp.hasStartedTaxi = true;
       opp.taxiTimer = 90;
-      createFloatingText("🛫 Opponent Taking Off!", opp.x, opp.y - 50, "red", 14);
+      createFloatingText(
+        "🛫 Opponent Taking Off!",
+        opp.x,
+        opp.y - 50,
+        "red",
+        14
+      );
       continue;
     }
 
@@ -963,7 +973,13 @@ function updateOpponents() {
         opp.ammoRegenTimer = (opp.ammoRegenTimer || 0) + 1;
         if (opp.ammoRegenTimer >= 120) {
           opp.machineGunAmmo = 200;
-          createFloatingText("🔫 Opponent Ammo Refilled!", opp.x, opp.y - 40, "red", 14);
+          createFloatingText(
+            "🔫 Opponent Ammo Refilled!",
+            opp.x,
+            opp.y - 40,
+            "red",
+            14
+          );
           opp.ammoRegenTimer = 0;
         }
       } else {
@@ -974,7 +990,15 @@ function updateOpponents() {
         opp.missileRegenTimer = (opp.missileRegenTimer || 0) + 1;
         if (opp.missileRegenTimer >= 300) {
           opp.missileAmmo = 4;
-          createFloatingText("🚀 Opponent Missile Refilled!", opp.x, opp.y - 60, "red", 14);
+          opp.lockTarget = null;
+          opp.lockTimer = 0;
+          createFloatingText(
+            "🚀 Opponent Missile Refilled!",
+            opp.x,
+            opp.y - 60,
+            "red",
+            14
+          );
           opp.missileRegenTimer = 0;
         }
       } else {
@@ -986,7 +1010,8 @@ function updateOpponents() {
       const offset = Math.PI / 3;
 
       maybeDodge(opp);
-      const targetAngle = Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodgeOffset;
+      const targetAngle =
+        Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodgeOffset;
 
       avoidMapEdges(opp);
       const underFire = detectIncomingFire(opp);
@@ -1042,7 +1067,6 @@ function updateOpponents() {
   }
 }
 
-
 function updateAllies() {
   for (const ally of allies) {
     if (!ally.isTakingOff && ally.delayedTaxiStart > 0) {
@@ -1054,7 +1078,13 @@ function updateAllies() {
       ally.isTakingOff = true;
       ally.hasStartedTaxi = true;
       ally.taxiTimer = 90;
-      createFloatingText("🛫 Ally Taking Off!", ally.x, ally.y - 50, "cyan", 14);
+      createFloatingText(
+        "🛫 Ally Taking Off!",
+        ally.x,
+        ally.y - 50,
+        "cyan",
+        14
+      );
       continue;
     }
 
@@ -1083,7 +1113,13 @@ function updateAllies() {
         ally.ammoRegenTimer = (ally.ammoRegenTimer || 0) + 1;
         if (ally.ammoRegenTimer >= 120) {
           ally.machineGunAmmo = 200;
-          createFloatingText("🔫 Ally Ammo Refilled!", ally.x, ally.y - 40, "cyan", 14);
+          createFloatingText(
+            "🔫 Ally Ammo Refilled!",
+            ally.x,
+            ally.y - 40,
+            "cyan",
+            14
+          );
           ally.ammoRegenTimer = 0;
         }
       } else {
@@ -1094,7 +1130,15 @@ function updateAllies() {
         ally.missileRegenTimer = (ally.missileRegenTimer || 0) + 1;
         if (ally.missileRegenTimer >= 300) {
           ally.missileAmmo = 4;
-          createFloatingText("🚀 Ally Missile Refilled!", ally.x, ally.y - 60, "cyan", 14);
+          ally.lockTarget = null;
+          ally.lockTimer = 0;
+          createFloatingText(
+            "🚀 Ally Missile Refilled!",
+            ally.x,
+            ally.y - 60,
+            "cyan",
+            14
+          );
           ally.missileRegenTimer = 0;
         }
       } else {
@@ -1105,7 +1149,8 @@ function updateAllies() {
       const dy = nearestOpponent.y - ally.y;
       const offset = Math.PI / 3;
       maybeDodge(ally);
-      const targetAngle = Math.atan2(dy, dx) + offset * ally.orbitDirection + ally.dodgeOffset;
+      const targetAngle =
+        Math.atan2(dy, dx) + offset * ally.orbitDirection + ally.dodgeOffset;
 
       avoidMapEdges(ally);
       const underFire = detectIncomingFire(ally);
@@ -1147,7 +1192,13 @@ function updateAllies() {
           Math.random() < 0.1;
 
         if (shouldFireMissile) {
-          createFloatingText("🚀 LOCKED", nearestOpponent.x, nearestOpponent.y - 50, "cyan", 18);
+          createFloatingText(
+            "🚀 LOCKED",
+            nearestOpponent.x,
+            nearestOpponent.y - 50,
+            "cyan",
+            18
+          );
           fireAllyMissile(ally);
           ally.lockTimer = 0;
         }
@@ -1160,7 +1211,6 @@ function updateAllies() {
     if (ally.collisionCooldown > 0) ally.collisionCooldown--;
   }
 }
-
 
 function updateOpponentBullets() {
   for (let i = opponentBullets.length - 1; i >= 0; i--) {
@@ -1374,14 +1424,24 @@ function updatePlayerAutopilot() {
     predicted.y - player.y,
     predicted.x - player.x
   );
-  rotateToward(player, interceptAngle + player.dodgeOffset, player.maxTurnRate || 0.02, 0);
+  rotateToward(
+    player,
+    interceptAngle + player.dodgeOffset,
+    player.maxTurnRate || 0.02,
+    0
+  );
 
   const targetAngle = Math.atan2(target.y - player.y, target.x - player.x);
 
   // 🛡️ In defensive mode, back away slowly instead of pursuing
   if (autopilotMode === "defensive" && distance < 600) {
     const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
-    rotateToward(player, retreatAngle + player.dodgeOffset, player.maxTurnRate || 0.02, 0);
+    rotateToward(
+      player,
+      retreatAngle + player.dodgeOffset,
+      player.maxTurnRate || 0.02,
+      0
+    );
   } else if (autopilotMode === "aggressive") {
     const strafeOffset = (player.orbitDirection || 1) * (Math.PI / 3); // 60° strafe
     const strafeAngle = targetAngle + strafeOffset + player.dodgeOffset;
@@ -1457,25 +1517,19 @@ function updatePlayerAutopilot() {
   let gunFireChance = 1.0;
   if (autopilotMode === "defensive") gunFireChance = 1.0;
   else if (autopilotMode === "balanced") gunFireChance = 1.0;
-  
-  const tryFireGun =
-  player.machineGunAmmo > 0 &&
-  aligned &&
-  distance < 600;
 
-
+  const tryFireGun = player.machineGunAmmo > 0 && aligned && distance < 600;
 
   const inCone = isInMissileCone(player, target);
 
   const tryFireMissile =
-  playerMissileLockReady &&
-  player.missileAmmo > 0 &&
-  aligned &&
-  inCone &&
-  distance < 1000 &&
-  target.health > 1 &&
-  player.missileCooldown <= 0;
-
+    playerMissileLockReady &&
+    player.missileAmmo > 0 &&
+    aligned &&
+    inCone &&
+    distance < 1000 &&
+    target.health > 1 &&
+    player.missileCooldown <= 0;
 
   if (tryFireMissile) {
     fireMissile();
@@ -1566,6 +1620,10 @@ function updatePlayer() {
     if (player.missileRegenTimer >= 300) {
       // 5 seconds at 60 FPS
       player.missileAmmo = 4;
+      playerMissileLockReady = false;
+      playerMissileLockTimer = 0;
+      missileLockAnnounced = false;
+
       createFloatingText(
         "🚀 Missile Refilled!",
         player.x,
@@ -1932,7 +1990,7 @@ function updateMissiles() {
     const dy = targetY - m.y;
     const targetAngle = Math.atan2(dy, dx);
 
-    rotateToward(m, targetAngle, 0.01, 0);
+    rotateToward(m, targetAngle, 0.02, 0.15);
     m.x += Math.cos(m.angle) * m.speed;
     m.y += Math.sin(m.angle) * m.speed;
     m.life--;
@@ -1991,7 +2049,7 @@ function updateMissiles() {
     const dy = targetY - m.y;
     const targetAngle = Math.atan2(dy, dx);
 
-    rotateToward(m, targetAngle, 0.05, 0.2);
+    rotateToward(m, targetAngle, 0.02, 0.15);
 
     m.x += Math.cos(m.angle) * m.speed;
     m.y += Math.sin(m.angle) * m.speed;
