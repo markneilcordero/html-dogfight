@@ -1473,7 +1473,7 @@ function updatePlayerAutopilot() {
   aligned &&
   inCone &&
   distance < 1000 &&
-  target.health > 40 &&
+  target.health > 1 &&
   player.missileCooldown <= 0;
 
 
