@@ -2197,8 +2197,8 @@ function updateMissiles() {
     m.life--;
 
     particles.push({
-      x: m.x,
-      y: m.y,
+      x: m.x - Math.cos(m.angle) * 12, // 12 pixels behind the missile
+      y: m.y - Math.sin(m.angle) * 12,
       alpha: 0.5,
       radius: 2 + Math.random() * 2,
       angle: m.angle + (Math.random() * 0.2 - 0.1),
