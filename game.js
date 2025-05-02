@@ -832,6 +832,7 @@ function fireAllyMissile(ally) {
     target: nearestOpponent,
     owner: ally,
     divertedToFlare: false,
+    type: "missile"
   });
 
   ally.missileAmmo--;
@@ -900,6 +901,7 @@ function fireMissile() {
     target: nearestOpponent,
     owner: player,
     divertedToFlare: false,
+    type: "missile",
   });
 
   player.missileAmmo--;
@@ -1331,6 +1333,7 @@ function fireOpponentMissile(opp, target) {
     speed: 6,
     life: 250,
     divertedToFlare: false,
+    type: "missile"
   });
 
   opp.missileAmmo--;
@@ -1793,6 +1796,9 @@ function moveForward(entity) {
 }
 
 function bounceOffWalls(entity) {
+  // Skip missiles
+  if (entity.type === "missile") return;
+
   // Bounce horizontally
   if (entity.x <= 0 || entity.x >= WORLD_WIDTH) {
     entity.angle = Math.PI - entity.angle;
