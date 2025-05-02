@@ -70,10 +70,7 @@ let joystickAngle = 0;
 let joystickActive = false;
 
 function setupJoystickControls() {
-  const container = document.getElementById("joystickContainer");
-  const joystick = document.getElementById("joystick");
-
-  container.addEventListener(
+  joystickContainer.addEventListener(
     "touchstart",
     (e) => {
       joystickActive = true;
@@ -81,10 +78,10 @@ function setupJoystickControls() {
     { passive: false }
   );
 
-  container.addEventListener("touchmove", (e) => {
+  joystickContainer.addEventListener("touchmove", (e) => {
     e.preventDefault();
     const touch = e.touches[0];
-    const rect = container.getBoundingClientRect();
+    const rect = joystickContainer.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
     const dx = touch.clientX - centerX;
@@ -101,11 +98,12 @@ function setupJoystickControls() {
     joystick.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
   });
 
-  container.addEventListener("touchend", () => {
+  joystickContainer.addEventListener("touchend", () => {
     joystickActive = false;
     joystick.style.transform = `translate(-50%, -50%)`;
   });
 }
+
 
 setupJoystickControls();
 
@@ -2351,7 +2349,6 @@ function draw() {
   drawParticles();
   drawExplosions();
   drawUI();
-  drawOffscreenIndicators();
   drawOffscreenIndicators();
 }
 
