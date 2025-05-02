@@ -2117,8 +2117,7 @@ function updateMissiles() {
     const dx = targetX - m.x;
     const dy = targetY - m.y;
     const targetAngle = Math.atan2(dy, dx);
-
-    rotateToward(m, targetAngle, 0.02, 0.15);
+rotateToward(m, targetAngle, 0.03); // Increase turn rate to 0.03 or higher
 
     m.x += Math.cos(m.angle) * m.speed;
     m.y += Math.sin(m.angle) * m.speed;
