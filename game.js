@@ -38,6 +38,32 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function adjustThrottle(entity, targetThrust, rate = 0.02, minThrust = 3, maxThrust = 5) {
+  if (entity.thrust < targetThrust) {
+    entity.thrust = Math.min(entity.thrust + rate, targetThrust);
+  } else if (entity.thrust > targetThrust) {
+    entity.thrust = Math.max(entity.thrust - rate, targetThrust);
+  }
+
+  entity.thrust = clamp(entity.thrust, minThrust, maxThrust);
+}
+
+function enhanceThrottleFor(entity, distance, underFire = false) {
+  if (underFire) {
+    adjustThrottle(entity, 5); // Full speed to dodge
+    return;
+  }
+
+  if (distance < 300) {
+    adjustThrottle(entity, 3.5); // Slow down to aim
+  } else if (distance > 800) {
+    adjustThrottle(entity, 5); // Speed up to close in
+  } else {
+    adjustThrottle(entity, 4.2); // Mid-speed cruising
+  }
+}
+
+
 function adjustThrottle(
   entity,
   targetThrust,
@@ -1168,13 +1194,15 @@ function updateOpponents() {
 
       avoidMapEdges(opp);
       const underFire = detectIncomingFire(opp);
+      const distance = target ? distanceBetween(opp, target) : Infinity;
       if (underFire) {
         maybeDodge(opp);
         adjustThrottle(opp, 4.5);
       }
 
       // 🧠 Aggressive behavior
-      adjustThrottle(opp, 5);
+      enhanceThrottleFor(opp, distance, underFire);
+
       rotateToward(opp, targetAngle, 0.015, 0);
       moveForward(opp);
 
@@ -1314,12 +1342,14 @@ function updateAllies() {
 
       avoidMapEdges(ally);
       const underFire = detectIncomingFire(ally);
+      const distance = target ? distanceBetween(ally, target) : Infinity;
       if (underFire) {
         maybeDodge(ally);
         adjustThrottle(ally, 4.5);
       }
 
-      adjustThrottle(ally, 5);
+      enhanceThrottleFor(ally, distance, underFire);
+
       rotateToward(ally, targetAngle, ally.maxTurnRate || 0.015, 0);
       moveForward(ally);
 
