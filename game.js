@@ -331,7 +331,7 @@ const opponents = [];
 const oppStartX = 50; // Starting X position near top-left
 const oppStartY = 50;
 
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 7; i++) {
   const col = i % 2;
   const row = Math.floor(i / 2);
   const x = oppStartX + col * 60;
@@ -355,7 +355,7 @@ const allies = [];
 const startX = WORLD_WIDTH - 200;
 const startY = WORLD_HEIGHT - 200;
 
-for (let i = 0; i < 9; i++) {
+for (let i = 0; i < 6; i++) {
   const row = Math.floor(i / 3);
   const col = i % 3;
   const x = startX + col * 50;
