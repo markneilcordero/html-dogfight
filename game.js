@@ -1090,7 +1090,7 @@ function updateOpponents() {
           opp.lockTimer > OPPONENT_LOCK_TIME &&
           opp.missileAmmo > 0 &&
           isAngleAligned(opp.angle, angleToTarget) &&
-          Math.random() < 0.1;
+          Math.random() < 0.9;
 
         if (shouldFireMissile) {
           createFloatingText("🚀 LOCKED", target.x, target.y - 50, "red", 18);
@@ -1231,7 +1231,7 @@ function updateAllies() {
           ally.lockTimer > OPPONENT_LOCK_TIME &&
           ally.missileAmmo > 0 &&
           isAngleAligned(ally.angle, angleToTarget) &&
-          Math.random() < 0.1
+          Math.random() < 0.9
         ) {
           createFloatingText(
             "🚀 LOCKED",
