@@ -776,18 +776,13 @@ function fireMachineGun() {
 function fireAllyMachineGun(ally) {
   if (ally.machineGunAmmo <= 0) return;
 
-  const targetData = findNearestOpponent(ally.x, ally.y);
-  if (!targetData.target) return;
-
-  const predicted = predictTargetPosition(ally, targetData.target, 16); // 16 = bullet speed
-  const dx = predicted.x - ally.x;
-  const dy = predicted.y - ally.y;
-  const angle = Math.atan2(dy, dx);
+  const spread = (Math.random() - 0.5) * (Math.PI / 36); // same as player
+  const bulletAngle = ally.angle + spread;
 
   machineGunBullets.push({
     x: ally.x,
     y: ally.y,
-    angle,
+    angle: bulletAngle,
     speed: 16,
     life: 500,
     owner: ally,
@@ -795,6 +790,7 @@ function fireAllyMachineGun(ally) {
 
   ally.machineGunAmmo--;
 }
+
 
 function fireAllyMissile(ally) {
   if (ally.missileAmmo <= 0) return;
@@ -1073,10 +1069,11 @@ function updateOpponents() {
       if (
         distance < 800 &&
         isAngleAligned(opp.angle, angleToTarget) &&
-        Math.random() < 0.05
+        opp.gunCooldown <= 0
       ) {
         fireOpponentMachineGun(opp);
-      }
+        opp.gunCooldown = 6; // ~100ms at 60 FPS
+      }      
 
       if (isInMissileCone(opp, target)) {
         if (opp.lockTarget === target) {
@@ -1104,6 +1101,7 @@ function updateOpponents() {
     }
 
     if (opp.collisionCooldown > 0) opp.collisionCooldown--;
+    if (opp.gunCooldown > 0) opp.gunCooldown--;
   }
 }
 
@@ -1210,12 +1208,13 @@ function updateAllies() {
 
       const angleToTarget = Math.atan2(dy, dx);
       if (
-        nearestDist < 600 &&
+        nearestDist < 800 &&
         isAngleAligned(ally.angle, angleToTarget) &&
-        Math.random() < 0.04
+        ally.gunCooldown <= 0
       ) {
         fireAllyMachineGun(ally);
-      }
+        ally.gunCooldown = 6;
+      }      
 
       const inMissileCone = isInMissileCone(ally, nearestOpponent);
 
@@ -1250,6 +1249,7 @@ function updateAllies() {
     }
 
     if (ally.collisionCooldown > 0) ally.collisionCooldown--;
+    if (ally.gunCooldown > 0) ally.gunCooldown--;
   }
 }
 
@@ -1289,19 +1289,14 @@ function updateOpponentBullets() {
 function fireOpponentMachineGun(opp) {
   if (opp.machineGunAmmo <= 0) return;
 
-  const targetData = findNearestEnemy(opp.x, opp.y); // target allies or player
-  if (!targetData.target) return;
-
-  const predicted = predictTargetPosition(opp, targetData.target, 12); // 12 = opponent bullet speed
-  const dx = predicted.x - opp.x;
-  const dy = predicted.y - opp.y;
-  const angle = Math.atan2(dy, dx);
+  const spread = (Math.random() - 0.5) * (Math.PI / 36);
+  const bulletAngle = opp.angle + spread;
 
   opponentBullets.push({
     x: opp.x,
     y: opp.y,
-    angle,
-    speed: 12,
+    angle: bulletAngle,
+    speed: 12, // You can raise this to 16 to match the player
     life: 500,
     owner: opp,
   });
