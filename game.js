@@ -734,22 +734,24 @@ function findNearestEnemy(x, y) {
   return { target: nearest, distance: nearestDist };
 }
 
-function findNearestEnemyFlare(x, y, ownerType) {
+function findNearestEnemyFlare(x, y, ownerType, maxDistance = 300) {
   let nearest = null;
   let nearestDist = Infinity;
 
   for (const flare of flares) {
+    // ✅ Skip flares from the same team
     if (
+      (ownerType === "player" && flare.owner === player) ||
       (ownerType === "ally" && allies.includes(flare.owner)) ||
       (ownerType === "opponent" && opponents.includes(flare.owner))
     ) {
-      continue; // 🚫 Skip flares from same team
+      continue;
     }
 
     const dx = flare.x - x;
     const dy = flare.y - y;
     const dist = Math.hypot(dx, dy);
-    if (dist < nearestDist) {
+    if (dist < nearestDist && dist < maxDistance) {
       nearest = flare;
       nearestDist = dist;
     }
@@ -757,6 +759,7 @@ function findNearestEnemyFlare(x, y, ownerType) {
 
   return nearest;
 }
+
 
 function findAggroTarget(entity, defaultFinder) {
   const now = performance.now(); // use timestamp
@@ -972,6 +975,7 @@ function fireAllyMissile(ally) {
     owner: ally,
     divertedToFlare: false,
     type: "missile",
+    ownerType: "ally"
   });
 
   ally.missileAmmo--;
@@ -2139,8 +2143,7 @@ function updateMissiles() {
   for (const m of opponentMissiles) {
     const dx = player.x - m.x;
     const dy = player.y - m.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist < 300) {
+    if (Math.hypot(dx, dy) < 300) {
       anyMissileLockedOn = true;
       break;
     }
@@ -2160,10 +2163,10 @@ function updateMissiles() {
   // === Update player missiles ===
   for (let i = missiles.length - 1; i >= 0; i--) {
     const m = missiles[i];
-    const flareTarget = findNearestEnemyFlare(m.x, m.y, "ally");
+    const flareTarget = findNearestEnemyFlare(m.x, m.y, "player");
 
     if (flareTarget && Math.random() < 0.8) {
-      m.target = null;
+      m.target = null; // abandon real target
       const dx = flareTarget.x - m.x;
       const dy = flareTarget.y - m.y;
       const targetAngle = Math.atan2(dy, dx);
@@ -2197,7 +2200,7 @@ function updateMissiles() {
     m.life--;
 
     particles.push({
-      x: m.x - Math.cos(m.angle) * 12, // 12 pixels behind the missile
+      x: m.x - Math.cos(m.angle) * 12,
       y: m.y - Math.sin(m.angle) * 12,
       alpha: 0.5,
       radius: 2 + Math.random() * 2,
@@ -2268,6 +2271,7 @@ function updateMissiles() {
     }
   }
 }
+
 
 
 function updateFlares() {
