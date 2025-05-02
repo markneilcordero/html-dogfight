@@ -1635,7 +1635,7 @@ function updatePlayer() {
     player.ammoRegenTimer++;
     if (player.ammoRegenTimer >= 120) {
       // 2 seconds at 60 FPS
-      player.machineGunAmmo = 100;
+      player.machineGunAmmo = 200;
       createFloatingText(
         "🔫 Ammo Refilled!",
         player.x,
