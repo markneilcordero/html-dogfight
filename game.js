@@ -2195,7 +2195,16 @@ function updateMissiles() {
       alpha: 0.5,
       radius: 2 + Math.random() * 2,
       angle: m.angle + (Math.random() * 0.2 - 0.1),
-      color: "white",
+      color: "lightgray",
+    });
+
+    particles.push({
+      x: m.x - Math.cos(m.angle) * 10,
+      y: m.y - Math.sin(m.angle) * 10,
+      alpha: 0.4,
+      radius: 3 + Math.random() * 2,
+      angle: m.angle + (Math.random() * 0.2 - 0.1),
+      color: "white", // second color
     });
 
     if (m.life <= 0) {
