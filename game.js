@@ -791,7 +791,6 @@ function fireAllyMachineGun(ally) {
   ally.machineGunAmmo--;
 }
 
-
 function fireAllyMissile(ally) {
   if (ally.missileAmmo <= 0) return;
   let nearestOpponent = null;
@@ -1073,7 +1072,7 @@ function updateOpponents() {
       ) {
         fireOpponentMachineGun(opp);
         opp.gunCooldown = 6; // ~100ms at 60 FPS
-      }      
+      }
 
       if (isInMissileCone(opp, target)) {
         if (opp.lockTarget === target) {
@@ -1086,6 +1085,7 @@ function updateOpponents() {
         const shouldFireMissile =
           opp.lockTimer > OPPONENT_LOCK_TIME &&
           opp.missileAmmo > 0 &&
+          opp.missileCooldown <= 0 &&
           isAngleAligned(opp.angle, angleToTarget) &&
           Math.random() < 0.9;
 
@@ -1093,6 +1093,7 @@ function updateOpponents() {
           createFloatingText("🚀 LOCKED", target.x, target.y - 50, "red", 18);
           fireOpponentMissile(opp, target);
           opp.lockTimer = 0;
+          opp.missileCooldown = 100;
         }
       } else {
         opp.lockTimer = Math.max(0, opp.lockTimer - 1);
@@ -1214,7 +1215,7 @@ function updateAllies() {
       ) {
         fireAllyMachineGun(ally);
         ally.gunCooldown = 6;
-      }      
+      }
 
       const inMissileCone = isInMissileCone(ally, nearestOpponent);
 
@@ -1229,6 +1230,7 @@ function updateAllies() {
         if (
           ally.lockTimer > OPPONENT_LOCK_TIME &&
           ally.missileAmmo > 0 &&
+          ally.missileCooldown <= 0 &&
           isAngleAligned(ally.angle, angleToTarget) &&
           Math.random() < 0.9
         ) {
@@ -1241,6 +1243,7 @@ function updateAllies() {
           );
           fireAllyMissile(ally);
           ally.lockTimer = 0;
+          ally.missileCooldown = 100;
         }
       } else {
         ally.lockTimer = Math.max(0, ally.lockTimer - 1);
