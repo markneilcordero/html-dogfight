@@ -832,7 +832,7 @@ function fireAllyMissile(ally) {
     target: nearestOpponent,
     owner: ally,
     divertedToFlare: false,
-    type: "missile"
+    type: "missile",
   });
 
   ally.missileAmmo--;
@@ -1333,7 +1333,7 @@ function fireOpponentMissile(opp, target) {
     speed: 6,
     life: 250,
     divertedToFlare: false,
-    type: "missile"
+    type: "missile",
   });
 
   opp.missileAmmo--;
@@ -1809,6 +1809,7 @@ function bounceOffWalls(entity) {
   if (entity.y <= 0 || entity.y >= WORLD_HEIGHT) {
     entity.angle = -entity.angle;
     entity.y = clamp(entity.y, 1, WORLD_HEIGHT - 1);
+    resetLockFor(entity); // 💡 Reset lock after vertical bounce
   }
 }
 
@@ -2117,7 +2118,7 @@ function updateMissiles() {
     const dx = targetX - m.x;
     const dy = targetY - m.y;
     const targetAngle = Math.atan2(dy, dx);
-rotateToward(m, targetAngle, 0.03); // Increase turn rate to 0.03 or higher
+    rotateToward(m, targetAngle, 0.03); // Increase turn rate to 0.03 or higher
 
     m.x += Math.cos(m.angle) * m.speed;
     m.y += Math.sin(m.angle) * m.speed;
