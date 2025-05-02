@@ -2730,10 +2730,10 @@ function drawUI() {
   drawLockOnLine();
   drawAllyLockLines();
   drawOpponentLockLines();
-  drawGunRangeGuide(player);
-  if (playerAIEnabled) {
-    drawGunRangeGuide(player);
-  }
+  // drawGunRangeGuide(player);
+  // if (playerAIEnabled) {
+  //   drawGunRangeGuide(player);
+  // }
   if (playerAIEnabled && playerMissileLockReady) {
     drawLockOnLine();
   }
