@@ -572,6 +572,58 @@ function checkAndFixMissileLockSystems() {
   }
 }
 
+function checkAndFixShootingSystems() {
+  // === [1] Player Check
+  if (playerAIEnabled && player.health > 0 && player.missileAmmo > 0) {
+    const { target, distance } = findNearestOpponent(player.x, player.y);
+    const aligned = target && isAngleAligned(player.angle, Math.atan2(target.y - player.y, target.x - player.x));
+    const inCone = target && isInMissileCone(player, target);
+
+    if (aligned && inCone && playerMissileLockReady && player.missileCooldown <= 0) {
+      console.warn("🚀 Player Autopilot forced missile fire");
+      fireMissile();
+      player.missileCooldown = 60;
+    }
+  }
+
+  // === [2] Allies Check
+  for (const ally of allies) {
+    if (ally.health > 0 && ally.missileAmmo > 0 && ally.lockTarget && ally.lockTimer > OPPONENT_LOCK_TIME && ally.missileCooldown <= 0) {
+      console.warn("🚀 Ally forced missile fire");
+      fireAllyMissile(ally);
+      ally.lockTimer = 0;
+      ally.missileCooldown = 100;
+    }
+
+    if (ally.health > 0 && ally.machineGunAmmo > 0 && ally.gunCooldown <= 0 && ally.lockTarget) {
+      const angleToTarget = Math.atan2(ally.lockTarget.y - ally.y, ally.lockTarget.x - ally.x);
+      if (isAngleAligned(ally.angle, angleToTarget)) {
+        console.warn("🔫 Ally forced gun fire");
+        fireAllyMachineGun(ally);
+        ally.gunCooldown = 6;
+      }
+    }
+  }
+
+  // === [3] Opponents Check
+  for (const opp of opponents) {
+    if (opp.health > 0 && opp.lockTarget && opp.lockTimer > OPPONENT_LOCK_TIME && opp.missileAmmo > 0 && opp.missileCooldown <= 0) {
+      console.warn("🚀 Opponent forced missile fire");
+      fireOpponentMissile(opp, opp.lockTarget);
+      opp.lockTimer = 0;
+      opp.missileCooldown = 100;
+    }
+
+    if (opp.health > 0 && opp.machineGunAmmo > 0 && opp.gunCooldown <= 0 && opp.lockTarget) {
+      const angleToTarget = Math.atan2(opp.lockTarget.y - opp.y, opp.lockTarget.x - opp.x);
+      if (isAngleAligned(opp.angle, angleToTarget)) {
+        console.warn("🔫 Opponent forced gun fire");
+        fireOpponentMachineGun(opp);
+        opp.gunCooldown = 6;
+      }
+    }
+  }
+}
 
 // ====================
 // [4] Utility Functions
@@ -1476,6 +1528,7 @@ function update() {
   updatePlayerMissileLock();
   updateOpponentMissileLock();
   checkAndFixMissileLockSystems();
+  checkAndFixShootingSystems();
 }
 
 function updatePlayerAutopilot() {
