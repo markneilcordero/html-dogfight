@@ -768,6 +768,7 @@ function fireMachineGun() {
     speed: 16,
     life: 500,
     owner: player,
+    trails: []
   });
 
   player.machineGunAmmo--;
@@ -786,6 +787,7 @@ function fireAllyMachineGun(ally) {
     speed: 16,
     life: 500,
     owner: ally,
+    trails: []
   });
 
   ally.machineGunAmmo--;
@@ -1265,6 +1267,15 @@ function updateOpponentBullets() {
     b.y += Math.sin(b.angle) * b.speed;
     b.life--;
 
+    // Add trail to the bullet
+b.trails.push({
+  x: b.x,
+  y: b.y,
+  alpha: 0.6
+});
+if (b.trails.length > 10) b.trails.shift(); // Limit trail length
+
+
     // Check collision with player
     let hit = false;
     const targets = [player, ...allies];
@@ -1304,6 +1315,7 @@ function fireOpponentMachineGun(opp) {
     speed: 12, // You can raise this to 16 to match the player
     life: 500,
     owner: opp,
+    trails: []
   });
 
   opp.machineGunAmmo--;
@@ -1936,6 +1948,15 @@ function updateBullets() {
     b.y += Math.sin(b.angle) * b.speed;
     b.life--;
 
+    // Add trail to the bullet
+b.trails.push({
+  x: b.x,
+  y: b.y,
+  alpha: 0.6
+});
+if (b.trails.length > 10) b.trails.shift(); // Limit trail length
+
+
     // === Check collision with each opponent ===
     for (const opp of opponents) {
       const dx = opp.x - b.x;
@@ -2325,6 +2346,20 @@ function drawProjectiles() {
 
 function drawMachineGunBullets() {
   for (const b of machineGunBullets) {
+    // Draw bullet trail
+    for (const t of b.trails) {
+      ctx.save();
+      ctx.globalAlpha = t.alpha;
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.arc(t.x - camera.x, t.y - camera.y, 1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      t.alpha -= 0.05; // Fade out
+    }
+
+    // Draw bullet
     ctx.save();
     ctx.translate(b.x - camera.x, b.y - camera.y);
     ctx.rotate(b.angle);
@@ -2332,6 +2367,7 @@ function drawMachineGunBullets() {
     ctx.restore();
   }
 }
+
 
 function drawMissiles() {
   for (const m of missiles) {
@@ -2345,6 +2381,20 @@ function drawMissiles() {
 
 function drawOpponentBullets() {
   for (const b of opponentBullets) {
+    // Draw bullet trail
+    for (const t of b.trails) {
+      ctx.save();
+      ctx.globalAlpha = t.alpha;
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.arc(t.x - camera.x, t.y - camera.y, 1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      t.alpha -= 0.05; // Fade out
+    }
+
+    // Draw bullet
     ctx.save();
     ctx.translate(b.x - camera.x, b.y - camera.y);
     ctx.rotate(b.angle);
