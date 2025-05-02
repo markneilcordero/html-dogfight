@@ -2140,7 +2140,6 @@ function updateMissiles() {
     const dx = player.x - m.x;
     const dy = player.y - m.y;
     const dist = Math.hypot(dx, dy);
-
     if (dist < 300) {
       anyMissileLockedOn = true;
       break;
@@ -2149,80 +2148,50 @@ function updateMissiles() {
 
   if (anyMissileLockedOn) {
     if (!missileLockAnnounced) {
-      createFloatingText(
-        "🚨 MISSILE LOCKED!",
-        player.x,
-        player.y - 60,
-        "red",
-        22,
-        true,
-        true
-      );
+      createFloatingText("🚨 MISSILE LOCKED!", player.x, player.y - 60, "red", 22);
       missileLockAnnounced = true;
     }
     lockOnAlertCooldown = 60;
   } else {
-    if (lockOnAlertCooldown > 0) {
-      lockOnAlertCooldown--;
-    }
-    if (lockOnAlertCooldown === 0) {
-      missileLockAnnounced = false;
-    }
+    if (lockOnAlertCooldown > 0) lockOnAlertCooldown--;
+    if (lockOnAlertCooldown === 0) missileLockAnnounced = false;
   }
 
   // === Update player missiles ===
-  let nearestOpponent = null;
   for (let i = missiles.length - 1; i >= 0; i--) {
     const m = missiles[i];
-
-    // === Redirect to flare if available
-    const flareTarget = findNearestEnemyFlare(m.x, m.y, "ally"); // 👈 skips ally flares
-    let targetX, targetY;
+    const flareTarget = findNearestEnemyFlare(m.x, m.y, "ally");
 
     if (flareTarget && Math.random() < 0.8) {
-      // 🎯 80% chance to chase the flare
-      targetX = flareTarget.x;
-      targetY = flareTarget.y;
+      m.target = null;
+      const dx = flareTarget.x - m.x;
+      const dy = flareTarget.y - m.y;
+      const targetAngle = Math.atan2(dy, dx);
+      rotateToward(m, targetAngle, 0.06, 0.05);
+
+      if (Math.hypot(dx, dy) < 20) {
+        createExplosion(flareTarget.x, flareTarget.y);
+        missiles.splice(i, 1);
+        flares.splice(flares.indexOf(flareTarget), 1);
+        continue;
+      }
     } else if (m.target && m.target.health > 0) {
-      // ✅ Continue homing on original target
-      targetX = m.target.x;
-      targetY = m.target.y;
-    } else if (!m.target) {
-      // 🎯 Assign initial target once
-      let nearest = null;
-      let nearestDist = Infinity;
+      const predicted = predictTargetPosition(m, m.target, m.speed);
+      const dx = predicted.x - m.x;
+      const dy = predicted.y - m.y;
+      const targetAngle = Math.atan2(dy, dx);
+      rotateToward(m, targetAngle, 0.06, 0.05);
 
-      for (const opp of opponents) {
-        if (opp.health <= 0) continue;
-        const dx = opp.x - m.x;
-        const dy = opp.y - m.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < nearestDist) {
-          nearest = opp;
-          nearestDist = dist;
-        }
+      if (Math.hypot(dx, dy) < 40) {
+        m.target.health -= 100;
+        m.target.lastAttacker = m.owner || player;
+        m.target.lastAttackedTime = performance.now();
+        createExplosion(m.target.x, m.target.y, 70);
+        missiles.splice(i, 1);
+        continue;
       }
-
-      if (nearest) {
-        m.target = nearest;
-        targetX = nearest.x;
-        targetY = nearest.y;
-      } else {
-        // 🛫 No target at all, fly straight
-        targetX = m.x + Math.cos(m.angle) * 100;
-        targetY = m.y + Math.sin(m.angle) * 100;
-      }
-    } else {
-      // ☠️ Target is dead, fly straight
-      targetX = m.x + Math.cos(m.angle) * 100;
-      targetY = m.y + Math.sin(m.angle) * 100;
     }
 
-    const dx = targetX - m.x;
-    const dy = targetY - m.y;
-    const targetAngle = Math.atan2(dy, dx);
-
-    rotateToward(m, targetAngle, 0.02, 0.15);
     m.x += Math.cos(m.angle) * m.speed;
     m.y += Math.sin(m.angle) * m.speed;
     m.life--;
@@ -2235,25 +2204,6 @@ function updateMissiles() {
       angle: m.angle + (Math.random() * 0.2 - 0.1),
       color: "white",
     });
-
-    // === Handle impact
-    if (flareTarget) {
-      if (Math.hypot(dx, dy) < 20) {
-        createExplosion(flareTarget.x, flareTarget.y);
-        missiles.splice(i, 1);
-        flares.splice(flares.indexOf(flareTarget), 1); // remove flare
-        continue;
-      }
-    } else {
-      if (m.target && Math.hypot(dx, dy) < 40) {
-        m.target.health -= 100;
-        m.target.lastAttacker = m.owner || player;
-        m.target.lastAttackedTime = performance.now();
-        createExplosion(m.target.x, m.target.y, 70);
-        missiles.splice(i, 1);
-        continue;
-      }
-    }
 
     if (m.life <= 0) {
       createExplosion(m.x, m.y);
@@ -2264,41 +2214,45 @@ function updateMissiles() {
   // === Update opponent missiles ===
   for (let i = opponentMissiles.length - 1; i >= 0; i--) {
     const m = opponentMissiles[i];
+    const flareTarget = findNearestEnemyFlare(m.x, m.y, "opponent");
 
-    let targetX, targetY;
-
-    // === If there are flares, prefer chasing the nearest flare
-    const nearestFlare = findNearestEnemyFlare(m.x, m.y, "opponent");
-
-    if (nearestFlare && !m.divertedToFlare && Math.random() < 0.8) {
-      // 🎯 Divert once with 80% chance
+    if (flareTarget && !m.divertedToFlare && Math.random() < 0.8) {
       m.divertedToFlare = true;
-      m.target = null; // stop tracking player
-      targetX = nearestFlare.x;
-      targetY = nearestFlare.y;
-    } else if (m.divertedToFlare && nearestFlare) {
-      // Continue chasing flare if already diverted
-      targetX = nearestFlare.x;
-      targetY = nearestFlare.y;
-    } else if (player.health > 0) {
-      targetX = player.x;
-      targetY = player.y;
-    } else {
-      // Fly straight if nothing
-      targetX = m.x + Math.cos(m.angle) * 100;
-      targetY = m.y + Math.sin(m.angle) * 100;
+      m.target = null;
     }
 
-    const dx = targetX - m.x;
-    const dy = targetY - m.y;
-    const targetAngle = Math.atan2(dy, dx);
-    rotateToward(m, targetAngle, 0.05, 0.15); // Increase turn rate to 0.03 or higher
+    if (m.divertedToFlare && flareTarget) {
+      const dx = flareTarget.x - m.x;
+      const dy = flareTarget.y - m.y;
+      const targetAngle = Math.atan2(dy, dx);
+      rotateToward(m, targetAngle, 0.06, 0.05);
+
+      if (Math.hypot(dx, dy) < 20) {
+        createExplosion(flareTarget.x, flareTarget.y);
+        opponentMissiles.splice(i, 1);
+        flares.splice(flares.indexOf(flareTarget), 1);
+        continue;
+      }
+    } else if (player.health > 0) {
+      m.target = player;
+      const predicted = predictTargetPosition(m, player, m.speed);
+      const dx = predicted.x - m.x;
+      const dy = predicted.y - m.y;
+      const targetAngle = Math.atan2(dy, dx);
+      rotateToward(m, targetAngle, 0.06, 0.05);
+
+      if (Math.hypot(dx, dy) < 40) {
+        player.health -= 100;
+        createExplosion(player.x, player.y, 70);
+        opponentMissiles.splice(i, 1);
+        continue;
+      }
+    }
 
     m.x += Math.cos(m.angle) * m.speed;
     m.y += Math.sin(m.angle) * m.speed;
     m.life--;
 
-    // === Missile trail (opponent)
     particles.push({
       x: m.x,
       y: m.y,
@@ -2308,30 +2262,13 @@ function updateMissiles() {
       color: "white",
     });
 
-    if (nearestFlare) {
-      // === Hit flare
-      if (Math.hypot(dx, dy) < 20) {
-        createExplosion(nearestFlare.x, nearestFlare.y);
-        opponentMissiles.splice(i, 1);
-        flares.splice(flares.indexOf(nearestFlare), 1); // Remove the flare
-        continue;
-      }
-    } else {
-      // === Hit player
-      if (Math.hypot(dx, dy) < 40) {
-        player.health -= 100;
-        createExplosion(player.x, player.y, 70);
-        opponentMissiles.splice(i, 1);
-        continue;
-      }
-    }
-
     if (m.life <= 0) {
-      createExplosion(m.x, m.y); // 💥 explode on timeout
+      createExplosion(m.x, m.y);
       opponentMissiles.splice(i, 1);
     }
   }
 }
+
 
 function updateFlares() {
   for (let i = flares.length - 1; i >= 0; i--) {
