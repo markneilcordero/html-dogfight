@@ -104,7 +104,6 @@ function setupJoystickControls() {
   });
 }
 
-
 setupJoystickControls();
 
 const keys = {};
@@ -484,8 +483,7 @@ function respawnPlane(plane, isOpponent = false) {
   plane.dodgeOffset = 0;
 
   plane.machineGunAmmo = 480;
-plane.missileAmmo = 14;
-
+  plane.missileAmmo = 14;
 
   plane.collisionCooldown = 60; // 1 second cooldown
 
@@ -550,8 +548,7 @@ function checkAndFixMissileLockSystems() {
   for (const ally of allies) {
     if (
       ally.lockTarget &&
-      (ally.lockTarget.health <= 0 ||
-        !isInMissileCone(ally, ally.lockTarget))
+      (ally.lockTarget.health <= 0 || !isInMissileCone(ally, ally.lockTarget))
     ) {
       // console.warn("🔧 Fixing Ally Lock");
       resetLockFor(ally);
@@ -562,8 +559,7 @@ function checkAndFixMissileLockSystems() {
   for (const opp of opponents) {
     if (
       opp.lockTarget &&
-      (opp.lockTarget.health <= 0 ||
-        !isInMissileCone(opp, opp.lockTarget))
+      (opp.lockTarget.health <= 0 || !isInMissileCone(opp, opp.lockTarget))
     ) {
       // console.warn("🔧 Fixing Opponent Lock");
       resetLockFor(opp);
@@ -575,10 +571,20 @@ function checkAndFixShootingSystems() {
   // === [1] Player Check
   if (playerAIEnabled && player.health > 0 && player.missileAmmo > 0) {
     const { target, distance } = findNearestOpponent(player.x, player.y);
-    const aligned = target && isAngleAligned(player.angle, Math.atan2(target.y - player.y, target.x - player.x));
+    const aligned =
+      target &&
+      isAngleAligned(
+        player.angle,
+        Math.atan2(target.y - player.y, target.x - player.x)
+      );
     const inCone = target && isInMissileCone(player, target);
 
-    if (aligned && inCone && playerMissileLockReady && player.missileCooldown <= 0) {
+    if (
+      aligned &&
+      inCone &&
+      playerMissileLockReady &&
+      player.missileCooldown <= 0
+    ) {
       // console.warn("🚀 Player Autopilot forced missile fire");
       fireMissile();
       player.missileCooldown = 60;
@@ -587,15 +593,29 @@ function checkAndFixShootingSystems() {
 
   // === [2] Allies Check
   for (const ally of allies) {
-    if (ally.health > 0 && ally.missileAmmo > 0 && ally.lockTarget && ally.lockTimer > OPPONENT_LOCK_TIME && ally.missileCooldown <= 0) {
+    if (
+      ally.health > 0 &&
+      ally.missileAmmo > 0 &&
+      ally.lockTarget &&
+      ally.lockTimer > OPPONENT_LOCK_TIME &&
+      ally.missileCooldown <= 0
+    ) {
       // console.warn("🚀 Ally forced missile fire");
       fireAllyMissile(ally);
       ally.lockTimer = 0;
       ally.missileCooldown = 100;
     }
 
-    if (ally.health > 0 && ally.machineGunAmmo > 0 && ally.gunCooldown <= 0 && ally.lockTarget) {
-      const angleToTarget = Math.atan2(ally.lockTarget.y - ally.y, ally.lockTarget.x - ally.x);
+    if (
+      ally.health > 0 &&
+      ally.machineGunAmmo > 0 &&
+      ally.gunCooldown <= 0 &&
+      ally.lockTarget
+    ) {
+      const angleToTarget = Math.atan2(
+        ally.lockTarget.y - ally.y,
+        ally.lockTarget.x - ally.x
+      );
       if (isAngleAligned(ally.angle, angleToTarget)) {
         // console.warn("🔫 Ally forced gun fire");
         fireAllyMachineGun(ally);
@@ -606,15 +626,29 @@ function checkAndFixShootingSystems() {
 
   // === [3] Opponents Check
   for (const opp of opponents) {
-    if (opp.health > 0 && opp.lockTarget && opp.lockTimer > OPPONENT_LOCK_TIME && opp.missileAmmo > 0 && opp.missileCooldown <= 0) {
+    if (
+      opp.health > 0 &&
+      opp.lockTarget &&
+      opp.lockTimer > OPPONENT_LOCK_TIME &&
+      opp.missileAmmo > 0 &&
+      opp.missileCooldown <= 0
+    ) {
       // console.warn("🚀 Opponent forced missile fire");
       fireOpponentMissile(opp, opp.lockTarget);
       opp.lockTimer = 0;
       opp.missileCooldown = 100;
     }
 
-    if (opp.health > 0 && opp.machineGunAmmo > 0 && opp.gunCooldown <= 0 && opp.lockTarget) {
-      const angleToTarget = Math.atan2(opp.lockTarget.y - opp.y, opp.lockTarget.x - opp.x);
+    if (
+      opp.health > 0 &&
+      opp.machineGunAmmo > 0 &&
+      opp.gunCooldown <= 0 &&
+      opp.lockTarget
+    ) {
+      const angleToTarget = Math.atan2(
+        opp.lockTarget.y - opp.y,
+        opp.lockTarget.x - opp.x
+      );
       if (isAngleAligned(opp.angle, angleToTarget)) {
         // console.warn("🔫 Opponent forced gun fire");
         fireOpponentMachineGun(opp);
@@ -746,7 +780,7 @@ function distanceBetween(a, b) {
 
 function prioritizeTarget(entity, candidates) {
   return candidates
-    .filter(c => c.health > 0)
+    .filter((c) => c.health > 0)
     .sort((a, b) => {
       const scoreA = a.health + distanceBetween(entity, a) * 0.1;
       const scoreB = b.health + distanceBetween(entity, b) * 0.1;
@@ -871,7 +905,7 @@ function fireMachineGun() {
     speed: 16,
     life: 500,
     owner: player,
-    trails: []
+    trails: [],
   });
 
   player.machineGunAmmo--;
@@ -890,7 +924,7 @@ function fireAllyMachineGun(ally) {
     speed: 16,
     life: 500,
     owner: ally,
-    trails: []
+    trails: [],
   });
 
   ally.machineGunAmmo--;
@@ -945,7 +979,13 @@ function fireAllyMissile(ally) {
 
 function fireMissile() {
   if (player.missileAmmo <= 0) {
-    createFloatingText("🚀 OUT OF MISSILES", player.x, player.y - 60, "gray", 16);
+    createFloatingText(
+      "🚀 OUT OF MISSILES",
+      player.x,
+      player.y - 60,
+      "gray",
+      16
+    );
     return;
   }
 
@@ -987,7 +1027,6 @@ function fireMissile() {
   playerMissileLockReady = false;
   playerMissileLockTimer = 0;
 }
-
 
 function releaseFlaresFor(entity) {
   const flarePairs = 10; // 5 pairs = 10 total flares
@@ -1082,10 +1121,9 @@ function updateOpponents() {
     // 🔒 Force aggressive mode only
     opp.mode = "aggressive";
 
-    const candidates = allies.concat(player).filter(e => e.health > 0);
+    const candidates = allies.concat(player).filter((e) => e.health > 0);
     const target = prioritizeTarget(opp, candidates);
     const distance = target ? distanceBetween(opp, target) : Infinity;
-
 
     if (target) {
       // === Ammo Regen
@@ -1175,14 +1213,14 @@ function updateOpponents() {
         opp.lockTimer = 0;
         opp.lockTarget = null;
       }
-      
+
       const shouldFireMissile =
         opp.lockTimer > OPPONENT_LOCK_TIME &&
         opp.missileAmmo > 0 &&
         opp.missileCooldown <= 0 &&
         isAngleAligned(opp.angle, angleToTarget) &&
         Math.random() < 0.9;
-      
+
       if (shouldFireMissile) {
         createFloatingText("🚀 LOCKED", target.x, target.y - 50, "red", 18);
         fireOpponentMissile(opp, target);
@@ -1252,7 +1290,7 @@ function updateAllies() {
       } else {
         ally.ammoRegenTimer = 0;
       }
-    
+
       if (ally.missileAmmo <= 0) {
         ally.missileRegenTimer = (ally.missileRegenTimer || 0) + 1;
         if (ally.missileRegenTimer >= 100) {
@@ -1271,30 +1309,30 @@ function updateAllies() {
       } else {
         ally.missileRegenTimer = 0;
       }
-    
+
       const dx = target.x - ally.x;
       const dy = target.y - ally.y;
       const offset = Math.PI / 3;
       maybeDodge(ally);
       const targetAngle =
         Math.atan2(dy, dx) + offset * ally.orbitDirection + ally.dodgeOffset;
-    
+
       avoidMapEdges(ally);
       const underFire = detectIncomingFire(ally);
       if (underFire) {
         maybeDodge(ally);
         adjustThrottle(ally, 4.5);
       }
-    
+
       adjustThrottle(ally, 5);
       rotateToward(ally, targetAngle, ally.maxTurnRate || 0.015, 0);
       moveForward(ally);
-    
+
       avoidOthers(ally, allies);
       bounceOffWalls(ally);
       createEntityWingTrails(ally);
       createEngineParticles(ally);
-    
+
       const angleToTarget = Math.atan2(dy, dx);
       if (
         nearestDist < 800 &&
@@ -1304,9 +1342,9 @@ function updateAllies() {
         fireAllyMachineGun(ally);
         ally.gunCooldown = 6;
       }
-    
+
       const inMissileCone = isInMissileCone(ally, target);
-    
+
       if (inMissileCone) {
         if (ally.lockTarget === target) {
           ally.lockTimer += 1;
@@ -1314,7 +1352,7 @@ function updateAllies() {
           ally.lockTarget = target;
           ally.lockTimer = 1;
         }
-    
+
         if (
           ally.lockTimer > OPPONENT_LOCK_TIME &&
           ally.missileAmmo > 0 &&
@@ -1322,18 +1360,12 @@ function updateAllies() {
           isAngleAligned(ally.angle, angleToTarget) &&
           Math.random() < 0.9
         ) {
-          createFloatingText(
-            "🚀 LOCKED",
-            target.x,
-            target.y - 50,
-            "lime",
-            18
-          );
+          createFloatingText("🚀 LOCKED", target.x, target.y - 50, "lime", 18);
           fireAllyMissile(ally);
           ally.lockTimer = 0;
           ally.missileCooldown = 100;
         }
-      }else if (ally.lockTarget === target && ally.lockTimer > 0) {
+      } else if (ally.lockTarget === target && ally.lockTimer > 0) {
         // 👁️ Memory behavior: slowly decay timer instead of forgetting
         ally.lockTimer = Math.max(0, ally.lockTimer - 1);
       } else {
@@ -1341,7 +1373,6 @@ function updateAllies() {
         ally.lockTarget = null;
       }
     }
-    
 
     if (ally.collisionCooldown > 0) ally.collisionCooldown--;
     if (ally.gunCooldown > 0) ally.gunCooldown--;
@@ -1356,13 +1387,12 @@ function updateOpponentBullets() {
     b.life--;
 
     // Add trail to the bullet
-b.trails.push({
-  x: b.x,
-  y: b.y,
-  alpha: 0.6
-});
-if (b.trails.length > 10) b.trails.shift(); // Limit trail length
-
+    b.trails.push({
+      x: b.x,
+      y: b.y,
+      alpha: 0.6,
+    });
+    if (b.trails.length > 10) b.trails.shift(); // Limit trail length
 
     // Check collision with player
     let hit = false;
@@ -1403,7 +1433,7 @@ function fireOpponentMachineGun(opp) {
     speed: 12, // You can raise this to 16 to match the player
     life: 500,
     owner: opp,
-    trails: []
+    trails: [],
   });
 
   opp.machineGunAmmo--;
@@ -1678,46 +1708,46 @@ function updatePlayerAutopilot() {
 
   const inCone = isInMissileCone(player, target);
 
-// === AI Lock-On Memory
-if (inCone) {
-  if (playerLockTarget === target) {
-    playerLockTimer += 1;
+  // === AI Lock-On Memory
+  if (inCone) {
+    if (playerLockTarget === target) {
+      playerLockTimer += 1;
+    } else {
+      playerLockTarget = target;
+      playerLockTimer = 1;
+    }
+
+    if (playerLockTimer > PLAYER_LOCK_TIME) {
+      playerMissileLockReady = true;
+    }
+  } else if (playerLockTarget === target && playerLockTimer > 0) {
+    playerLockTimer -= 1; // 💡 AI memory decay
   } else {
-    playerLockTarget = target;
-    playerLockTimer = 1;
+    playerLockTimer = 0;
+    playerLockTarget = null;
+    playerMissileLockReady = false;
   }
 
-  if (playerLockTimer > PLAYER_LOCK_TIME) {
-    playerMissileLockReady = true;
-  }
-} else if (playerLockTarget === target && playerLockTimer > 0) {
-  playerLockTimer -= 1; // 💡 AI memory decay
-} else {
-  playerLockTimer = 0;
-  playerLockTarget = null;
-  playerMissileLockReady = false;
-}
+  const tryFireMissile =
+    playerMissileLockReady &&
+    player.missileAmmo > 0 &&
+    aligned &&
+    distance < 1000 &&
+    target.health > 1 &&
+    player.missileCooldown <= 0;
 
-const tryFireMissile =
-  playerMissileLockReady &&
-  player.missileAmmo > 0 &&
-  aligned &&
-  distance < 1000 &&
-  target.health > 1 &&
-  player.missileCooldown <= 0;
-
-if (tryFireMissile) {
-  fireMissile();
-  player.missileCooldown = 60;
-  createFloatingText(
-    "🚀 AUTOPILOT FIRED",
-    player.x,
-    player.y - 60,
-    "yellow",
-    16
-  );
-  return;
-} else if (tryFireGun && player.gunCooldown <= 0) {
+  if (tryFireMissile) {
+    fireMissile();
+    player.missileCooldown = 60;
+    createFloatingText(
+      "🚀 AUTOPILOT FIRED",
+      player.x,
+      player.y - 60,
+      "yellow",
+      16
+    );
+    return;
+  } else if (tryFireGun && player.gunCooldown <= 0) {
     fireMachineGun();
     player.gunCooldown = 6; // 🔫 fire every 6 frames (~100ms at 60FPS)
   }
@@ -2073,13 +2103,12 @@ function updateBullets() {
     b.life--;
 
     // Add trail to the bullet
-b.trails.push({
-  x: b.x,
-  y: b.y,
-  alpha: 0.6
-});
-if (b.trails.length > 10) b.trails.shift(); // Limit trail length
-
+    b.trails.push({
+      x: b.x,
+      y: b.y,
+      alpha: 0.6,
+    });
+    if (b.trails.length > 10) b.trails.shift(); // Limit trail length
 
     // === Check collision with each opponent ===
     for (const opp of opponents) {
@@ -2371,6 +2400,18 @@ function draw() {
   drawOffscreenIndicators();
 }
 
+function drawLockMemoryIcon(entity) {
+  const iconX = entity.x - camera.x;
+  const iconY = entity.y - camera.y - 60;
+
+  ctx.save();
+  ctx.fillStyle = "white";
+  ctx.font = "16px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("🔒", iconX, iconY);
+  ctx.restore();
+}
+
 function drawBackground() {
   ctx.drawImage(images.sky, -camera.x, -camera.y, WORLD_WIDTH, WORLD_HEIGHT);
 }
@@ -2490,7 +2531,6 @@ function drawMachineGunBullets() {
     ctx.restore();
   }
 }
-
 
 function drawMissiles() {
   for (const m of missiles) {
@@ -2921,6 +2961,18 @@ function drawUI() {
     50
   );
   ctx.fillText(`☠️ Kills: ${player.killCount}`, 20, 70);
+
+  // === Lock-On Memory UI Feedback 🔒
+  for (const entity of [player, ...allies, ...opponents]) {
+    if (
+      entity.health > 0 &&
+      entity.lockTimer > 0 &&
+      entity.lockTarget &&
+      entity.lockTarget.health > 0
+    ) {
+      drawLockMemoryIcon(entity);
+    }
+  }
 }
 
 function drawFloatingTexts() {
