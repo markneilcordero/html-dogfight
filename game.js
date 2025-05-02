@@ -508,7 +508,8 @@ function resetLockFor(entity) {
   if (
     !entity.lockTarget ||
     entity.lockTarget.health <= 0 ||
-    Math.hypot(entity.lockTarget.x - entity.x, entity.lockTarget.y - entity.y) > 1000
+    Math.hypot(entity.lockTarget.x - entity.x, entity.lockTarget.y - entity.y) >
+      1000
   ) {
     entity.lockTarget = null;
     entity.lockTimer = 0;
@@ -523,7 +524,8 @@ function resetLockFor(entity) {
     if (
       !playerLockTarget ||
       playerLockTarget.health <= 0 ||
-      Math.hypot(playerLockTarget.x - player.x, playerLockTarget.y - player.y) > 1000
+      Math.hypot(playerLockTarget.x - player.x, playerLockTarget.y - player.y) >
+        1000
     ) {
       playerLockTarget = null;
       playerMissileLockReady = false;
@@ -532,7 +534,6 @@ function resetLockFor(entity) {
     }
   }
 }
-
 
 // ====================
 // [4] Utility Functions
@@ -1216,7 +1217,9 @@ function updateAllies() {
         fireAllyMachineGun(ally);
       }
 
-      if (isInMissileCone(ally, nearestOpponent)) {
+      const inMissileCone = isInMissileCone(ally, nearestOpponent);
+
+      if (inMissileCone) {
         if (ally.lockTarget === nearestOpponent) {
           ally.lockTimer += 1;
         } else {
@@ -1224,13 +1227,12 @@ function updateAllies() {
           ally.lockTimer = 1;
         }
 
-        const shouldFireMissile =
+        if (
           ally.lockTimer > OPPONENT_LOCK_TIME &&
           ally.missileAmmo > 0 &&
           isAngleAligned(ally.angle, angleToTarget) &&
-          Math.random() < 0.1;
-
-        if (shouldFireMissile) {
+          Math.random() < 0.1
+        ) {
           createFloatingText(
             "🚀 LOCKED",
             nearestOpponent.x,
@@ -1242,7 +1244,8 @@ function updateAllies() {
           ally.lockTimer = 0;
         }
       } else {
-        resetLockFor(ally);
+        ally.lockTimer = Math.max(0, ally.lockTimer - 1);
+        ally.lockTarget = null;
       }
     }
 
@@ -1566,16 +1569,22 @@ function updatePlayerAutopilot() {
     target.health > 1 &&
     player.missileCooldown <= 0;
 
-    if (tryFireMissile) {
-      fireMissile();
-      player.missileCooldown = 60;
-      createFloatingText("🚀 AUTOPILOT FIRED", player.x, player.y - 60, "yellow", 16);
-      return;
-    } else if (tryFireGun && player.gunCooldown <= 0) {
-      fireMachineGun();
-      player.gunCooldown = 6; // 🔫 fire every 6 frames (~100ms at 60FPS)
-    }
-    if (player.gunCooldown > 0) player.gunCooldown--;
+  if (tryFireMissile) {
+    fireMissile();
+    player.missileCooldown = 60;
+    createFloatingText(
+      "🚀 AUTOPILOT FIRED",
+      player.x,
+      player.y - 60,
+      "yellow",
+      16
+    );
+    return;
+  } else if (tryFireGun && player.gunCooldown <= 0) {
+    fireMachineGun();
+    player.gunCooldown = 6; // 🔫 fire every 6 frames (~100ms at 60FPS)
+  }
+  if (player.gunCooldown > 0) player.gunCooldown--;
 }
 
 function updatePlayer() {
@@ -2003,7 +2012,7 @@ function updateMissiles() {
       // 🎯 Assign initial target once
       let nearest = null;
       let nearestDist = Infinity;
-    
+
       for (const opp of opponents) {
         if (opp.health <= 0) continue;
         const dx = opp.x - m.x;
@@ -2014,7 +2023,7 @@ function updateMissiles() {
           nearestDist = dist;
         }
       }
-    
+
       if (nearest) {
         m.target = nearest;
         targetX = nearest.x;
@@ -2028,7 +2037,7 @@ function updateMissiles() {
       // ☠️ Target is dead, fly straight
       targetX = m.x + Math.cos(m.angle) * 100;
       targetY = m.y + Math.sin(m.angle) * 100;
-    }    
+    }
 
     const dx = targetX - m.x;
     const dy = targetY - m.y;
@@ -2082,25 +2091,24 @@ function updateMissiles() {
     // === If there are flares, prefer chasing the nearest flare
     const nearestFlare = findNearestEnemyFlare(m.x, m.y, "opponent");
 
-if (nearestFlare && !m.divertedToFlare && Math.random() < 0.8) {
-  // 🎯 Divert once with 80% chance
-  m.divertedToFlare = true;
-  m.target = null; // stop tracking player
-  targetX = nearestFlare.x;
-  targetY = nearestFlare.y;
-} else if (m.divertedToFlare && nearestFlare) {
-  // Continue chasing flare if already diverted
-  targetX = nearestFlare.x;
-  targetY = nearestFlare.y;
-} else if (player.health > 0) {
-  targetX = player.x;
-  targetY = player.y;
-} else {
-  // Fly straight if nothing
-  targetX = m.x + Math.cos(m.angle) * 100;
-  targetY = m.y + Math.sin(m.angle) * 100;
-}
-
+    if (nearestFlare && !m.divertedToFlare && Math.random() < 0.8) {
+      // 🎯 Divert once with 80% chance
+      m.divertedToFlare = true;
+      m.target = null; // stop tracking player
+      targetX = nearestFlare.x;
+      targetY = nearestFlare.y;
+    } else if (m.divertedToFlare && nearestFlare) {
+      // Continue chasing flare if already diverted
+      targetX = nearestFlare.x;
+      targetY = nearestFlare.y;
+    } else if (player.health > 0) {
+      targetX = player.x;
+      targetY = player.y;
+    } else {
+      // Fly straight if nothing
+      targetX = m.x + Math.cos(m.angle) * 100;
+      targetY = m.y + Math.sin(m.angle) * 100;
+    }
 
     const dx = targetX - m.x;
     const dy = targetY - m.y;
@@ -2652,7 +2660,7 @@ function drawOpponentLockLines() {
     ctx.restore();
   }
 
-  // Ally missile cone guide (if locking on)
+  // // Ally missile cone guide (if locking on)
   // for (const ally of allies) {
   //   if (ally.health > 0 && ally.lockTarget) {
   //     drawMissileRangeGuideFor(ally, "rgba(0, 255, 255, 0.08)"); // cyan-ish
