@@ -2729,7 +2729,8 @@ function drawGunRangeGuide(entity) {
 }
 
 function drawLockOnLine() {
-  if (!playerMissileLockReady) return;
+  if (!playerMissileLockReady || !playerLockTarget) return;
+  if (playerLockTarget.health <= 0) return;
 
   // Find nearest valid opponent within missile cone
   let nearestOpponent = null;
