@@ -394,6 +394,7 @@ let autopilotMode = "balanced"; // "balanced", "aggressive", "defensive"
 // === Lock Variables ===
 const PLAYER_LOCK_TIME = 10; // Player needs 1.5 seconds to lock (adjust this!)
 const OPPONENT_LOCK_TIME = 10; // Opponent needs 1.5 seconds to lock (adjust this!)
+const LOCK_MEMORY_DURATION = 3600;
 
 let playerMissileLockTimer = 0; // how long player has been locking onto opponent
 let playerMissileLockReady = false;
@@ -1158,30 +1159,35 @@ function updateOpponents() {
         opp.gunCooldown = 6; // ~100ms at 60 FPS
       }
 
-      if (isInMissileCone(opp, target)) {
+      const inMissileCone = isInMissileCone(opp, target);
+
+      if (inMissileCone) {
         if (opp.lockTarget === target) {
           opp.lockTimer += 1;
         } else {
           opp.lockTarget = target;
           opp.lockTimer = 1;
         }
-
-        const shouldFireMissile =
-          opp.lockTimer > OPPONENT_LOCK_TIME &&
-          opp.missileAmmo > 0 &&
-          opp.missileCooldown <= 0 &&
-          isAngleAligned(opp.angle, angleToTarget) &&
-          Math.random() < 0.9;
-
-        if (shouldFireMissile) {
-          createFloatingText("🚀 LOCKED", target.x, target.y - 50, "red", 18);
-          fireOpponentMissile(opp, target);
-          opp.lockTimer = 0;
-          opp.missileCooldown = 100;
-        }
+      } else if (opp.lockTarget === target && opp.lockTimer > 0) {
+        // 🧠 AI Memory: decay timer instead of instant reset
+        opp.lockTimer = Math.max(0, opp.lockTimer - 1); // 🧠 Memory decay
       } else {
-        opp.lockTimer = Math.max(0, opp.lockTimer - 1);
+        opp.lockTimer = 0;
         opp.lockTarget = null;
+      }
+      
+      const shouldFireMissile =
+        opp.lockTimer > OPPONENT_LOCK_TIME &&
+        opp.missileAmmo > 0 &&
+        opp.missileCooldown <= 0 &&
+        isAngleAligned(opp.angle, angleToTarget) &&
+        Math.random() < 0.9;
+      
+      if (shouldFireMissile) {
+        createFloatingText("🚀 LOCKED", target.x, target.y - 50, "red", 18);
+        fireOpponentMissile(opp, target);
+        opp.lockTimer = 0;
+        opp.missileCooldown = 100;
       }
     }
 
@@ -1327,8 +1333,11 @@ function updateAllies() {
           ally.lockTimer = 0;
           ally.missileCooldown = 100;
         }
-      } else {
+      }else if (ally.lockTarget === target && ally.lockTimer > 0) {
+        // 👁️ Memory behavior: slowly decay timer instead of forgetting
         ally.lockTimer = Math.max(0, ally.lockTimer - 1);
+      } else {
+        ally.lockTimer = 0;
         ally.lockTarget = null;
       }
     }
@@ -1669,27 +1678,46 @@ function updatePlayerAutopilot() {
 
   const inCone = isInMissileCone(player, target);
 
-  const tryFireMissile =
-    playerMissileLockReady &&
-    player.missileAmmo > 0 &&
-    aligned &&
-    inCone &&
-    distance < 1000 &&
-    target.health > 1 &&
-    player.missileCooldown <= 0;
+// === AI Lock-On Memory
+if (inCone) {
+  if (playerLockTarget === target) {
+    playerLockTimer += 1;
+  } else {
+    playerLockTarget = target;
+    playerLockTimer = 1;
+  }
 
-  if (tryFireMissile) {
-    fireMissile();
-    player.missileCooldown = 60;
-    createFloatingText(
-      "🚀 AUTOPILOT FIRED",
-      player.x,
-      player.y - 60,
-      "yellow",
-      16
-    );
-    return;
-  } else if (tryFireGun && player.gunCooldown <= 0) {
+  if (playerLockTimer > PLAYER_LOCK_TIME) {
+    playerMissileLockReady = true;
+  }
+} else if (playerLockTarget === target && playerLockTimer > 0) {
+  playerLockTimer -= 1; // 💡 AI memory decay
+} else {
+  playerLockTimer = 0;
+  playerLockTarget = null;
+  playerMissileLockReady = false;
+}
+
+const tryFireMissile =
+  playerMissileLockReady &&
+  player.missileAmmo > 0 &&
+  aligned &&
+  distance < 1000 &&
+  target.health > 1 &&
+  player.missileCooldown <= 0;
+
+if (tryFireMissile) {
+  fireMissile();
+  player.missileCooldown = 60;
+  createFloatingText(
+    "🚀 AUTOPILOT FIRED",
+    player.x,
+    player.y - 60,
+    "yellow",
+    16
+  );
+  return;
+} else if (tryFireGun && player.gunCooldown <= 0) {
     fireMachineGun();
     player.gunCooldown = 6; // 🔫 fire every 6 frames (~100ms at 60FPS)
   }
