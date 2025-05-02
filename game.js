@@ -536,6 +536,43 @@ function resetLockFor(entity) {
   }
 }
 
+function checkAndFixMissileLockSystems() {
+  // === [1] Player Lock Check
+  if (
+    player.lockTarget &&
+    (player.lockTarget.health <= 0 ||
+      !isInMissileCone(player, player.lockTarget))
+  ) {
+    console.warn("🔧 Fixing Player Lock");
+    resetLockFor(player);
+  }
+
+  // === [2] Allies Lock Check
+  for (const ally of allies) {
+    if (
+      ally.lockTarget &&
+      (ally.lockTarget.health <= 0 ||
+        !isInMissileCone(ally, ally.lockTarget))
+    ) {
+      console.warn("🔧 Fixing Ally Lock");
+      resetLockFor(ally);
+    }
+  }
+
+  // === [3] Opponents Lock Check
+  for (const opp of opponents) {
+    if (
+      opp.lockTarget &&
+      (opp.lockTarget.health <= 0 ||
+        !isInMissileCone(opp, opp.lockTarget))
+    ) {
+      console.warn("🔧 Fixing Opponent Lock");
+      resetLockFor(opp);
+    }
+  }
+}
+
+
 // ====================
 // [4] Utility Functions
 // ====================
@@ -1438,6 +1475,7 @@ function update() {
   updateExplosions();
   updatePlayerMissileLock();
   updateOpponentMissileLock();
+  checkAndFixMissileLockSystems();
 }
 
 function updatePlayerAutopilot() {
