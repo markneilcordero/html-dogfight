@@ -541,7 +541,7 @@ function checkAndFixMissileLockSystems() {
     (player.lockTarget.health <= 0 ||
       !isInMissileCone(player, player.lockTarget))
   ) {
-    console.warn("🔧 Fixing Player Lock");
+    // console.warn("🔧 Fixing Player Lock");
     resetLockFor(player);
   }
 
@@ -552,7 +552,7 @@ function checkAndFixMissileLockSystems() {
       (ally.lockTarget.health <= 0 ||
         !isInMissileCone(ally, ally.lockTarget))
     ) {
-      console.warn("🔧 Fixing Ally Lock");
+      // console.warn("🔧 Fixing Ally Lock");
       resetLockFor(ally);
     }
   }
@@ -564,7 +564,7 @@ function checkAndFixMissileLockSystems() {
       (opp.lockTarget.health <= 0 ||
         !isInMissileCone(opp, opp.lockTarget))
     ) {
-      console.warn("🔧 Fixing Opponent Lock");
+      // console.warn("🔧 Fixing Opponent Lock");
       resetLockFor(opp);
     }
   }
@@ -578,7 +578,7 @@ function checkAndFixShootingSystems() {
     const inCone = target && isInMissileCone(player, target);
 
     if (aligned && inCone && playerMissileLockReady && player.missileCooldown <= 0) {
-      console.warn("🚀 Player Autopilot forced missile fire");
+      // console.warn("🚀 Player Autopilot forced missile fire");
       fireMissile();
       player.missileCooldown = 60;
     }
@@ -587,7 +587,7 @@ function checkAndFixShootingSystems() {
   // === [2] Allies Check
   for (const ally of allies) {
     if (ally.health > 0 && ally.missileAmmo > 0 && ally.lockTarget && ally.lockTimer > OPPONENT_LOCK_TIME && ally.missileCooldown <= 0) {
-      console.warn("🚀 Ally forced missile fire");
+      // console.warn("🚀 Ally forced missile fire");
       fireAllyMissile(ally);
       ally.lockTimer = 0;
       ally.missileCooldown = 100;
@@ -596,7 +596,7 @@ function checkAndFixShootingSystems() {
     if (ally.health > 0 && ally.machineGunAmmo > 0 && ally.gunCooldown <= 0 && ally.lockTarget) {
       const angleToTarget = Math.atan2(ally.lockTarget.y - ally.y, ally.lockTarget.x - ally.x);
       if (isAngleAligned(ally.angle, angleToTarget)) {
-        console.warn("🔫 Ally forced gun fire");
+        // console.warn("🔫 Ally forced gun fire");
         fireAllyMachineGun(ally);
         ally.gunCooldown = 6;
       }
@@ -606,7 +606,7 @@ function checkAndFixShootingSystems() {
   // === [3] Opponents Check
   for (const opp of opponents) {
     if (opp.health > 0 && opp.lockTarget && opp.lockTimer > OPPONENT_LOCK_TIME && opp.missileAmmo > 0 && opp.missileCooldown <= 0) {
-      console.warn("🚀 Opponent forced missile fire");
+      // console.warn("🚀 Opponent forced missile fire");
       fireOpponentMissile(opp, opp.lockTarget);
       opp.lockTimer = 0;
       opp.missileCooldown = 100;
@@ -615,7 +615,7 @@ function checkAndFixShootingSystems() {
     if (opp.health > 0 && opp.machineGunAmmo > 0 && opp.gunCooldown <= 0 && opp.lockTarget) {
       const angleToTarget = Math.atan2(opp.lockTarget.y - opp.y, opp.lockTarget.x - opp.x);
       if (isAngleAligned(opp.angle, angleToTarget)) {
-        console.warn("🔫 Opponent forced gun fire");
+        // console.warn("🔫 Opponent forced gun fire");
         fireOpponentMachineGun(opp);
         opp.gunCooldown = 6;
       }
