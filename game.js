@@ -424,8 +424,8 @@ function createPlane(x, y) {
     dodgeCooldown: 0,
     dodgeOffset: 0,
     flareCooldown: 0,
-    machineGunAmmo: 200, // 🔫 New
-    missileAmmo: 4, // 🚀 New
+    machineGunAmmo: 480, // 🔫 New
+    missileAmmo: 14, // 🚀 New
     lockTimer: 0,
     lockTarget: null,
     collisionCooldown: 0,
@@ -484,8 +484,9 @@ function respawnPlane(plane, isOpponent = false) {
   plane.dodgeCooldown = 0;
   plane.dodgeOffset = 0;
 
-  plane.machineGunAmmo = 200;
-  plane.missileAmmo = 4;
+  plane.machineGunAmmo = 480;
+plane.missileAmmo = 14;
+
 
   plane.collisionCooldown = 60; // 1 second cooldown
 
@@ -1028,7 +1029,7 @@ function updateOpponents() {
       if (opp.missileAmmo <= 0) {
         opp.missileRegenTimer = (opp.missileRegenTimer || 0) + 1;
         if (opp.missileRegenTimer >= 300) {
-          opp.missileAmmo = 4;
+          opp.missileAmmo = 14;
           opp.lockTarget = null;
           opp.lockTimer = 0;
           createFloatingText(
@@ -1172,7 +1173,7 @@ function updateAllies() {
       if (ally.missileAmmo <= 0) {
         ally.missileRegenTimer = (ally.missileRegenTimer || 0) + 1;
         if (ally.missileRegenTimer >= 100) {
-          ally.missileAmmo = 4;
+          ally.missileAmmo = 14;
           ally.lockTarget = null;
           ally.lockTimer = 0;
           createFloatingText(
@@ -1651,9 +1652,9 @@ function updatePlayer() {
   if (player.machineGunAmmo <= 0) {
     if (!player.ammoRegenTimer) player.ammoRegenTimer = 0;
     player.ammoRegenTimer++;
-    if (player.ammoRegenTimer >= 120) {
+    if (player.ammoRegenTimer >= 180) {
       // 2 seconds at 60 FPS
-      player.machineGunAmmo = 200;
+      player.machineGunAmmo = 480;
       createFloatingText(
         "🔫 Ammo Refilled!",
         player.x,
@@ -1670,9 +1671,9 @@ function updatePlayer() {
   if (player.missileAmmo <= 0) {
     if (!player.missileRegenTimer) player.missileRegenTimer = 0;
     player.missileRegenTimer++;
-    if (player.missileRegenTimer >= 100) {
+    if (player.missileRegenTimer >= 300) {
       // 5 seconds at 60 FPS
-      player.missileAmmo = 4;
+      player.missileAmmo = 14;
       playerMissileLockReady = false;
       playerMissileLockTimer = 0;
       missileLockAnnounced = false;
