@@ -1538,7 +1538,7 @@ function update() {
   updateOpponentMissileLock();
 
   // 8. Periodic system checks
-  if (++shootingFixCounter % 5 === 0) {
+  if (++shootingFixCounter % 2 === 0) {
     checkAndFixMissileLockSystems();
     checkAndFixShootingSystems();
   }
