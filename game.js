@@ -1507,7 +1507,7 @@ function updateOpponentMissileLock() {
 // ====================
 // [7] Update Functions
 // ====================
-
+let shootingFixCounter = 0;
 function update() {
   maybeDeployFlares(opponents);
   maybeDeployFlares(allies);
@@ -1527,8 +1527,10 @@ function update() {
   updateExplosions();
   updatePlayerMissileLock();
   updateOpponentMissileLock();
-  checkAndFixMissileLockSystems();
-  checkAndFixShootingSystems();
+  if (++shootingFixCounter % 5 === 0) {
+    checkAndFixMissileLockSystems();
+    checkAndFixShootingSystems();
+  }
 }
 
 function updatePlayerAutopilot() {
