@@ -580,15 +580,13 @@ function checkAndFixShootingSystems() {
     const inCone = target && isInMissileCone(player, target);
 
     if (
-      aligned &&
-      inCone &&
       playerMissileLockReady &&
+      player.missileAmmo > 0 &&
       player.missileCooldown <= 0
     ) {
-      // console.warn("🚀 Player Autopilot forced missile fire");
       fireMissile();
       player.missileCooldown = 60;
-    }
+    }    
   }
 
   // === [2] Allies Check
@@ -1002,18 +1000,10 @@ function fireMissile() {
   const dist = Math.hypot(dx, dy);
   const angleToTarget = Math.atan2(dy, dx);
 
-  if (!isInMissileCone(player, target)) {
-    const angleDiff =
-      ((angleToTarget - player.angle + Math.PI * 3) % (2 * Math.PI)) - Math.PI;
-
-    let reason = "❌ NOT IN RANGE";
-    if (dist < 0) reason = "❌ INVALID DIST";
-    else if (dist > 900) reason = "❌ TOO FAR";
-    else if (Math.abs(angleDiff) > Math.PI / 6) reason = "❌ NOT ALIGNED";
-
-    createFloatingText(reason, player.x, player.y - 60, "gray", 16);
+  if (dist > 1200) {
+    createFloatingText("❌ TOO FAR", player.x, player.y - 60, "gray", 16);
     return;
-  }
+  }  
 
   missiles.push({
     x: player.x,
@@ -1058,6 +1048,7 @@ function releaseFlaresFor(entity) {
           life: 100,
           size: 12 + Math.random() * 6,
           owner: entity, // ✅ assign owner
+          trails: [],
         });
       }
 
@@ -1733,12 +1724,11 @@ function updatePlayerAutopilot() {
   }
 
   const tryFireMissile =
-    playerMissileLockReady &&
-    player.missileAmmo > 0 &&
-    aligned &&
-    distance < 1000 &&
-    target.health > 1 &&
-    player.missileCooldown <= 0;
+  playerMissileLockReady &&
+  player.missileAmmo > 0 &&
+  distance < 1000 &&
+  target.health > 1 &&
+  player.missileCooldown <= 0;
 
   if (tryFireMissile) {
     fireMissile();
@@ -2280,11 +2270,22 @@ function updateFlares() {
     f.x += Math.cos(f.angle) * f.speed;
     f.y += Math.sin(f.angle) * f.speed;
     f.life--;
+
+    // ✅ Add trail point
+    f.trails.push({
+      x: f.x,
+      y: f.y,
+      alpha: 0.6,
+    });
+
+    if (f.trails.length > 10) f.trails.shift(); // Limit trail length
+
     if (f.life <= 0) {
       flares.splice(i, 1);
     }
   }
 }
+
 
 function updateParticles() {
   for (let i = particles.length - 1; i >= 0; i--) {
@@ -2519,6 +2520,21 @@ function drawOpponentMissiles() {
 
 function drawFlares() {
   for (const f of flares) {
+    // ✅ Draw trails first
+    for (const t of f.trails) {
+      ctx.save();
+      ctx.globalAlpha = t.alpha;
+      ctx.fillStyle = "orange"; // You can adjust color
+      ctx.beginPath();
+      ctx.arc(t.x - camera.x, t.y - camera.y, 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Fade trail point
+      t.alpha -= 0.02;
+    }
+
+    // 🔥 Draw flare image
     ctx.save();
     ctx.globalAlpha = 0.8;
     ctx.translate(f.x - camera.x, f.y - camera.y);
@@ -2527,6 +2543,7 @@ function drawFlares() {
     ctx.restore();
   }
 }
+
 
 function drawParticles() {
   for (const p of particles) {
