@@ -1509,24 +1509,37 @@ function updateOpponentMissileLock() {
 // ====================
 let shootingFixCounter = 0;
 function update() {
+  // 1. AI/defensive actions before movement
   maybeDeployFlares(opponents);
   maybeDeployFlares(allies);
+
+  // 2. Player and entity updates (movement, actions)
   updatePlayer();
-  updateBullets();
-  updateOpponentBullets();
-  updateMissiles();
   updateOpponents();
   updateAllies();
 
+  // 3. Projectiles and effects (move after entities for accurate collision)
+  updateBullets();
+  updateOpponentBullets();
+  updateMissiles();
+
+  // 4. Collisions (if you use them)
   // handleCollisions();
 
+  // 5. Physics/anti-stacking (optional)
   // applyAntiStacking([player, ...opponents, ...allies]);
+
+  // 6. Visual and timed effects
   updateFlares();
   updateParticles();
   updateFloatingTexts();
   updateExplosions();
+
+  // 7. Lock-on and targeting logic (after movement)
   updatePlayerMissileLock();
   updateOpponentMissileLock();
+
+  // 8. Periodic system checks
   if (++shootingFixCounter % 5 === 0) {
     checkAndFixMissileLockSystems();
     checkAndFixShootingSystems();
