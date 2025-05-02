@@ -739,6 +739,20 @@ function findAggroTarget(entity, defaultFinder) {
   return defaultFinder(entity.x, entity.y);
 }
 
+function distanceBetween(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function prioritizeTarget(entity, candidates) {
+  return candidates
+    .filter(c => c.health > 0)
+    .sort((a, b) => {
+      const scoreA = a.health + distanceBetween(entity, a) * 0.1;
+      const scoreB = b.health + distanceBetween(entity, b) * 0.1;
+      return scoreA - scoreB;
+    })[0];
+}
+
 function detectIncomingFire(entity) {
   for (const b of machineGunBullets) {
     const dx = b.x - entity.x;
@@ -930,53 +944,27 @@ function fireAllyMissile(ally) {
 
 function fireMissile() {
   if (player.missileAmmo <= 0) {
-    createFloatingText(
-      "🚀 OUT OF MISSILES",
-      player.x,
-      player.y - 60,
-      "gray",
-      16
-    );
+    createFloatingText("🚀 OUT OF MISSILES", player.x, player.y - 60, "gray", 16);
     return;
   }
 
-  // === Find nearest opponent
-  let nearestOpponent = null;
-  let nearestDist = Infinity;
+  const target = prioritizeTarget(player, opponents);
+  if (!target) return;
 
-  for (const opp of opponents) {
-    const dx = opp.x - player.x;
-    const dy = opp.y - player.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist < nearestDist) {
-      nearestDist = dist;
-      nearestOpponent = opp;
-    }
-  }
-
-  if (!nearestOpponent) return;
-
-  const predicted = predictTargetPosition(player, nearestOpponent, 4); // 4 = missile speed
+  const predicted = predictTargetPosition(player, target, 4); // missile speed = 4
   const dx = predicted.x - player.x;
   const dy = predicted.y - player.y;
-  const targetAngle = Math.atan2(dy, dx);
+  const dist = Math.hypot(dx, dy);
+  const angleToTarget = Math.atan2(dy, dx);
 
-  if (!isInMissileCone(player, nearestOpponent)) {
-    const dx = nearestOpponent.x - player.x;
-    const dy = nearestOpponent.y - player.y;
-    const dist = Math.hypot(dx, dy);
-    const angleToTarget = Math.atan2(dy, dx);
+  if (!isInMissileCone(player, target)) {
     const angleDiff =
       ((angleToTarget - player.angle + Math.PI * 3) % (2 * Math.PI)) - Math.PI;
 
     let reason = "❌ NOT IN RANGE";
-    if (dist < 0) {
-      reason = "❌ INVALID DIST";
-    } else if (dist > 900) {
-      reason = "❌ TOO FAR";
-    } else if (Math.abs(angleDiff) > Math.PI / 6) {
-      reason = "❌ NOT ALIGNED";
-    }
+    if (dist < 0) reason = "❌ INVALID DIST";
+    else if (dist > 900) reason = "❌ TOO FAR";
+    else if (Math.abs(angleDiff) > Math.PI / 6) reason = "❌ NOT ALIGNED";
 
     createFloatingText(reason, player.x, player.y - 60, "gray", 16);
     return;
@@ -985,10 +973,10 @@ function fireMissile() {
   missiles.push({
     x: player.x,
     y: player.y,
-    angle: targetAngle,
+    angle: angleToTarget,
     speed: 6,
     life: 250,
-    target: nearestOpponent,
+    target: target,
     owner: player,
     divertedToFlare: false,
     type: "missile",
@@ -998,6 +986,7 @@ function fireMissile() {
   playerMissileLockReady = false;
   playerMissileLockTimer = 0;
 }
+
 
 function releaseFlaresFor(entity) {
   const flarePairs = 10; // 5 pairs = 10 total flares
@@ -1092,7 +1081,10 @@ function updateOpponents() {
     // 🔒 Force aggressive mode only
     opp.mode = "aggressive";
 
-    const { target, distance } = findAggroTarget(opp, findNearestEnemy);
+    const candidates = allies.concat(player).filter(e => e.health > 0);
+    const target = prioritizeTarget(opp, candidates);
+    const distance = target ? distanceBetween(opp, target) : Infinity;
+
 
     if (target) {
       // === Ammo Regen
@@ -1233,12 +1225,10 @@ function updateAllies() {
     // 🔒 Force aggressive mode only
     ally.mode = "aggressive";
 
-    const { target: nearestOpponent, distance: nearestDist } = findAggroTarget(
-      ally,
-      findNearestOpponent
-    );
+    const target = prioritizeTarget(ally, opponents);
+    const nearestDist = target ? distanceBetween(ally, target) : Infinity;
 
-    if (nearestOpponent) {
+    if (target) {
       // === Ammo Regen
       if (ally.machineGunAmmo <= 0) {
         ally.ammoRegenTimer = (ally.ammoRegenTimer || 0) + 1;
@@ -1256,7 +1246,7 @@ function updateAllies() {
       } else {
         ally.ammoRegenTimer = 0;
       }
-
+    
       if (ally.missileAmmo <= 0) {
         ally.missileRegenTimer = (ally.missileRegenTimer || 0) + 1;
         if (ally.missileRegenTimer >= 100) {
@@ -1275,30 +1265,30 @@ function updateAllies() {
       } else {
         ally.missileRegenTimer = 0;
       }
-
-      const dx = nearestOpponent.x - ally.x;
-      const dy = nearestOpponent.y - ally.y;
+    
+      const dx = target.x - ally.x;
+      const dy = target.y - ally.y;
       const offset = Math.PI / 3;
       maybeDodge(ally);
       const targetAngle =
         Math.atan2(dy, dx) + offset * ally.orbitDirection + ally.dodgeOffset;
-
+    
       avoidMapEdges(ally);
       const underFire = detectIncomingFire(ally);
       if (underFire) {
         maybeDodge(ally);
         adjustThrottle(ally, 4.5);
       }
-
+    
       adjustThrottle(ally, 5);
       rotateToward(ally, targetAngle, ally.maxTurnRate || 0.015, 0);
       moveForward(ally);
-
+    
       avoidOthers(ally, allies);
       bounceOffWalls(ally);
       createEntityWingTrails(ally);
       createEngineParticles(ally);
-
+    
       const angleToTarget = Math.atan2(dy, dx);
       if (
         nearestDist < 800 &&
@@ -1308,17 +1298,17 @@ function updateAllies() {
         fireAllyMachineGun(ally);
         ally.gunCooldown = 6;
       }
-
-      const inMissileCone = isInMissileCone(ally, nearestOpponent);
-
+    
+      const inMissileCone = isInMissileCone(ally, target);
+    
       if (inMissileCone) {
-        if (ally.lockTarget === nearestOpponent) {
+        if (ally.lockTarget === target) {
           ally.lockTimer += 1;
         } else {
-          ally.lockTarget = nearestOpponent;
+          ally.lockTarget = target;
           ally.lockTimer = 1;
         }
-
+    
         if (
           ally.lockTimer > OPPONENT_LOCK_TIME &&
           ally.missileAmmo > 0 &&
@@ -1328,8 +1318,8 @@ function updateAllies() {
         ) {
           createFloatingText(
             "🚀 LOCKED",
-            nearestOpponent.x,
-            nearestOpponent.y - 50,
+            target.x,
+            target.y - 50,
             "lime",
             18
           );
@@ -1342,6 +1332,7 @@ function updateAllies() {
         ally.lockTarget = null;
       }
     }
+    
 
     if (ally.collisionCooldown > 0) ally.collisionCooldown--;
     if (ally.gunCooldown > 0) ally.gunCooldown--;
