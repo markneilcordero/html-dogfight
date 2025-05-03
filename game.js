@@ -1094,15 +1094,8 @@ function updateOpponents() {
     if (opp.health <= 0) {
       if (opp.lastAttacker === player) {
         player.killCount++;
-        createFloatingText(
-          `☠️ Kills: ${player.killCount}`,
-          player.x,
-          player.y - 100,
-          "lime",
-          20
-        );
+        createFloatingText(`☠️ Kills: ${player.killCount}`, player.x, player.y - 100, "lime", 20);
       }
-
       createExplosion(opp.x, opp.y, 100);
       respawnPlane(opp, true);
       continue;
@@ -1117,13 +1110,7 @@ function updateOpponents() {
       opp.isTakingOff = true;
       opp.hasStartedTaxi = true;
       opp.taxiTimer = 90;
-      createFloatingText(
-        "🛫 Opponent Taking Off!",
-        opp.x,
-        opp.y - 50,
-        "red",
-        14
-      );
+      createFloatingText("🛫 Opponent Taking Off!", opp.x, opp.y - 50, "red", 14);
       continue;
     }
 
@@ -1132,14 +1119,13 @@ function updateOpponents() {
       moveForward(opp);
       createEngineParticles(opp);
       opp.taxiTimer--;
-
       if (opp.taxiTimer > 0) continue;
       opp.isTakingOff = false;
       opp.thrust = 5;
       continue;
     }
 
-    // 🔒 Force aggressive mode only
+    // 🔒 Force aggressive mode
     opp.mode = "aggressive";
 
     const candidates = allies.concat(player).filter((e) => e.health > 0);
@@ -1152,13 +1138,7 @@ function updateOpponents() {
         opp.ammoRegenTimer = (opp.ammoRegenTimer || 0) + 1;
         if (opp.ammoRegenTimer >= 120) {
           opp.machineGunAmmo = 200;
-          createFloatingText(
-            "🔫 Opponent Ammo Refilled!",
-            opp.x,
-            opp.y - 40,
-            "red",
-            14
-          );
+          createFloatingText("🔫 Opponent Ammo Refilled!", opp.x, opp.y - 40, "red", 14);
           opp.ammoRegenTimer = 0;
         }
       } else {
@@ -1171,53 +1151,40 @@ function updateOpponents() {
           opp.missileAmmo = 14;
           opp.lockTarget = null;
           opp.lockTimer = 0;
-          createFloatingText(
-            "🚀 Opponent Missile Refilled!",
-            opp.x,
-            opp.y - 60,
-            "red",
-            14
-          );
+          createFloatingText("🚀 Opponent Missile Refilled!", opp.x, opp.y - 60, "red", 14);
           opp.missileRegenTimer = 0;
         }
       } else {
         opp.missileRegenTimer = 0;
       }
 
-      const dx = target.x - opp.x;
-      const dy = target.y - opp.y;
-      const offset = Math.PI / 3;
-
       maybeDodge(opp);
-      const targetAngle =
-        Math.atan2(dy, dx) + offset * opp.orbitDirection + opp.dodgeOffset;
-
       avoidMapEdges(opp);
       const underFire = detectIncomingFire(opp);
-      const distance = target ? distanceBetween(opp, target) : Infinity;
       if (underFire) {
         maybeDodge(opp);
         adjustThrottle(opp, 4.5);
       }
 
-      // 🧠 Aggressive behavior
       enhanceThrottleFor(opp, distance, underFire);
 
-      rotateToward(opp, targetAngle, 0.015, 0);
+      const orbitAngle = getSmartOrbitAngle(opp, target);
+      rotateToward(opp, orbitAngle, 0.015, 0);
       moveForward(opp);
 
       bounceOffWalls(opp);
       createEntityWingTrails(opp);
       createEngineParticles(opp);
 
-      const angleToTarget = Math.atan2(dy, dx);
+      const angleToTarget = Math.atan2(target.y - opp.y, target.x - opp.x);
+
       if (
         distance < 800 &&
         isAngleAligned(opp.angle, angleToTarget) &&
         opp.gunCooldown <= 0
       ) {
         fireOpponentMachineGun(opp);
-        opp.gunCooldown = 6; // ~100ms at 60 FPS
+        opp.gunCooldown = 6;
       }
 
       const inMissileCone = isInMissileCone(opp, target);
@@ -1230,8 +1197,7 @@ function updateOpponents() {
           opp.lockTimer = 1;
         }
       } else if (opp.lockTarget === target && opp.lockTimer > 0) {
-        // 🧠 AI Memory: decay timer instead of instant reset
-        opp.lockTimer = Math.max(0, opp.lockTimer - 1); // 🧠 Memory decay
+        opp.lockTimer = Math.max(0, opp.lockTimer - 1);
       } else {
         opp.lockTimer = 0;
         opp.lockTarget = null;
@@ -1257,6 +1223,7 @@ function updateOpponents() {
   }
 }
 
+
 function updateAllies() {
   for (const ally of allies) {
     if (!ally.isTakingOff && ally.delayedTaxiStart > 0) {
@@ -1268,13 +1235,7 @@ function updateAllies() {
       ally.isTakingOff = true;
       ally.hasStartedTaxi = true;
       ally.taxiTimer = 90;
-      createFloatingText(
-        "🛫 Ally Taking Off!",
-        ally.x,
-        ally.y - 50,
-        "cyan",
-        14
-      );
+      createFloatingText("🛫 Ally Taking Off!", ally.x, ally.y - 50, "cyan", 14);
       continue;
     }
 
@@ -1301,13 +1262,7 @@ function updateAllies() {
         ally.ammoRegenTimer = (ally.ammoRegenTimer || 0) + 1;
         if (ally.ammoRegenTimer >= 100) {
           ally.machineGunAmmo = 200;
-          createFloatingText(
-            "🔫 Ally Ammo Refilled!",
-            ally.x,
-            ally.y - 40,
-            "cyan",
-            14
-          );
+          createFloatingText("🔫 Ally Ammo Refilled!", ally.x, ally.y - 40, "cyan", 14);
           ally.ammoRegenTimer = 0;
         }
       } else {
@@ -1320,29 +1275,18 @@ function updateAllies() {
           ally.missileAmmo = 14;
           ally.lockTarget = null;
           ally.lockTimer = 0;
-          createFloatingText(
-            "🚀 Ally Missile Refilled!",
-            ally.x,
-            ally.y - 60,
-            "cyan",
-            14
-          );
+          createFloatingText("🚀 Ally Missile Refilled!", ally.x, ally.y - 60, "cyan", 14);
           ally.missileRegenTimer = 0;
         }
       } else {
         ally.missileRegenTimer = 0;
       }
 
-      const dx = target.x - ally.x;
-      const dy = target.y - ally.y;
-      const offset = Math.PI / 3;
       maybeDodge(ally);
-      const targetAngle =
-        Math.atan2(dy, dx) + offset * ally.orbitDirection + ally.dodgeOffset;
-
       avoidMapEdges(ally);
       const underFire = detectIncomingFire(ally);
-      const distance = target ? distanceBetween(ally, target) : Infinity;
+      const distance = nearestDist;
+
       if (underFire) {
         maybeDodge(ally);
         adjustThrottle(ally, 4.5);
@@ -1350,7 +1294,8 @@ function updateAllies() {
 
       enhanceThrottleFor(ally, distance, underFire);
 
-      rotateToward(ally, targetAngle, ally.maxTurnRate || 0.015, 0);
+      const orbitAngle = getSmartOrbitAngle(ally, target);
+      rotateToward(ally, orbitAngle, ally.maxTurnRate || 0.015, 0);
       moveForward(ally);
 
       avoidOthers(ally, allies);
@@ -1358,7 +1303,10 @@ function updateAllies() {
       createEntityWingTrails(ally);
       createEngineParticles(ally);
 
+      const dx = target.x - ally.x;
+      const dy = target.y - ally.y;
       const angleToTarget = Math.atan2(dy, dx);
+
       if (
         nearestDist < 800 &&
         isAngleAligned(ally.angle, angleToTarget) &&
@@ -1391,7 +1339,6 @@ function updateAllies() {
           ally.missileCooldown = 100;
         }
       } else if (ally.lockTarget === target && ally.lockTimer > 0) {
-        // 👁️ Memory behavior: slowly decay timer instead of forgetting
         ally.lockTimer = Math.max(0, ally.lockTimer - 1);
       } else {
         ally.lockTimer = 0;
@@ -1403,6 +1350,7 @@ function updateAllies() {
     if (ally.gunCooldown > 0) ally.gunCooldown--;
   }
 }
+
 
 function updateOpponentBullets() {
   for (let i = opponentBullets.length - 1; i >= 0; i--) {
@@ -1600,7 +1548,6 @@ function update() {
 }
 
 function updatePlayerAutopilot() {
-  // avoidOthers(player, [...opponents, ...allies]);
   const { target, distance } = findNearestOpponent(player.x, player.y);
 
   // === [1] Handle Evading First
@@ -1610,130 +1557,84 @@ function updatePlayerAutopilot() {
       maybeDodge(player);
       adjustThrottle(player, 5);
     }
-    // Always release flares if missile is incoming and cooldown is ready
     if (player.flareCooldown <= 0 && detectIncomingMissile(player)) {
       releaseFlaresFor(player);
       player.flareCooldown = 300;
     }
   }
 
-  // === [3] Patrol if No Target
   if (!target || target.health <= 0) {
     moveForward(player);
     return;
   }
 
-  // 🎲 Randomize orbit direction occasionally
   if (Math.random() < 0.01) {
     player.orbitDirection = Math.random() < 0.5 ? 1 : -1;
   }
 
   maybeDodge(player);
 
-  const predicted = predictTargetPosition(player, target, 6);
-  const interceptAngle = Math.atan2(
-    predicted.y - player.y,
-    predicted.x - player.x
-  );
-  rotateToward(
-    player,
-    interceptAngle + player.dodgeOffset,
-    player.maxTurnRate || 0.02,
-    0
-  );
-
+  // === [2] Smart Orbiting
   const targetAngle = Math.atan2(target.y - player.y, target.x - player.x);
+  let finalAngle = getSmartOrbitAngle(player, target);
 
-  // 🛡️ In defensive mode, back away slowly instead of pursuing
   if (autopilotMode === "defensive" && distance < 600) {
-    const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
-    rotateToward(
-      player,
-      retreatAngle + player.dodgeOffset,
-      player.maxTurnRate || 0.02,
-      0
-    );
-  } else if (autopilotMode === "aggressive") {
-    const strafeOffset = (player.orbitDirection || 1) * (Math.PI / 3); // 60° strafe
-    const strafeAngle = targetAngle + strafeOffset + player.dodgeOffset;
-    rotateToward(player, strafeAngle, player.maxTurnRate || 0.02, 0);
+    finalAngle = Math.atan2(player.y - target.y, player.x - target.x) + player.dodgeOffset;
+  } else if (autopilotMode === "balanced" && player.health < 30) {
+    finalAngle = Math.atan2(player.y - target.y, player.x - target.x) + player.dodgeOffset;
+    rotateToward(player, finalAngle, player.maxTurnRate || 0.02);
+    adjustThrottle(player, 5);
+    return;
   } else if (autopilotMode === "balanced") {
-    if (player.health < 30) {
-      // 🚨 Low health — disengage
-      const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
-      rotateToward(player, retreatAngle, player.maxTurnRate || 0.02);
-      adjustThrottle(player, 5);
-      return;
-    }
-
     const noAmmo = player.machineGunAmmo <= 0 && player.missileAmmo <= 0;
     if (noAmmo) {
-      // 🕊️ No ammo — fly evasively
-      const orbitAngle =
-        targetAngle + (player.orbitDirection || 1) * (Math.PI / 2);
-      rotateToward(player, orbitAngle, player.maxTurnRate || 0.02, 0);
+      finalAngle = getSmartOrbitAngle(player, target);
+      rotateToward(player, finalAngle, player.maxTurnRate || 0.02);
       adjustThrottle(player, 5);
       return;
     }
 
     if (distance < 400) {
-      // 🧠 Strafe around the target at mid-range
-      const strafeOffset = (player.orbitDirection || 1) * (Math.PI / 4); // 45° strafe
-      const strafeAngle = targetAngle + strafeOffset + player.dodgeOffset;
-      rotateToward(player, strafeAngle, player.maxTurnRate || 0.02);
+      finalAngle = getSmartOrbitAngle(player, target);
     } else {
-      // 📡 Close in or reposition with predictive aim
-      const aimAngle = targetAngle + player.dodgeOffset + Math.random() * 0.05;
-      rotateToward(player, aimAngle, player.maxTurnRate || 0.02, 0);
+      finalAngle = targetAngle + player.dodgeOffset + Math.random() * 0.05;
     }
   }
 
-  // === [4] Throttle Based on Mode
+  rotateToward(player, finalAngle, player.maxTurnRate || 0.02, 0);
+
+  // === [3] Throttle Based on Mode
   if (autopilotMode === "defensive") {
-    // 🛡️ If too close to enemy, back off
     if (distance < 300) {
       const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
       rotateToward(player, retreatAngle, player.maxTurnRate || 0.02);
       adjustThrottle(player, 5);
       return;
     }
-
-    // 🛡️ Use flares more reactively if missiles nearby
     if (detectIncomingMissile(player) && player.flareCooldown <= 0) {
       releaseFlaresFor(player);
       player.flareCooldown = 300;
     }
-
-    adjustThrottle(player, distance > 600 ? 5 : 5);
+    adjustThrottle(player, 5);
   } else if (autopilotMode === "aggressive") {
     adjustThrottle(player, 5);
-  } else {
-    if (autopilotMode === "balanced") {
-      if (underFire) {
-        adjustThrottle(player, 5); // escape if under fire
-      } else {
-        adjustThrottle(player, distance > 800 ? 5 : distance > 400 ? 5 : 5);
-      }
+  } else if (autopilotMode === "balanced") {
+    if (underFire) {
+      adjustThrottle(player, 5);
+    } else {
+      adjustThrottle(player, distance > 800 ? 5 : 5);
     }
   }
 
-  // === [5] Fire Logic
-  // === [5] Fire Logic
+  // === [4] Fire Logic
   const dx = target.x - player.x;
   const dy = target.y - player.y;
   const angleToTarget = Math.atan2(dy, dx);
-
   const aligned = isAngleAligned(player.angle, angleToTarget);
 
-  let gunFireChance = 1.0;
-  if (autopilotMode === "defensive") gunFireChance = 1.0;
-  else if (autopilotMode === "balanced") gunFireChance = 1.0;
-
   const tryFireGun = player.machineGunAmmo > 0 && aligned && distance < 600;
-
   const inCone = isInMissileCone(player, target);
 
-  // === AI Lock-On Memory
   if (inCone) {
     if (playerLockTarget === target) {
       playerLockTimer += 1;
@@ -1741,12 +1642,11 @@ function updatePlayerAutopilot() {
       playerLockTarget = target;
       playerLockTimer = 1;
     }
-
     if (playerLockTimer > PLAYER_LOCK_TIME) {
       playerMissileLockReady = true;
     }
   } else if (playerLockTarget === target && playerLockTimer > 0) {
-    playerLockTimer -= 1; // 💡 AI memory decay
+    playerLockTimer -= 1;
   } else {
     playerLockTimer = 0;
     playerLockTarget = null;
@@ -1754,29 +1654,25 @@ function updatePlayerAutopilot() {
   }
 
   const tryFireMissile =
-  playerMissileLockReady &&
-  player.missileAmmo > 0 &&
-  distance < 1000 &&
-  target.health > 1 &&
-  player.missileCooldown <= 0;
+    playerMissileLockReady &&
+    player.missileAmmo > 0 &&
+    distance < 1000 &&
+    target.health > 1 &&
+    player.missileCooldown <= 0;
 
   if (tryFireMissile) {
     fireMissile();
     player.missileCooldown = 60;
-    createFloatingText(
-      "🚀 AUTOPILOT FIRED",
-      player.x,
-      player.y - 60,
-      "yellow",
-      16
-    );
+    createFloatingText("🚀 AUTOPILOT FIRED", player.x, player.y - 60, "yellow", 16);
     return;
   } else if (tryFireGun && player.gunCooldown <= 0) {
     fireMachineGun();
-    player.gunCooldown = 6; // 🔫 fire every 6 frames (~100ms at 60FPS)
+    player.gunCooldown = 6;
   }
+
   if (player.gunCooldown > 0) player.gunCooldown--;
 }
+
 
 function updatePlayer() {
   if (player.isTakingOff) {
@@ -2117,6 +2013,33 @@ function predictTargetPosition(shooter, target, projectileSpeed) {
     target.y + Math.sin(target.angle) * target.thrust * timeToImpact;
 
   return { x: predictedX, y: predictedY };
+}
+
+function getSmartOrbitAngle(entity, target) {
+  const baseAngle = Math.atan2(target.y - entity.y, target.x - entity.x);
+
+  // === [1] Dynamic Orbit Offset Based on Distance ===
+  const maxOffset = Math.PI / 3;  // ⬅️ tighter max (was PI/2)
+  const minOffset = Math.PI / 12; // ⬅️ tighter min (was PI/8)
+  const dist = Math.hypot(target.x - entity.x, target.y - entity.y);
+  const t = clamp((dist - 150) / 500, 0, 1); // ⬅️ closer range curve
+  const adaptiveOffset = minOffset + (maxOffset - minOffset) * t;
+
+  // === [2] Adjust Based on Mode ===
+  let modeMultiplier = 1;
+  if (entity.mode === "aggressive") {
+    modeMultiplier = 0.4; // ⬅️ even tighter orbit
+  } else if (entity.mode === "defensive") {
+    modeMultiplier = 1.3;
+  } else {
+    modeMultiplier = 1.0;
+  }
+
+  const finalOffset = adaptiveOffset * modeMultiplier;
+
+  // === [3] Apply Orbit Direction (+ Optional Dodge Offset) ===
+  const dodgeOffset = entity.dodgeOffset || 0;
+  return baseAngle + finalOffset * entity.orbitDirection + dodgeOffset;
 }
 
 function updateBullets() {
