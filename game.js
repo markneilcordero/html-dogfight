@@ -1556,10 +1556,10 @@ function update() {
   updateOpponentMissileLock();
 
   // 8. Periodic system checks
-  if (++shootingFixCounter % 2 === 0) {
-    checkAndFixMissileLockSystems();
-    checkAndFixShootingSystems();
-  }
+  // if (++shootingFixCounter % 2 === 0) {
+  //   checkAndFixMissileLockSystems();
+  //   checkAndFixShootingSystems();
+  // }
 }
 
 function updatePlayerAutopilot() {
