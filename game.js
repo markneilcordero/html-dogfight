@@ -2128,8 +2128,8 @@ function updateMissiles() {
       const dy = predicted.y - m.y;
       const targetAngle = Math.atan2(dy, dx);
       rotateToward(m, targetAngle, 0.06, 0.05);
-
-      if (Math.hypot(dx, dy) < 40) {
+const distToTarget = Math.hypot(m.target.x - m.x, m.target.y - m.y);
+      if (distToTarget < 40) {
         m.target.health -= 100;
         m.target.lastAttacker = m.owner || player;
         m.target.lastAttackedTime = performance.now();
