@@ -906,6 +906,16 @@ function isInMissileCone(
   return Math.abs(angleDiff) <= coneAngle;
 }
 
+function isNearMapEdge(entity, margin = 200) {
+  return (
+    entity.x < margin ||
+    entity.x > WORLD_WIDTH - margin ||
+    entity.y < margin ||
+    entity.y > WORLD_HEIGHT - margin
+  );
+}
+
+
 // ====================
 // [5] Player Actions
 // ====================
@@ -1564,14 +1574,15 @@ function update() {
 
 function updatePlayerAutopilot() {
   const { target, distance } = findNearestOpponent(player.x, player.y);
+  const nearEdge = isNearMapEdge(player); // shared check
 
   // === [1] Handle Evading First
   const underFire = detectIncomingMissile(player) || detectIncomingFire(player);
   if (underFire) {
-    if (autopilotMode !== "aggressive") {
-      maybeDodge(player);
-      adjustThrottle(player, 5);
+    if (autopilotMode !== "aggressive" && Math.random() < 0.01) {
+      player.orbitDirection = Math.random() < 0.5 ? 1 : -1;
     }
+
     if (player.flareCooldown <= 0 && detectIncomingMissile(player)) {
       releaseFlaresFor(player);
       player.flareCooldown = 300;
@@ -1583,70 +1594,94 @@ function updatePlayerAutopilot() {
     return;
   }
 
-  if (Math.random() < 0.01) {
+  if (autopilotMode !== "aggressive" && Math.random() < 0.01) {
     player.orbitDirection = Math.random() < 0.5 ? 1 : -1;
   }
 
   maybeDodge(player);
 
-  // === [2] Smart Orbiting
   const targetAngle = Math.atan2(target.y - player.y, target.x - player.x);
   let finalAngle = getSmartOrbitAngle(player, target);
 
-  if (autopilotMode === "defensive" && distance < 600) {
-    finalAngle = Math.atan2(player.y - target.y, player.x - target.x) + player.dodgeOffset;
-  } else if (autopilotMode === "balanced" && player.health < 30) {
-    finalAngle = Math.atan2(player.y - target.y, player.x - target.x) + player.dodgeOffset;
-    rotateToward(player, finalAngle, player.maxTurnRate || 0.02);
-    adjustThrottle(player, 5);
-    return;
-  } else if (autopilotMode === "balanced") {
-    const noAmmo = player.machineGunAmmo <= 0 && player.missileAmmo <= 0;
-    if (noAmmo) {
-      finalAngle = getSmartOrbitAngle(player, target);
+  // === [2] Defensive Mode
+  if (autopilotMode === "defensive") {
+    if (nearEdge) {
       rotateToward(player, finalAngle, player.maxTurnRate || 0.02);
-      adjustThrottle(player, 5);
+      adjustThrottle(player, 4);
+      maybeDodge(player);
       return;
     }
 
-    if (distance < 400) {
-      finalAngle = getSmartOrbitAngle(player, target);
-    } else {
-      finalAngle = targetAngle + player.dodgeOffset + Math.random() * 0.05;
-    }
-  }
-
-  rotateToward(player, finalAngle, player.maxTurnRate || 0.02, 0);
-
-  // === [3] Throttle Based on Mode
-  if (autopilotMode === "defensive") {
     if (distance < 300) {
       const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
       rotateToward(player, retreatAngle, player.maxTurnRate || 0.02);
       adjustThrottle(player, 5);
-      return;
+    } else if (distance < 600) {
+      rotateToward(player, finalAngle, player.maxTurnRate || 0.02);
+      adjustThrottle(player, 5);
+    } else {
+      rotateToward(player, targetAngle, player.maxTurnRate || 0.02);
+      adjustThrottle(player, 5);
     }
-    if (detectIncomingMissile(player) && player.flareCooldown <= 0) {
-      releaseFlaresFor(player);
-      player.flareCooldown = 300;
-    }
-    adjustThrottle(player, 5);
-  } else if (autopilotMode === "aggressive") {
-    adjustThrottle(player, 5);
-  } else if (autopilotMode === "balanced") {
-    adjustThrottle(player, underFire || distance > 800 ? 5 : 5);
+    maybeDodge(player);
   }
 
-  // === [4] Fire Logic
+  // === [3] Balanced Mode
+  else if (autopilotMode === "balanced") {
+    if (nearEdge) {
+      rotateToward(player, finalAngle, player.maxTurnRate || 0.02);
+      adjustThrottle(player, 4);
+      maybeDodge(player);
+      return;
+    }
+
+    const noAmmo = player.machineGunAmmo <= 0 && player.missileAmmo <= 0;
+    if (player.health < 30 || noAmmo) {
+      rotateToward(player, finalAngle, player.maxTurnRate || 0.02);
+      adjustThrottle(player, 5);
+      maybeDodge(player);
+      return;
+    }
+
+    if (distance < 300) {
+      rotateToward(player, finalAngle, player.maxTurnRate || 0.02);
+      adjustThrottle(player, 5);
+    } else {
+      rotateToward(player, targetAngle, player.maxTurnRate || 0.025);
+      adjustThrottle(player, distance > 800 ? 5 : 4);
+    }
+
+    maybeDodge(player);
+  }
+
+  // === [4] Aggressive Mode
+  else if (autopilotMode === "aggressive") {
+    if (nearEdge) {
+      rotateToward(player, finalAngle, player.maxTurnRate || 0.02);
+      adjustThrottle(player, 4);
+      maybeDodge(player);
+      return;
+    }
+
+    const chaseAngle = Math.atan2(target.y - player.y, target.x - player.x);
+    rotateToward(player, chaseAngle, player.maxTurnRate || 0.03);
+    adjustThrottle(player, distance > 800 ? 5 : 4);
+
+    if (distance < 300) {
+      rotateToward(player, finalAngle, player.maxTurnRate || 0.02);
+    }
+
+    maybeDodge(player);
+  }
+
+  // === [5] Fire Logic
   const dx = target.x - player.x;
   const dy = target.y - player.y;
   const angleToTarget = Math.atan2(dy, dx);
 
-  // Gun still needs alignment
   const aligned = isAngleAligned(player.angle, angleToTarget);
   const tryFireGun = player.machineGunAmmo > 0 && aligned && distance < 600;
 
-  // Lock-on system
   const inCone = isInMissileCone(player, target);
   if (inCone) {
     if (playerLockTarget === target) {
@@ -1668,7 +1703,6 @@ function updatePlayerAutopilot() {
     }
   }
 
-  // Fire missile only when ready
   const shouldFireMissile =
     playerMissileLockReady &&
     player.missileAmmo > 0 &&
@@ -1679,7 +1713,6 @@ function updatePlayerAutopilot() {
   if (shouldFireMissile) {
     fireMissile();
     player.missileCooldown = 60;
-    // createFloatingText("🚀 AUTOPILOT FIRED", player.x, player.y - 60, "yellow", 16);
     return;
   } else if (tryFireGun && player.gunCooldown <= 0) {
     fireMachineGun();
@@ -1688,6 +1721,7 @@ function updatePlayerAutopilot() {
 
   if (player.gunCooldown > 0) player.gunCooldown--;
 }
+
 
 
 function updatePlayer() {
@@ -2032,31 +2066,48 @@ function predictTargetPosition(shooter, target, projectileSpeed) {
 }
 
 function getSmartOrbitAngle(entity, target) {
+  // === [0] Handle map edge override ===
+  const margin = 150;
+  const edgeAvoidance = {
+    x: 0,
+    y: 0,
+  };
+
+  if (entity.x < margin) edgeAvoidance.x += 1;
+  if (entity.x > WORLD_WIDTH - margin) edgeAvoidance.x -= 1;
+  if (entity.y < margin) edgeAvoidance.y += 1;
+  if (entity.y > WORLD_HEIGHT - margin) edgeAvoidance.y -= 1;
+
+  if (edgeAvoidance.x !== 0 || edgeAvoidance.y !== 0) {
+    // Compute angle away from edge
+    const edgeAngle = Math.atan2(edgeAvoidance.y, edgeAvoidance.x);
+    return edgeAngle + (entity.dodgeOffset || 0); // still apply dodge
+  }
+
+  // === [1] Orbit around target (default behavior)
   const baseAngle = Math.atan2(target.y - entity.y, target.x - entity.x);
 
-  // === [1] Dynamic Orbit Offset Based on Distance ===
-  const maxOffset = Math.PI / 3;  // ⬅️ tighter max (was PI/2)
-  const minOffset = Math.PI / 12; // ⬅️ tighter min (was PI/8)
+  const maxOffset = Math.PI / 3;
+  const minOffset = Math.PI / 16;
   const dist = Math.hypot(target.x - entity.x, target.y - entity.y);
-  const t = clamp((dist - 150) / 500, 0, 1); // ⬅️ closer range curve
+  const t = clamp((dist - 100) / 500, 0, 1);
   const adaptiveOffset = minOffset + (maxOffset - minOffset) * t;
 
-  // === [2] Adjust Based on Mode ===
   let modeMultiplier = 1;
-  if (entity.mode === "aggressive") {
-    modeMultiplier = 0.4; // ⬅️ even tighter orbit
-  } else if (entity.mode === "defensive") {
-    modeMultiplier = 1.3;
-  } else {
-    modeMultiplier = 1.0;
-  }
+  if (entity.mode === "aggressive") modeMultiplier = 0.3;
+  else if (entity.mode === "defensive") modeMultiplier = 1.4;
 
   const finalOffset = adaptiveOffset * modeMultiplier;
 
-  // === [3] Apply Orbit Direction (+ Optional Dodge Offset) ===
-  const dodgeOffset = entity.dodgeOffset || 0;
+  let dodgeOffset = 0;
+  if (entity === player && (detectIncomingMissile(entity) || detectIncomingFire(entity))) {
+    dodgeOffset = entity.dodgeOffset || 0;
+  }
+
   return baseAngle + finalOffset * entity.orbitDirection + dodgeOffset;
 }
+
+
 
 function updateBullets() {
   for (let i = machineGunBullets.length - 1; i >= 0; i--) {
