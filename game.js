@@ -63,24 +63,6 @@ function enhanceThrottleFor(entity, distance, underFire = false) {
   }
 }
 
-
-function adjustThrottle(
-  entity,
-  targetThrust,
-  rate = 0.02,
-  minThrust = 3,
-  maxThrust = 5
-) {
-  if (entity.thrust < targetThrust) {
-    entity.thrust = Math.min(entity.thrust + rate, targetThrust);
-  } else if (entity.thrust > targetThrust) {
-    entity.thrust = Math.max(entity.thrust - rate, targetThrust);
-  }
-
-  // Clamp to min/max bounds
-  entity.thrust = clamp(entity.thrust, minThrust, maxThrust);
-}
-
 function loadImage(src) {
   const img = new Image();
   img.src = src;
@@ -900,9 +882,11 @@ function checkCollision(entityA, entityB, threshold = 100) {
 }
 
 function isAngleAligned(angle1, angle2, tolerance = Math.PI / 6) {
-  let diff = ((angle1 - angle2 + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+  const normalize = (a) => ((a + Math.PI) % (2 * Math.PI)) - Math.PI;
+  const diff = normalize(angle1 - angle2);
   return Math.abs(diff) <= tolerance;
 }
+
 
 function isInMissileCone(
   player,
@@ -1048,6 +1032,11 @@ function fireMissile() {
   const dist = Math.hypot(dx, dy);
   const angleToTarget = Math.atan2(dy, dx);
 
+  if (!isAngleAligned(player.angle, angleToTarget)) {
+    createFloatingText("❌ NOT ALIGNED", player.x, player.y - 60, "gray", 16);
+    return;
+  }
+
   if (dist > 1200) {
     createFloatingText("❌ TOO FAR", player.x, player.y - 60, "gray", 16);
     return;
@@ -1071,9 +1060,10 @@ function fireMissile() {
 }
 
 
+
 function releaseFlaresFor(entity) {
   const flarePairs = 10; // 5 pairs = 10 total flares
-  const flareSpacing = 20; // distance from center
+  const flareSpacing = 20; // distance from center  
   const baseAngle = entity.angle + Math.PI; // backwards
   const delayBetweenPairs = 80; // in milliseconds
 
@@ -1655,7 +1645,6 @@ function updatePlayerAutopilot() {
   const dy = target.y - player.y;
   const angleToTarget = Math.atan2(dy, dx);
   const aligned = isAngleAligned(player.angle, angleToTarget);
-
   const tryFireGun = player.machineGunAmmo > 0 && aligned && distance < 600;
   const inCone = isInMissileCone(player, target);
 
@@ -1677,15 +1666,16 @@ function updatePlayerAutopilot() {
     playerMissileLockReady = false;
   }
 
-  const tryFireMissile =
+  // === ✅ Cache lock state before firing
+  const shouldFireMissile =
     playerMissileLockReady &&
     player.missileAmmo > 0 &&
     distance < 1000 &&
     target.health > 1 &&
     player.missileCooldown <= 0;
 
-  if (tryFireMissile) {
-    fireMissile();
+  if (shouldFireMissile) {
+    fireMissile(); // this will reset playerMissileLockReady
     player.missileCooldown = 60;
     createFloatingText("🚀 AUTOPILOT FIRED", player.x, player.y - 60, "yellow", 16);
     return;
@@ -1696,7 +1686,6 @@ function updatePlayerAutopilot() {
 
   if (player.gunCooldown > 0) player.gunCooldown--;
 }
-
 
 function updatePlayer() {
   if (player.isTakingOff) {
