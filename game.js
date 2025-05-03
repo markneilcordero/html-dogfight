@@ -2104,13 +2104,13 @@ function updateMissiles() {
     if (lockOnAlertCooldown === 0) missileLockAnnounced = false;
   }
 
-  // === Update player missiles ===
+  // === Player Missiles ===
   for (let i = missiles.length - 1; i >= 0; i--) {
     const m = missiles[i];
     const flareTarget = findNearestEnemyFlare(m.x, m.y, "player");
 
     if (flareTarget && Math.random() < 0.8) {
-      m.target = null; // abandon real target
+      m.target = null;
       const dx = flareTarget.x - m.x;
       const dy = flareTarget.y - m.y;
       const targetAngle = Math.atan2(dy, dx);
@@ -2128,7 +2128,8 @@ function updateMissiles() {
       const dy = predicted.y - m.y;
       const targetAngle = Math.atan2(dy, dx);
       rotateToward(m, targetAngle, 0.06, 0.05);
-const distToTarget = Math.hypot(m.target.x - m.x, m.target.y - m.y);
+
+      const distToTarget = Math.hypot(m.target.x - m.x, m.target.y - m.y);
       if (distToTarget < 40) {
         m.target.health -= 100;
         m.target.lastAttacker = m.owner || player;
@@ -2158,7 +2159,7 @@ const distToTarget = Math.hypot(m.target.x - m.x, m.target.y - m.y);
       alpha: 0.4,
       radius: 3 + Math.random() * 2,
       angle: m.angle + (Math.random() * 0.2 - 0.1),
-      color: "white", // second color
+      color: "white",
     });
 
     if (m.life <= 0) {
@@ -2167,7 +2168,7 @@ const distToTarget = Math.hypot(m.target.x - m.x, m.target.y - m.y);
     }
   }
 
-  // === Update opponent missiles ===
+  // === Opponent Missiles ===
   for (let i = opponentMissiles.length - 1; i >= 0; i--) {
     const m = opponentMissiles[i];
     const flareTarget = findNearestEnemyFlare(m.x, m.y, "opponent");
@@ -2197,7 +2198,8 @@ const distToTarget = Math.hypot(m.target.x - m.x, m.target.y - m.y);
       const targetAngle = Math.atan2(dy, dx);
       rotateToward(m, targetAngle, 0.06, 0.05);
 
-      if (Math.hypot(dx, dy) < 40) {
+      const distToTarget = Math.hypot(player.x - m.x, player.y - m.y);
+      if (distToTarget < 40) {
         player.health -= 100;
         createExplosion(player.x, player.y, 70);
         opponentMissiles.splice(i, 1);
@@ -2224,6 +2226,7 @@ const distToTarget = Math.hypot(m.target.x - m.x, m.target.y - m.y);
     }
   }
 }
+
 
 
 
