@@ -1081,7 +1081,7 @@ function releaseFlaresFor(entity) {
           angle: baseAngle + spread,
           speed: 1 + Math.random() * 0.5,
           life: 100,
-          size: 12 + Math.random() * 6,
+          size: 5 + Math.random() * 6,
           owner: entity, // ✅ assign owner
           trails: [],
         });
