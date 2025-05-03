@@ -1435,6 +1435,7 @@ function fireOpponentMissile(opp, target) {
     angle: targetAngle,
     speed: 6,
     life: 250,
+    target: target,
     divertedToFlare: false,
     type: "missile",
   });
