@@ -906,16 +906,6 @@ function isInMissileCone(
   return Math.abs(angleDiff) <= coneAngle;
 }
 
-function isNearMapEdge(entity, margin = 200) {
-  return (
-    entity.x < margin ||
-    entity.x > WORLD_WIDTH - margin ||
-    entity.y < margin ||
-    entity.y > WORLD_HEIGHT - margin
-  );
-}
-
-
 // ====================
 // [5] Player Actions
 // ====================
@@ -1574,9 +1564,8 @@ function update() {
 
 function updatePlayerAutopilot() {
   const { target, distance } = findNearestOpponent(player.x, player.y);
-  const nearEdge = isNearMapEdge(player); // shared check
 
-  // === [1] Handle Evading First
+  // === [1] Handle Threats First
   const underFire = detectIncomingMissile(player) || detectIncomingFire(player);
   if (underFire) {
     if (autopilotMode !== "aggressive" && Math.random() < 0.01) {
@@ -1590,6 +1579,7 @@ function updatePlayerAutopilot() {
   }
 
   if (!target || target.health <= 0) {
+    avoidMapEdges(player);
     moveForward(player);
     return;
   }
@@ -1599,18 +1589,13 @@ function updatePlayerAutopilot() {
   }
 
   maybeDodge(player);
+  avoidMapEdges(player);
 
   const targetAngle = Math.atan2(target.y - player.y, target.x - player.x);
-  let finalAngle = getSmartOrbitAngle(player, target);
+  const finalAngle = getSmartOrbitAngle(player, target);
 
   // === [2] Defensive Mode
   if (autopilotMode === "defensive") {
-    if (nearEdge) {
-      rotateToward(player, finalAngle, player.maxTurnRate || 0.02);
-      adjustThrottle(player, 4);
-      maybeDodge(player);
-      return;
-    }
 
     if (distance < 300) {
       const retreatAngle = Math.atan2(player.y - target.y, player.x - target.x);
@@ -1623,23 +1608,15 @@ function updatePlayerAutopilot() {
       rotateToward(player, targetAngle, player.maxTurnRate || 0.02);
       adjustThrottle(player, 5);
     }
-    maybeDodge(player);
   }
 
   // === [3] Balanced Mode
   else if (autopilotMode === "balanced") {
-    if (nearEdge) {
-      rotateToward(player, finalAngle, player.maxTurnRate || 0.02);
-      adjustThrottle(player, 4);
-      maybeDodge(player);
-      return;
-    }
 
     const noAmmo = player.machineGunAmmo <= 0 && player.missileAmmo <= 0;
     if (player.health < 30 || noAmmo) {
       rotateToward(player, finalAngle, player.maxTurnRate || 0.02);
       adjustThrottle(player, 5);
-      maybeDodge(player);
       return;
     }
 
@@ -1650,35 +1627,23 @@ function updatePlayerAutopilot() {
       rotateToward(player, targetAngle, player.maxTurnRate || 0.025);
       adjustThrottle(player, distance > 800 ? 5 : 4);
     }
-
-    maybeDodge(player);
   }
 
   // === [4] Aggressive Mode
   else if (autopilotMode === "aggressive") {
-    if (nearEdge) {
-      rotateToward(player, finalAngle, player.maxTurnRate || 0.02);
-      adjustThrottle(player, 4);
-      maybeDodge(player);
-      return;
-    }
 
-    const chaseAngle = Math.atan2(target.y - player.y, target.x - player.x);
-    rotateToward(player, chaseAngle, player.maxTurnRate || 0.03);
+    rotateToward(player, targetAngle, player.maxTurnRate || 0.03);
     adjustThrottle(player, distance > 800 ? 5 : 4);
 
     if (distance < 300) {
       rotateToward(player, finalAngle, player.maxTurnRate || 0.02);
     }
-
-    maybeDodge(player);
   }
 
   // === [5] Fire Logic
   const dx = target.x - player.x;
   const dy = target.y - player.y;
   const angleToTarget = Math.atan2(dy, dx);
-
   const aligned = isAngleAligned(player.angle, angleToTarget);
   const tryFireGun = player.machineGunAmmo > 0 && aligned && distance < 600;
 
@@ -1721,7 +1686,6 @@ function updatePlayerAutopilot() {
 
   if (player.gunCooldown > 0) player.gunCooldown--;
 }
-
 
 
 function updatePlayer() {
@@ -2066,25 +2030,13 @@ function predictTargetPosition(shooter, target, projectileSpeed) {
 }
 
 function getSmartOrbitAngle(entity, target) {
-  // === [0] Handle map edge override ===
   const margin = 150;
-  const edgeAvoidance = {
-    x: 0,
-    y: 0,
-  };
+  const nearLeft = entity.x < margin;
+  const nearRight = entity.x > WORLD_WIDTH - margin;
+  const nearTop = entity.y < margin;
+  const nearBottom = entity.y > WORLD_HEIGHT - margin;
 
-  if (entity.x < margin) edgeAvoidance.x += 1;
-  if (entity.x > WORLD_WIDTH - margin) edgeAvoidance.x -= 1;
-  if (entity.y < margin) edgeAvoidance.y += 1;
-  if (entity.y > WORLD_HEIGHT - margin) edgeAvoidance.y -= 1;
-
-  if (edgeAvoidance.x !== 0 || edgeAvoidance.y !== 0) {
-    // Compute angle away from edge
-    const edgeAngle = Math.atan2(edgeAvoidance.y, edgeAvoidance.x);
-    return edgeAngle + (entity.dodgeOffset || 0); // still apply dodge
-  }
-
-  // === [1] Orbit around target (default behavior)
+  // === [1] Standard orbit behavior around target
   const baseAngle = Math.atan2(target.y - entity.y, target.x - entity.x);
 
   const maxOffset = Math.PI / 3;
@@ -2106,8 +2058,6 @@ function getSmartOrbitAngle(entity, target) {
 
   return baseAngle + finalOffset * entity.orbitDirection + dodgeOffset;
 }
-
-
 
 function updateBullets() {
   for (let i = machineGunBullets.length - 1; i >= 0; i--) {
