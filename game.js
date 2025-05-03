@@ -608,11 +608,13 @@ function checkAndFixShootingSystems() {
     if (
       playerMissileLockReady &&
       player.missileAmmo > 0 &&
-      player.missileCooldown <= 0
+      player.missileCooldown <= 0 &&
+      player.lockTarget &&
+      isInMissileCone(player, player.lockTarget)
     ) {
       fireMissile();
       player.missileCooldown = 60;
-    }    
+    }       
   }
 
   // === [2] Allies Check
@@ -622,9 +624,13 @@ function checkAndFixShootingSystems() {
       ally.missileAmmo > 0 &&
       ally.lockTarget &&
       ally.lockTimer > OPPONENT_LOCK_TIME &&
-      ally.missileCooldown <= 0
+      ally.missileCooldown <= 0 &&
+      isInMissileCone(ally, ally.lockTarget) && // ✅ Missile cone check
+      isAngleAligned(ally.angle, Math.atan2(
+        ally.lockTarget.y - ally.y,
+        ally.lockTarget.x - ally.x
+      ))
     ) {
-      // console.warn("🚀 Ally forced missile fire");
       fireAllyMissile(ally);
       ally.lockTimer = 0;
       ally.missileCooldown = 100;
@@ -655,13 +661,17 @@ function checkAndFixShootingSystems() {
       opp.lockTarget &&
       opp.lockTimer > OPPONENT_LOCK_TIME &&
       opp.missileAmmo > 0 &&
-      opp.missileCooldown <= 0
+      opp.missileCooldown <= 0 &&
+      isInMissileCone(opp, opp.lockTarget) && // ✅ Missile cone check
+      isAngleAligned(opp.angle, Math.atan2(
+        opp.lockTarget.y - opp.y,
+        opp.lockTarget.x - opp.x
+      ))
     ) {
-      // console.warn("🚀 Opponent forced missile fire");
       fireOpponentMissile(opp, opp.lockTarget);
       opp.lockTimer = 0;
       opp.missileCooldown = 100;
-    }
+    }    
 
     if (
       opp.health > 0 &&
@@ -1020,7 +1030,19 @@ function fireMissile() {
   const target = prioritizeTarget(player, opponents);
   if (!target) return;
 
-  const predicted = predictTargetPosition(player, target, 4); // missile speed = 4
+  // ❗ Check if target is in the cone
+  if (!isInMissileCone(player, target)) {
+    createFloatingText(
+      "❌ TARGET OUTSIDE CONE",
+      player.x,
+      player.y - 60,
+      "gray",
+      16
+    );
+    return;
+  }
+
+  const predicted = predictTargetPosition(player, target, 4);
   const dx = predicted.x - player.x;
   const dy = predicted.y - player.y;
   const dist = Math.hypot(dx, dy);
@@ -1029,7 +1051,7 @@ function fireMissile() {
   if (dist > 1200) {
     createFloatingText("❌ TOO FAR", player.x, player.y - 60, "gray", 16);
     return;
-  }  
+  }
 
   missiles.push({
     x: player.x,
@@ -1047,6 +1069,7 @@ function fireMissile() {
   playerMissileLockReady = false;
   playerMissileLockTimer = 0;
 }
+
 
 function releaseFlaresFor(entity) {
   const flarePairs = 10; // 5 pairs = 10 total flares
