@@ -1347,7 +1347,7 @@ function updateAllies() {
 
         if (shouldFireMissile) {
           fireAllyMissile(ally);
-          createFloatingText("🚀 LOCKED", target.x, target.y - 50, "lime", 18);
+          // createFloatingText("🚀 LOCKED", target.x, target.y - 50, "lime", 18);
           ally.lockTimer = 0;
           ally.missileCooldown = 100;
         }
@@ -1484,13 +1484,13 @@ function updatePlayerMissileLock() {
 
     if (playerLockTimer > PLAYER_LOCK_TIME) {
       if (!playerMissileLockReady && !missileLockAnnounced) {
-        createFloatingText(
-          "🚀 LOCKED",
-          nearestOpponent.x,
-          nearestOpponent.y - 50,
-          "red",
-          18
-        );
+        // createFloatingText(
+        //   "🚀 LOCKED",
+        //   nearestOpponent.x,
+        //   nearestOpponent.y - 50,
+        //   "red",
+        //   18
+        // );
         missileLockAnnounced = true;
       }
 
@@ -1510,7 +1510,7 @@ function updateOpponentMissileLock() {
       opp.lockTimer = (opp.lockTimer || 0) + 1;
       opp.lockTarget = target;
       if (opp.lockTimer > OPPONENT_LOCK_TIME && Math.random() < 0.02) {
-        createFloatingText("🚀 LOCKED", target.x, target.y - 50, "red", 18);
+        // createFloatingText("🚀 LOCKED", target.x, target.y - 50, "red", 18);
         fireOpponentMissile(opp, target);
         opp.lockTimer = 0;
       }
@@ -1679,7 +1679,7 @@ function updatePlayerAutopilot() {
   if (shouldFireMissile) {
     fireMissile();
     player.missileCooldown = 60;
-    createFloatingText("🚀 AUTOPILOT FIRED", player.x, player.y - 60, "yellow", 16);
+    // createFloatingText("🚀 AUTOPILOT FIRED", player.x, player.y - 60, "yellow", 16);
     return;
   } else if (tryFireGun && player.gunCooldown <= 0) {
     fireMachineGun();
@@ -2110,7 +2110,7 @@ function updateMissiles() {
 
   if (anyMissileLockedOn) {
     if (!missileLockAnnounced) {
-      createFloatingText("🚨 MISSILE LOCKED!", player.x, player.y - 60, "red", 22);
+      // createFloatingText("🚨 MISSILE LOCKED!", player.x, player.y - 60, "red", 22);
       missileLockAnnounced = true;
     }
     lockOnAlertCooldown = 60;
