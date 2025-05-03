@@ -1032,11 +1032,6 @@ function fireMissile() {
   const dist = Math.hypot(dx, dy);
   const angleToTarget = Math.atan2(dy, dx);
 
-  if (!isAngleAligned(player.angle, angleToTarget)) {
-    createFloatingText("❌ NOT ALIGNED", player.x, player.y - 60, "gray", 16);
-    return;
-  }
-
   if (dist > 1200) {
     createFloatingText("❌ TOO FAR", player.x, player.y - 60, "gray", 16);
     return;
@@ -1058,6 +1053,7 @@ function fireMissile() {
   playerMissileLockReady = false;
   playerMissileLockTimer = 0;
 }
+
 
 
 
@@ -1189,8 +1185,10 @@ function updateOpponents() {
       createEntityWingTrails(opp);
       createEngineParticles(opp);
 
+      // === Fire Logic
       const angleToTarget = Math.atan2(target.y - opp.y, target.x - opp.x);
 
+      // === Fire Gun (aligned)
       if (
         distance < 800 &&
         isAngleAligned(opp.angle, angleToTarget) &&
@@ -1200,32 +1198,32 @@ function updateOpponents() {
         opp.gunCooldown = 6;
       }
 
+      // === Missile Lock
       const inMissileCone = isInMissileCone(opp, target);
-
       if (inMissileCone) {
         if (opp.lockTarget === target) {
-          opp.lockTimer += 1;
+          opp.lockTimer++;
         } else {
           opp.lockTarget = target;
           opp.lockTimer = 1;
         }
       } else if (opp.lockTarget === target && opp.lockTimer > 0) {
-        opp.lockTimer = Math.max(0, opp.lockTimer - 1);
+        opp.lockTimer--;
       } else {
         opp.lockTimer = 0;
         opp.lockTarget = null;
       }
 
+      // === Fire Missile (no angle check)
       const shouldFireMissile =
         opp.lockTimer > OPPONENT_LOCK_TIME &&
         opp.missileAmmo > 0 &&
         opp.missileCooldown <= 0 &&
-        isAngleAligned(opp.angle, angleToTarget) &&
         Math.random() < 0.9;
 
       if (shouldFireMissile) {
-        createFloatingText("🚀 LOCKED", target.x, target.y - 50, "red", 18);
         fireOpponentMissile(opp, target);
+        createFloatingText("🚀 LOCKED", target.x, target.y - 50, "red", 18);
         opp.lockTimer = 0;
         opp.missileCooldown = 100;
       }
@@ -1263,7 +1261,7 @@ function updateAllies() {
       continue;
     }
 
-    // 🔒 Force aggressive mode only
+    // 🔒 Force aggressive mode
     ally.mode = "aggressive";
 
     const target = prioritizeTarget(ally, opponents);
@@ -1316,10 +1314,12 @@ function updateAllies() {
       createEntityWingTrails(ally);
       createEngineParticles(ally);
 
+      // === Fire Logic
       const dx = target.x - ally.x;
       const dy = target.y - ally.y;
       const angleToTarget = Math.atan2(dy, dx);
 
+      // === Fire Gun (requires angle alignment)
       if (
         nearestDist < 800 &&
         isAngleAligned(ally.angle, angleToTarget) &&
@@ -1329,30 +1329,30 @@ function updateAllies() {
         ally.gunCooldown = 6;
       }
 
-      const inMissileCone = isInMissileCone(ally, target);
-
-      if (inMissileCone) {
+      // === Missile Lock & Fire
+      const inCone = isInMissileCone(ally, target);
+      if (inCone) {
         if (ally.lockTarget === target) {
-          ally.lockTimer += 1;
+          ally.lockTimer++;
         } else {
           ally.lockTarget = target;
           ally.lockTimer = 1;
         }
 
-        if (
+        const shouldFireMissile =
           ally.lockTimer > OPPONENT_LOCK_TIME &&
           ally.missileAmmo > 0 &&
           ally.missileCooldown <= 0 &&
-          isAngleAligned(ally.angle, angleToTarget) &&
-          Math.random() < 0.9
-        ) {
-          createFloatingText("🚀 LOCKED", target.x, target.y - 50, "lime", 18);
+          Math.random() < 0.9;
+
+        if (shouldFireMissile) {
           fireAllyMissile(ally);
+          createFloatingText("🚀 LOCKED", target.x, target.y - 50, "lime", 18);
           ally.lockTimer = 0;
           ally.missileCooldown = 100;
         }
       } else if (ally.lockTarget === target && ally.lockTimer > 0) {
-        ally.lockTimer = Math.max(0, ally.lockTimer - 1);
+        ally.lockTimer--;
       } else {
         ally.lockTimer = 0;
         ally.lockTarget = null;
@@ -1363,6 +1363,7 @@ function updateAllies() {
     if (ally.gunCooldown > 0) ally.gunCooldown--;
   }
 }
+
 
 
 function updateOpponentBullets() {
@@ -1633,24 +1634,23 @@ function updatePlayerAutopilot() {
   } else if (autopilotMode === "aggressive") {
     adjustThrottle(player, 5);
   } else if (autopilotMode === "balanced") {
-    if (underFire) {
-      adjustThrottle(player, 5);
-    } else {
-      adjustThrottle(player, distance > 800 ? 5 : 5);
-    }
+    adjustThrottle(player, underFire || distance > 800 ? 5 : 5);
   }
 
   // === [4] Fire Logic
   const dx = target.x - player.x;
   const dy = target.y - player.y;
   const angleToTarget = Math.atan2(dy, dx);
+
+  // Gun still needs alignment
   const aligned = isAngleAligned(player.angle, angleToTarget);
   const tryFireGun = player.machineGunAmmo > 0 && aligned && distance < 600;
-  const inCone = isInMissileCone(player, target);
 
+  // Lock-on system
+  const inCone = isInMissileCone(player, target);
   if (inCone) {
     if (playerLockTarget === target) {
-      playerLockTimer += 1;
+      playerLockTimer++;
     } else {
       playerLockTarget = target;
       playerLockTimer = 1;
@@ -1658,15 +1658,17 @@ function updatePlayerAutopilot() {
     if (playerLockTimer > PLAYER_LOCK_TIME) {
       playerMissileLockReady = true;
     }
-  } else if (playerLockTarget === target && playerLockTimer > 0) {
-    playerLockTimer -= 1;
   } else {
-    playerLockTimer = 0;
-    playerLockTarget = null;
-    playerMissileLockReady = false;
+    if (playerLockTarget === target && playerLockTimer > 0) {
+      playerLockTimer--;
+    } else {
+      playerLockTimer = 0;
+      playerLockTarget = null;
+      playerMissileLockReady = false;
+    }
   }
 
-  // === ✅ Cache lock state before firing
+  // Fire missile only when ready
   const shouldFireMissile =
     playerMissileLockReady &&
     player.missileAmmo > 0 &&
@@ -1675,7 +1677,7 @@ function updatePlayerAutopilot() {
     player.missileCooldown <= 0;
 
   if (shouldFireMissile) {
-    fireMissile(); // this will reset playerMissileLockReady
+    fireMissile();
     player.missileCooldown = 60;
     createFloatingText("🚀 AUTOPILOT FIRED", player.x, player.y - 60, "yellow", 16);
     return;
@@ -1686,6 +1688,7 @@ function updatePlayerAutopilot() {
 
   if (player.gunCooldown > 0) player.gunCooldown--;
 }
+
 
 function updatePlayer() {
   if (player.isTakingOff) {
