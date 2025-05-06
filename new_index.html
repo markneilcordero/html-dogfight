@@ -23,7 +23,36 @@
     <button id="fireBtn" style="padding:10px 20px;">🔫</button>
     <button id="missileBtn" style="padding:10px 20px;">🚀</button>
   </div>
+  <div id="joystick" style="position: fixed; left: 20px; bottom: 100px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;">
+    <div id="thumb" style="width: 40px; height: 40px; background: white; border-radius: 50%; position: relative; top: 30px; left: 30px;"></div>
+  </div>
   
   <script src="new_game.js"></script>
+  <script>
+    let joyX = 0, joyY = 0;
+
+    const joystick = document.getElementById("joystick");
+    const thumb = document.getElementById("thumb");
+
+    joystick.addEventListener("touchmove", e => {
+      const touch = e.touches[0];
+      const rect = joystick.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      joyX = (touch.clientX - centerX) / 40;
+      joyY = (touch.clientY - centerY) / 40;
+      e.preventDefault();
+    }, { passive: false });
+
+    joystick.addEventListener("touchend", () => {
+      joyX = 0;
+      joyY = 0;
+    });
+
+    function updatePlayerJoystick() {
+      if (Math.abs(joyX) > 0.1) player.angle += joyX * 0.05;
+      if (joyY < -0.2) player.speed = Math.min(player.speed + player.acceleration, player.maxSpeed);
+    }
+  </script>
 </body>
 </html>

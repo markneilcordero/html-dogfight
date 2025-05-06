@@ -95,6 +95,11 @@ const player = {
   health: 100,
 };
 
+let lives = 3;
+let isGameOver = false;
+let score = 0;
+let isPaused = false;
+
 const bullets = [];
 const BULLET_SPEED = 10;
 const BULLET_LIFESPAN = 60; // ~1 second @ 60fps
@@ -114,6 +119,9 @@ const enemies = [];
 const ENEMY_COUNT = 5;
 const ENEMY_SIZE = 50;
 const ENEMY_HEALTH = 50;
+
+let level = 1;
+let enemiesRemaining = ENEMY_COUNT;
 
 const enemyBullets = [];
 const ENEMY_FIRE_COOLDOWN = 60;
@@ -167,6 +175,10 @@ const keys = {};
 window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
 window.addEventListener("keyup",   e => keys[e.key.toLowerCase()] = false);
 
+window.addEventListener("keydown", e => {
+    if (e.key.toLowerCase() === "p") isPaused = !isPaused;
+  });
+
 document.getElementById("fireBtn").addEventListener("touchstart", () => keys[" "]=true);
 document.getElementById("fireBtn").addEventListener("touchend",   () => keys[" "]=false);
 document.getElementById("missileBtn").addEventListener("touchstart", () => keys["m"]=true);
@@ -177,6 +189,7 @@ document.getElementById("missileBtn").addEventListener("touchend",   () => keys[
 // [6] Update Logic
 // ======================
 function updatePlayer() {
+if (typeof updatePlayerJoystick === "function") updatePlayerJoystick();
   if (keys["a"] || keys["arrowleft"]) player.angle -= player.rotationSpeed;
   if (keys["d"] || keys["arrowright"]) player.angle += player.rotationSpeed;
   if (keys["w"] || keys["arrowup"]) {
@@ -255,7 +268,9 @@ bullets.forEach((b, bi) => {
   // Remove dead enemies
   for (let i = enemies.length - 1; i >= 0; i--) {
     if (enemies[i].health <= 0) {
-      enemies.splice(i, 1);
+        enemies.splice(i, 1);
+        enemiesRemaining--;
+        score += 100;
     }
   }
   
@@ -308,6 +323,17 @@ bullets.forEach((b, bi) => {
   
       if (dist < 20) {
         player.health -= 5;
+        if (player.health <= 0) {
+            lives--;
+            if (lives > 0) {
+              player.x = WORLD_WIDTH / 2;
+              player.y = WORLD_HEIGHT / 2;
+              player.health = 100;
+            } else {
+              isGameOver = true;
+            }
+          }
+          
         enemyBullets.splice(i, 1);
         continue;
       }
@@ -641,6 +667,7 @@ function renderHUD() {
   ctx.fillStyle = "#00ffcc";
   ctx.fillText(`Throttle: ${(player.speed / player.maxSpeed * 100).toFixed(0)}%`, 20, 30);
   ctx.fillText(`Health: ${player.health}%`, 20, 55);
+  ctx.fillText(`Score: ${score}`, 20, 130);
 
   // Optional: FPS counter
   const now = performance.now();
@@ -648,6 +675,23 @@ function renderHUD() {
   lastFrameTime = now;
   ctx.fillStyle = "#aaa";
   ctx.fillText(`FPS: ${fps}`, 20, 80);
+  ctx.fillText(`Lives: ${lives}`, 20, 105);
+
+  ctx.fillStyle = "#00ffcc";
+  ctx.fillText(`Level: ${level}`, 20, 155);
+
+
+  if (isGameOver) {
+    ctx.fillStyle = "red";
+    ctx.font = "48px sans-serif";
+    ctx.fillText("GAME OVER", canvas.width / 2 - 120, canvas.height / 2);
+  }
+
+  if (isPaused && !isGameOver) {
+    ctx.fillStyle = "yellow";
+    ctx.font = "36px sans-serif";
+    ctx.fillText("PAUSED", canvas.width / 2 - 60, canvas.height / 2);
+  }  
 
   ctx.restore();
 }
@@ -668,6 +712,23 @@ function update() {
     updateFlares();
     updateExplosions();
     updateCamera();
+
+    if (enemiesRemaining <= 0) {
+        level++;
+        enemiesRemaining = ENEMY_COUNT + level * 2;
+      
+        for (let i = 0; i < enemiesRemaining; i++) {
+          enemies.push({
+            x: Math.random() * WORLD_WIDTH,
+            y: Math.random() * WORLD_HEIGHT,
+            angle: Math.random() * Math.PI * 2,
+            speed: 2 + level * 0.2,
+            health: ENEMY_HEALTH + level * 10,
+            turnTimer: Math.floor(Math.random() * 60),
+          });
+        }
+      }
+      
   }
   
   function render() {
@@ -686,9 +747,12 @@ function update() {
   
   
 
-function gameLoop() {
-  update();
-  render();
-  requestAnimationFrame(gameLoop);
-}
+  function gameLoop() {
+    if (!isPaused && !isGameOver) {
+      update();
+    }
+    render();
+    requestAnimationFrame(gameLoop);
+  }
+  
 gameLoop();
