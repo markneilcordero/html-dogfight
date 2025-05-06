@@ -57,6 +57,13 @@ const player = {
   health: 100,
 };
 
+const bullets = [];
+const BULLET_SPEED = 10;
+const BULLET_LIFESPAN = 60; // ~1 second @ 60fps
+const BULLET_SIZE = 6;
+let shootCooldown = 0;
+
+
 // ======================
 // [5] Input
 // ======================
@@ -75,6 +82,19 @@ function updatePlayer() {
   } else {
     player.speed *= 0.98;
   }
+    // Shooting
+    if ((keys[" "] || keys["space"]) && shootCooldown <= 0) {
+    bullets.push({
+      x: player.x + Math.cos(player.angle) * 30,
+      y: player.y + Math.sin(player.angle) * 30,
+      vx: Math.cos(player.angle) * BULLET_SPEED,
+      vy: Math.sin(player.angle) * BULLET_SPEED,
+      life: BULLET_LIFESPAN,
+    });
+    shootCooldown = 10; // cooldown frames
+  }
+  if (shootCooldown > 0) shootCooldown--;
+  
 
   player.x += Math.cos(player.angle) * player.speed;
   player.y += Math.sin(player.angle) * player.speed;
@@ -82,6 +102,25 @@ function updatePlayer() {
   player.x = clamp(player.x, 0, WORLD_WIDTH);
   player.y = clamp(player.y, 0, WORLD_HEIGHT);
 }
+
+function updateBullets() {
+    for (let i = bullets.length - 1; i >= 0; i--) {
+      const b = bullets[i];
+      b.x += b.vx;
+      b.y += b.vy;
+      b.life--;
+  
+      // Remove bullets out of bounds or expired
+      if (
+        b.life <= 0 ||
+        b.x < 0 || b.x > WORLD_WIDTH ||
+        b.y < 0 || b.y > WORLD_HEIGHT
+      ) {
+        bullets.splice(i, 1);
+      }
+    }
+  }
+  
 
 function updateCamera() {
   camera.x = clamp(player.x - camera.width / 2, 0, WORLD_WIDTH - camera.width);
@@ -119,6 +158,16 @@ function renderWorld() {
   ctx.restore();
 }
 
+function renderBullets() {
+    ctx.fillStyle = "#ffff00";
+    bullets.forEach(b => {
+      ctx.beginPath();
+      ctx.arc(b.x - camera.x, b.y - camera.y, BULLET_SIZE, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  
+
 // ======================
 // [8] Render HUD
 // ======================
@@ -147,15 +196,18 @@ let lastFrameTime = performance.now();
 // [9] Game Loop
 // ======================
 function update() {
-  updatePlayer();
-  updateCamera();
-}
-
-function render() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  renderWorld();
-  renderHUD();
-}
+    updatePlayer();
+    updateBullets();
+    updateCamera();
+  }
+  
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    renderWorld();
+    renderBullets(); // <-- add this
+    renderHUD();
+  }
+  
 
 function gameLoop() {
   update();
