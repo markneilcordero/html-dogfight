@@ -66,6 +66,7 @@ function loadImage(src) {
 const playerImage = loadImage("images/player.png");
 const allyImage = loadImage("images/ally.png");
 const enemyImage = loadImage("images/enemy.png");
+const bulletImage = loadImage("images/bullet.png"); // path to your uploaded image
 
 // ======================
 // [3.1] Load Sounds
@@ -108,7 +109,7 @@ let isPaused = false;
 const bullets = [];
 const BULLET_SPEED = 10;
 const BULLET_LIFESPAN = 60; // ~1 second @ 60fps
-const BULLET_SIZE = 6;
+const BULLET_SIZE = 100;
 let shootCooldown = 0;
 
 const missiles = [];
@@ -533,17 +534,22 @@ function renderWorld() {
   ctx.restore();
 }
 
-function renderBullets() {
-    ctx.fillStyle = "yellow";
-    ctx.shadowColor = "yellow";
-    ctx.shadowBlur = 8;
-    bullets.forEach(b => {
-      ctx.beginPath();
-      ctx.arc(b.x - camera.x, b.y - camera.y, BULLET_SIZE, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    ctx.shadowBlur = 0;
+function renderBulletImage(bullet) {
+    const angle = Math.atan2(bullet.vy, bullet.vx);
+    ctx.save();
+    ctx.translate(bullet.x - camera.x, bullet.y - camera.y);
+    ctx.rotate(angle);
+    if (bulletImage.complete) {
+      ctx.drawImage(bulletImage, -BULLET_SIZE / 2, -BULLET_SIZE / 2, BULLET_SIZE, BULLET_SIZE);
+    }
+    ctx.restore();
   }
+  
+  
+  function renderBullets() {
+    bullets.forEach(renderBulletImage);
+  }
+  
 
   function renderEnemies() {
     enemies.forEach(e => {
@@ -591,12 +597,7 @@ if (getLockedTarget(player, [e]) === e) {
   }
   
   function renderAllyBullets() {
-    ctx.fillStyle = "cyan";
-    allyBullets.forEach(b => {
-      ctx.beginPath();
-      ctx.arc(b.x - camera.x, b.y - camera.y, 4, 0, Math.PI * 2);
-      ctx.fill();
-    });
+    allyBullets.forEach(renderBulletImage);
   }
   
 
@@ -620,14 +621,11 @@ if (getLockedTarget(player, [e]) === e) {
       ctx.fill();
     });
   }
+
+
   
   function renderEnemyBullets() {
-    ctx.fillStyle = "red";
-    enemyBullets.forEach(b => {
-      ctx.beginPath();
-      ctx.arc(b.x - camera.x, b.y - camera.y, 4, 0, Math.PI * 2);
-      ctx.fill();
-    });
+    enemyBullets.forEach(renderBulletImage);
   }  
 
   function spawnExplosion(x, y) {
