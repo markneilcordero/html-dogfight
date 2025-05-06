@@ -106,6 +106,8 @@ let isGameOver = false;
 let score = 0;
 let isPaused = false;
 
+const MIN_PLANE_SPEED = 5;
+
 const bullets = [];
 const BULLET_SPEED = 10;
 const BULLET_LIFESPAN = 60; // ~1 second @ 60fps
@@ -219,7 +221,8 @@ if (typeof updatePlayerJoystick === "function") updatePlayerJoystick();
     player.speed = Math.min(player.speed + player.acceleration, player.maxSpeed);
   } else {
     player.speed *= 0.98;
-  }
+    player.speed = Math.max(player.speed, MIN_PLANE_SPEED);
+  }  
   
 
   player.x += Math.cos(player.angle) * player.speed;
@@ -442,8 +445,11 @@ function updateEnemies() {
       }
   
       // === Move Forward ===
+      enemy.speed = Math.max(enemy.speed, MIN_PLANE_SPEED);
+
       enemy.x += Math.cos(enemy.angle) * enemy.speed;
       enemy.y += Math.sin(enemy.angle) * enemy.speed;
+
   
       enemy.x = clamp(enemy.x, 0, WORLD_WIDTH);
       enemy.y = clamp(enemy.y, 0, WORLD_HEIGHT);
@@ -517,8 +523,11 @@ function updateEnemies() {
       }
   
       // Move forward
+      ally.speed = Math.max(ally.speed, MIN_PLANE_SPEED);
+
       ally.x += Math.cos(ally.angle) * ally.speed;
       ally.y += Math.sin(ally.angle) * ally.speed;
+
   
       ally.x = clamp(ally.x, 0, WORLD_WIDTH);
       ally.y = clamp(ally.y, 0, WORLD_HEIGHT);
