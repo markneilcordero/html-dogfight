@@ -67,8 +67,8 @@ function loadImage(src) {
 const playerImage = loadImage("images/player.png");
 const allyImage = loadImage("images/ally.png");
 const enemyImage = loadImage("images/enemy.png");
-const bulletImage = loadImage("images/bullet.png"); 
-const missileImage = loadImage("images/missile.png");   
+const bulletImage = loadImage("images/bullet.png");
+const missileImage = loadImage("images/missile.png");
 
 // ======================
 // [3.1] Load Sounds
@@ -172,6 +172,7 @@ for (let i = 0; i < ALLY_COUNT; i++) {
     speed: 2.5,
     health: ALLY_HEALTH,
     cooldown: 0,
+    missileCooldown: 0,
     image: allyImage,
   });
 }
@@ -224,6 +225,17 @@ function fireBullet({
     life: life,
     trailHistory: [],
   });
+}
+
+function fireMissile({ origin, target }) {
+  missiles.push({
+    x: origin.x,
+    y: origin.y,
+    angle: origin.angle,
+    target: target,
+    trailHistory: [],
+  });
+  playSound("missile");
 }
 
 function updatePlayer() {
@@ -520,6 +532,13 @@ function updateEnemies() {
           offset: 30,
         });
         enemy.cooldown = ENEMY_FIRE_COOLDOWN;
+
+        if (!enemy.missileCooldown) enemy.missileCooldown = 0;
+        enemy.missileCooldown--;
+        if (enemy.missileCooldown <= 0 && dist < MISSILE_RANGE) {
+          fireMissile({ origin: enemy, target: player });
+          enemy.missileCooldown = 240; // ~4 seconds cooldown
+        }
       }
     }
   });
@@ -565,6 +584,14 @@ function updateAllies() {
           offset: 30,
         });
         ally.cooldown = ALLY_FIRE_COOLDOWN;
+
+        // Fire missile if not on cooldown
+        if (!ally.missileCooldown) ally.missileCooldown = 0;
+        ally.missileCooldown--;
+        if (ally.missileCooldown <= 0 && closestDist < MISSILE_RANGE) {
+          fireMissile({ origin: ally, target: closest });
+          ally.missileCooldown = 180; // ~3 seconds cooldown
+        }
       }
     }
 
@@ -753,12 +780,12 @@ function renderAllyBullets() {
 }
 
 function renderMissiles() {
-  missiles.forEach(m => {
+  missiles.forEach((m) => {
     // 🟡 Draw missile trail
     if (!m.trailHistory) m.trailHistory = [];
     m.trailHistory.push({ x: m.x, y: m.y, alpha: 1.0 });
     if (m.trailHistory.length > 20) m.trailHistory.shift();
-    m.trailHistory.forEach(p => p.alpha *= 0.95);
+    m.trailHistory.forEach((p) => (p.alpha *= 0.95));
 
     renderMissileTrail(m.trailHistory);
 
@@ -768,12 +795,17 @@ function renderMissiles() {
     ctx.translate(m.x - camera.x, m.y - camera.y);
     ctx.rotate(angle);
     if (missileImage.complete) {
-      ctx.drawImage(missileImage, -MISSILE_SIZE / 2, -MISSILE_SIZE / 2, MISSILE_SIZE, MISSILE_SIZE);
+      ctx.drawImage(
+        missileImage,
+        -MISSILE_SIZE / 2,
+        -MISSILE_SIZE / 2,
+        MISSILE_SIZE,
+        MISSILE_SIZE
+      );
     }
     ctx.restore();
   });
 }
-
 
 function renderFlares() {
   ctx.fillStyle = "orange";
@@ -884,6 +916,7 @@ function update() {
         health: ENEMY_HEALTH + level * 10,
         turnTimer: Math.floor(Math.random() * 60),
         image: enemyImage,
+        missileCooldown: 0,
       });
     }
   }
