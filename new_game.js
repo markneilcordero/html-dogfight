@@ -56,11 +56,16 @@ function getLockedTarget(source, targets) {
 // [3] Load Images
 // ======================
 function loadImage(src) {
-  const img = new Image();
-  img.src = src;
-  return img;
-}
+    const img = new Image();
+    img.src = src;
+    img.loaded = false;
+    img.onload = () => { img.loaded = true; };
+    return img;
+  }
+  
 const playerImage = loadImage("images/player.png");
+const allyImage = loadImage("images/ally.png");
+const enemyImage = loadImage("images/enemy.png");
 
 // ======================
 // [3.1] Load Sounds
@@ -152,6 +157,7 @@ for (let i = 0; i < ENEMY_COUNT; i++) {
       speed: 2,
       health: ENEMY_HEALTH,
       turnTimer: Math.floor(Math.random() * 60),
+      image: enemyImage,
     });
   }
 
@@ -163,6 +169,7 @@ for (let i = 0; i < ENEMY_COUNT; i++) {
       speed: 2.5,
       health: ALLY_HEALTH,
       cooldown: 0,
+      image: allyImage,
     });
   }
   
@@ -521,7 +528,7 @@ function renderWorld() {
   // Draw player
   ctx.save();
   ctx.translate(player.x - camera.x, player.y - camera.y);
-  ctx.rotate(player.angle);
+  ctx.rotate(player.angle + Math.PI / 4);
   ctx.drawImage(player.image, -player.width / 2, -player.height / 2, player.width, player.height);
   ctx.restore();
 }
@@ -542,14 +549,11 @@ function renderBullets() {
     enemies.forEach(e => {
       ctx.save();
       ctx.translate(e.x - camera.x, e.y - camera.y);
-      ctx.rotate(e.angle);
-      ctx.fillStyle = "red";
-      ctx.beginPath();
-      ctx.moveTo(0, -ENEMY_SIZE / 2);
-      ctx.lineTo(ENEMY_SIZE / 2, ENEMY_SIZE / 2);
-      ctx.lineTo(-ENEMY_SIZE / 2, ENEMY_SIZE / 2);
-      ctx.closePath();
-      ctx.fill();
+      ctx.rotate(e.angle + Math.PI / 4);
+      if (e.image && e.image.loaded) {
+        ctx.drawImage(e.image, -ENEMY_SIZE / 2, -ENEMY_SIZE / 2, ENEMY_SIZE, ENEMY_SIZE);
+      }
+      
       ctx.restore();
   
       // Health bar
@@ -574,14 +578,8 @@ if (getLockedTarget(player, [e]) === e) {
     allies.forEach(a => {
       ctx.save();
       ctx.translate(a.x - camera.x, a.y - camera.y);
-      ctx.rotate(a.angle);
-      ctx.fillStyle = "#00aaff";
-      ctx.beginPath();
-      ctx.moveTo(0, -ALLY_SIZE / 2);
-      ctx.lineTo(ALLY_SIZE / 2, ALLY_SIZE / 2);
-      ctx.lineTo(-ALLY_SIZE / 2, ALLY_SIZE / 2);
-      ctx.closePath();
-      ctx.fill();
+      ctx.rotate(a.angle + Math.PI / 4);
+      ctx.drawImage(a.image, -ALLY_SIZE / 2, -ALLY_SIZE / 2, ALLY_SIZE, ALLY_SIZE);
       ctx.restore();
   
       // Health bar
@@ -725,6 +723,7 @@ function update() {
             speed: 2 + level * 0.2,
             health: ENEMY_HEALTH + level * 10,
             turnTimer: Math.floor(Math.random() * 60),
+            image: enemyImage,
           });
         }
       }
