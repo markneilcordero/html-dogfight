@@ -69,6 +69,8 @@ const allyImage = loadImage("images/ally.png");
 const enemyImage = loadImage("images/enemy.png");
 const bulletImage = loadImage("images/bullet.png");
 const missileImage = loadImage("images/missile.png");
+const explosionImage = loadImage("images/explosion.png");
+const flareImage = loadImage("images/flare.png");
 
 // ======================
 // [3.1] Load Sounds
@@ -808,13 +810,29 @@ function renderMissiles() {
 }
 
 function renderFlares() {
-  ctx.fillStyle = "orange";
   flares.forEach((f) => {
-    ctx.beginPath();
-    ctx.arc(f.x - camera.x, f.y - camera.y, 12, 0, Math.PI * 2);
-    ctx.fill();
+    const size = 24; // or scale based on remaining timer
+    ctx.save();
+    ctx.translate(f.x - camera.x, f.y - camera.y);
+    if (flareImage.complete && flareImage.naturalWidth !== 0) {
+      ctx.drawImage(
+        flareImage,
+        -size / 2,
+        -size / 2,
+        size,
+        size
+      );
+    } else {
+      // fallback circle if image fails
+      ctx.fillStyle = "orange";
+      ctx.beginPath();
+      ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   });
 }
+
 
 function renderEnemyBullets() {
   enemyBullets.forEach(renderBulletImage);
@@ -836,12 +854,25 @@ function updateExplosions() {
 function renderExplosions() {
   explosions.forEach((e) => {
     const alpha = e.timer / EXPLOSION_DURATION;
-    ctx.fillStyle = `rgba(255,150,0,${alpha})`;
-    ctx.beginPath();
-    ctx.arc(e.x - camera.x, e.y - camera.y, 30 * alpha, 0, Math.PI * 2);
-    ctx.fill();
+    const size = 64 * alpha; // scale explosion over time
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    if (explosionImage.complete && explosionImage.naturalWidth !== 0) {
+      ctx.drawImage(
+        explosionImage,
+        e.x - camera.x - size / 2,
+        e.y - camera.y - size / 2,
+        size,
+        size
+      );
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.restore();
   });
 }
+
 
 // ======================
 // [8] Render HUD
