@@ -109,7 +109,7 @@ let isPaused = false;
 const bullets = [];
 const BULLET_SPEED = 10;
 const BULLET_LIFESPAN = 60; // ~1 second @ 60fps
-const BULLET_SIZE = 100;
+const BULLET_SIZE = 10;
 let shootCooldown = 0;
 
 const missiles = [];
@@ -196,6 +196,21 @@ document.getElementById("missileBtn").addEventListener("touchend",   () => keys[
 // ======================
 // [6] Update Logic
 // ======================
+
+function fireBullet({ origin, angle, speed, life, targetArray, spread = 0.2, offset = 30 }) {
+  const randomSpread = (Math.random() - 0.5) * spread;
+  const finalAngle = angle + randomSpread;
+
+  targetArray.push({
+    x: origin.x + Math.cos(finalAngle) * offset,
+    y: origin.y + Math.sin(finalAngle) * offset,
+    vx: Math.cos(finalAngle) * speed,
+    vy: Math.sin(finalAngle) * speed,
+    life: life,
+  });
+}
+
+
 function updatePlayer() {
 if (typeof updatePlayerJoystick === "function") updatePlayerJoystick();
   if (keys["a"] || keys["arrowleft"]) player.angle -= player.rotationSpeed;
@@ -215,14 +230,16 @@ if (typeof updatePlayerJoystick === "function") updatePlayerJoystick();
 
   // Shooting
   if ((keys[" "] || keys["space"]) && shootCooldown <= 0) {
-    bullets.push({
-      x: player.x + Math.cos(player.angle) * 30,
-      y: player.y + Math.sin(player.angle) * 30,
-      vx: Math.cos(player.angle) * BULLET_SPEED,
-      vy: Math.sin(player.angle) * BULLET_SPEED,
+    fireBullet({
+      origin: player,
+      angle: player.angle,
+      speed: BULLET_SPEED,
       life: BULLET_LIFESPAN,
+      targetArray: bullets,
+      spread: 0.2, // optional
+      offset: 30,  // optional
     });
-    shootCooldown = 10; // cooldown frames
+    shootCooldown = 10;
   }
   if (shootCooldown > 0) shootCooldown--;
 
@@ -440,12 +457,15 @@ function updateEnemies() {
         const dist = Math.hypot(dx, dy);
   
         if (dist < 800) {
-          enemyBullets.push({
-            x: enemy.x + Math.cos(enemy.angle) * 30,
-            y: enemy.y + Math.sin(enemy.angle) * 30,
-            vx: Math.cos(enemy.angle) * ENEMY_BULLET_SPEED,
-            vy: Math.sin(enemy.angle) * ENEMY_BULLET_SPEED,
-          });
+          fireBullet({
+            origin: enemy,
+            angle: enemy.angle,
+            speed: ENEMY_BULLET_SPEED,
+            life: BULLET_LIFESPAN,
+            targetArray: enemyBullets,
+            spread: 0.3, // slightly more inaccurate
+            offset: 30,
+          });          
           enemy.cooldown = ENEMY_FIRE_COOLDOWN;
         }
       }
@@ -483,12 +503,15 @@ function updateEnemies() {
         // Fire bullets
         ally.cooldown--;
         if (ally.cooldown <= 0 && closestDist < 800) {
-          allyBullets.push({
-            x: ally.x + Math.cos(ally.angle) * 30,
-            y: ally.y + Math.sin(ally.angle) * 30,
-            vx: Math.cos(ally.angle) * ALLY_BULLET_SPEED,
-            vy: Math.sin(ally.angle) * ALLY_BULLET_SPEED,
-          });
+          fireBullet({
+            origin: ally,
+            angle: ally.angle,
+            speed: ALLY_BULLET_SPEED,
+            life: BULLET_LIFESPAN,
+            targetArray: allyBullets,
+            spread: 0.2,
+            offset: 30,
+          });          
           ally.cooldown = ALLY_FIRE_COOLDOWN;
         }
       }
