@@ -4,7 +4,7 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const camera = {
+camera = {
     x: 0,
     y: 0,
     width: canvas.width,
@@ -41,12 +41,12 @@ function loadImage(src) {
 const playerImage = loadImage("images/player.png");
 
 // ======================
-// [4] Player Config
+// [4] Player
 // ======================
 const player = {
   x: WORLD_WIDTH / 2,
   y: WORLD_HEIGHT / 2,
-  angle: 0, // Facing direction in radians
+  angle: 0,
   speed: 0,
   maxSpeed: 5,
   rotationSpeed: 0.05,
@@ -54,39 +54,31 @@ const player = {
   image: playerImage,
   width: 60,
   height: 60,
+  health: 100,
 };
 
 // ======================
-// [5] Input Handling
+// [5] Input
 // ======================
 const keys = {};
 window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
 window.addEventListener("keyup",   e => keys[e.key.toLowerCase()] = false);
 
 // ======================
-// [6] Update Functions
+// [6] Update Logic
 // ======================
 function updatePlayer() {
-  // Turn left/right
-  if (keys["arrowleft"] || keys["a"]) {
-    player.angle -= player.rotationSpeed;
-  }
-  if (keys["arrowright"] || keys["d"]) {
-    player.angle += player.rotationSpeed;
-  }
-
-  // Accelerate / throttle
-  if (keys["arrowup"] || keys["w"]) {
+  if (keys["a"] || keys["arrowleft"]) player.angle -= player.rotationSpeed;
+  if (keys["d"] || keys["arrowright"]) player.angle += player.rotationSpeed;
+  if (keys["w"] || keys["arrowup"]) {
     player.speed = Math.min(player.speed + player.acceleration, player.maxSpeed);
   } else {
-    player.speed *= 0.98; // friction
+    player.speed *= 0.98;
   }
 
-  // Move forward
   player.x += Math.cos(player.angle) * player.speed;
   player.y += Math.sin(player.angle) * player.speed;
 
-  // Clamp to world
   player.x = clamp(player.x, 0, WORLD_WIDTH);
   player.y = clamp(player.y, 0, WORLD_HEIGHT);
 }
@@ -97,14 +89,15 @@ function updateCamera() {
 }
 
 // ======================
-// [7] Render Functions
+// [7] Render World
 // ======================
 function renderWorld() {
-  ctx.fillStyle = "#222";
+  // Sky background
+  ctx.fillStyle = "#111";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Optional grid
-  ctx.strokeStyle = "#333";
+  // Optional: grid lines
+  ctx.strokeStyle = "#222";
   for (let x = 0; x < WORLD_WIDTH; x += 200) {
     ctx.beginPath();
     ctx.moveTo(x - camera.x, 0 - camera.y);
@@ -118,22 +111,40 @@ function renderWorld() {
     ctx.stroke();
   }
 
-  // Draw player image rotated
+  // Draw player
   ctx.save();
   ctx.translate(player.x - camera.x, player.y - camera.y);
   ctx.rotate(player.angle);
-  ctx.drawImage(
-    player.image,
-    -player.width / 2,
-    -player.height / 2,
-    player.width,
-    player.height
-  );
+  ctx.drawImage(player.image, -player.width / 2, -player.height / 2, player.width, player.height);
   ctx.restore();
 }
 
 // ======================
-// [8] Game Loop
+// [8] Render HUD
+// ======================
+function renderHUD() {
+  ctx.save();
+  ctx.resetTransform();
+
+  ctx.font = "16px monospace";
+  ctx.fillStyle = "#00ffcc";
+  ctx.fillText(`Throttle: ${(player.speed / player.maxSpeed * 100).toFixed(0)}%`, 20, 30);
+  ctx.fillText(`Health: ${player.health}%`, 20, 55);
+
+  // Optional: FPS counter
+  const now = performance.now();
+  const fps = Math.round(1000 / (now - lastFrameTime));
+  lastFrameTime = now;
+  ctx.fillStyle = "#aaa";
+  ctx.fillText(`FPS: ${fps}`, 20, 80);
+
+  ctx.restore();
+}
+
+let lastFrameTime = performance.now();
+
+// ======================
+// [9] Game Loop
 // ======================
 function update() {
   updatePlayer();
@@ -143,6 +154,7 @@ function update() {
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   renderWorld();
+  renderHUD();
 }
 
 function gameLoop() {
