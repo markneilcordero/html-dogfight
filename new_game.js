@@ -120,7 +120,7 @@ const trails = [];
 const missiles = [];
 const MISSILE_SPEED = 6;
 const MISSILE_TURN_RATE = 0.08;
-const MISSILE_SIZE = 10;
+const MISSILE_SIZE = 30;
 const MISSILE_RANGE = 900;
 const MISSILE_CONE = Math.PI / 6; // ~30°
 const MISSILE_DAMAGE = 50;
@@ -657,16 +657,19 @@ function renderBulletTrail(trail) {
 }
 
 function renderMissileTrail(trail) {
-  for (let i = 0; i < trail.length - 1; i++) {
-    const p1 = trail[i];
-    const p2 = trail[i + 1];
+  for (let i = 0; i < trail.length; i++) {
+    const p = trail[i];
+    const radius = 4 * p.alpha; // size fades with alpha
     ctx.beginPath();
-    ctx.strokeStyle = `rgba(255, 150, 0, ${p1.alpha})`; // orange trail
-    ctx.lineWidth = 1;
-    ctx.moveTo(p1.x - camera.x, p1.y - camera.y);
-    ctx.lineTo(p2.x - camera.x, p2.y - camera.y);
-    ctx.stroke();
+    ctx.fillStyle = `rgba(200, 200, 200, ${p.alpha * 0.6})`; // light gray smoke
+    ctx.shadowColor = `rgba(200, 200, 200, ${p.alpha * 0.5})`;
+    ctx.shadowBlur = 5;
+    ctx.arc(p.x - camera.x, p.y - camera.y, radius, 0, Math.PI * 2);
+    ctx.fill();
   }
+
+  // Reset shadow blur after drawing
+  ctx.shadowBlur = 0;
 }
 
 function renderEnemies() {
@@ -754,8 +757,8 @@ function renderMissiles() {
     // 🟡 Draw missile trail
     if (!m.trailHistory) m.trailHistory = [];
     m.trailHistory.push({ x: m.x, y: m.y, alpha: 1.0 });
-    if (m.trailHistory.length > 8) m.trailHistory.shift();
-    m.trailHistory.forEach(p => p.alpha *= 0.9);
+    if (m.trailHistory.length > 20) m.trailHistory.shift();
+    m.trailHistory.forEach(p => p.alpha *= 0.95);
 
     renderMissileTrail(m.trailHistory);
 
