@@ -110,7 +110,7 @@ const MIN_PLANE_SPEED = 5;
 
 const bullets = [];
 const BULLET_SPEED = 10;
-const BULLET_LIFESPAN = 60; // ~1 second @ 60fps
+const BULLET_LIFESPAN = 1000; // ~1 second @ 60fps
 const BULLET_SIZE = 10;
 let shootCooldown = 0;
 
@@ -584,7 +584,7 @@ function renderWorld() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Optional: grid lines
-  ctx.strokeStyle = "#222";
+  ctx.strokeStyle = "rgba(255, 255, 255, 1)";
   for (let x = 0; x < WORLD_WIDTH; x += 200) {
     ctx.beginPath();
     ctx.moveTo(x - camera.x, 0 - camera.y);
