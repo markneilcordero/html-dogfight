@@ -67,7 +67,8 @@ function loadImage(src) {
 const playerImage = loadImage("images/player.png");
 const allyImage = loadImage("images/ally.png");
 const enemyImage = loadImage("images/enemy.png");
-const bulletImage = loadImage("images/bullet.png"); // path to your uploaded image
+const bulletImage = loadImage("images/bullet.png"); 
+const missileImage = loadImage("images/missile.png");   
 
 // ======================
 // [3.1] Load Sounds
@@ -327,6 +328,9 @@ function updateBullets() {
 function updateMissiles() {
   for (let i = missiles.length - 1; i >= 0; i--) {
     const m = missiles[i];
+
+    if (!m.trailHistory) m.trailHistory = [];
+
     const target = m.target;
 
     // Track target if still alive
@@ -652,6 +656,19 @@ function renderBulletTrail(trail) {
   }
 }
 
+function renderMissileTrail(trail) {
+  for (let i = 0; i < trail.length - 1; i++) {
+    const p1 = trail[i];
+    const p2 = trail[i + 1];
+    ctx.beginPath();
+    ctx.strokeStyle = `rgba(255, 150, 0, ${p1.alpha})`; // orange trail
+    ctx.lineWidth = 1;
+    ctx.moveTo(p1.x - camera.x, p1.y - camera.y);
+    ctx.lineTo(p2.x - camera.x, p2.y - camera.y);
+    ctx.stroke();
+  }
+}
+
 function renderEnemies() {
   enemies.forEach((e) => {
     ctx.save();
@@ -733,16 +750,27 @@ function renderAllyBullets() {
 }
 
 function renderMissiles() {
-  ctx.fillStyle = "orange";
-  ctx.shadowColor = "orange";
-  ctx.shadowBlur = 10;
-  missiles.forEach((m) => {
-    ctx.beginPath();
-    ctx.arc(m.x - camera.x, m.y - camera.y, MISSILE_SIZE, 0, Math.PI * 2);
-    ctx.fill();
+  missiles.forEach(m => {
+    // 🟡 Draw missile trail
+    if (!m.trailHistory) m.trailHistory = [];
+    m.trailHistory.push({ x: m.x, y: m.y, alpha: 1.0 });
+    if (m.trailHistory.length > 8) m.trailHistory.shift();
+    m.trailHistory.forEach(p => p.alpha *= 0.9);
+
+    renderMissileTrail(m.trailHistory);
+
+    // 🟢 Draw missile image
+    const angle = m.angle;
+    ctx.save();
+    ctx.translate(m.x - camera.x, m.y - camera.y);
+    ctx.rotate(angle);
+    if (missileImage.complete) {
+      ctx.drawImage(missileImage, -MISSILE_SIZE / 2, -MISSILE_SIZE / 2, MISSILE_SIZE, MISSILE_SIZE);
+    }
+    ctx.restore();
   });
-  ctx.shadowBlur = 0;
 }
+
 
 function renderFlares() {
   ctx.fillStyle = "orange";
