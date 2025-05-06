@@ -130,16 +130,16 @@ let level = 1;
 let enemiesRemaining = ENEMY_COUNT;
 
 const enemyBullets = [];
-const ENEMY_FIRE_COOLDOWN = 60;
-const ENEMY_BULLET_SPEED = 6;
+const ENEMY_FIRE_COOLDOWN = 10;
+const ENEMY_BULLET_SPEED = 8;
 
 const allies = [];
 const ALLY_COUNT = 3;
 const ALLY_SIZE = 50;
 const ALLY_HEALTH = 100;
 const allyBullets = [];
-const ALLY_BULLET_SPEED = 7;
-const ALLY_FIRE_COOLDOWN = 40;
+const ALLY_FIRE_COOLDOWN = 10;
+const ALLY_BULLET_SPEED = 8;
 
 
 const flares = [];
