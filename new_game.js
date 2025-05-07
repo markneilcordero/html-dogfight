@@ -259,6 +259,15 @@ const PLAYER_BULLET_SPREAD = 0.02; // slightly tighter
 const ENEMY_BULLET_SPREAD = 0.02; // looser, less accurate
 const ALLY_BULLET_SPREAD = 0.02; // medium accuracy
 
+const PLAYER_BULLET_DAMAGE = 1;
+const ALLY_BULLET_DAMAGE = 1;
+const ENEMY_BULLET_DAMAGE = 1;
+
+const PLAYER_MISSILE_DAMAGE = 100;
+const ALLY_MISSILE_DAMAGE = 100;
+const ENEMY_MISSILE_DAMAGE = 100;
+
+
 for (let i = 0; i < ENEMY_COUNT; i++) {
   enemies.push({
     x: Math.random() * WORLD_WIDTH,
@@ -445,9 +454,13 @@ function updateMissile(m, index) {
         (m.ownerType === "player" && target === player) ||
         (m.ownerType === "enemy" && enemies.includes(target)) ||
         (m.ownerType === "ally" && allies.includes(target));
-      if (!isFriendlyFire) {
-        target.health -= MISSILE_DAMAGE;
-      }
+        if (!isFriendlyFire) {
+          let damage = 0;
+          if (m.ownerType === "player") damage = PLAYER_MISSILE_DAMAGE;
+          else if (m.ownerType === "ally") damage = ALLY_MISSILE_DAMAGE;
+          else if (m.ownerType === "enemy") damage = ENEMY_MISSILE_DAMAGE;
+          target.health -= damage;
+        }        
     }
     spawnExplosion(m.x, m.y);
     missiles.splice(index, 1);
@@ -551,9 +564,10 @@ function updateBullets() {
       const dy = b.y - e.y;
       const dist = Math.hypot(dx, dy);
       if (dist < ENEMY_SIZE / 2 + BULLET_SIZE) {
-        e.health -= 25;
+        e.health -= PLAYER_BULLET_DAMAGE;
+        spawnExplosion(b.x, b.y, 0.4); // 💥 Add explosion
         bullets.splice(bi, 1); // remove bullet
-      }
+      }      
     });
   });
 
@@ -614,7 +628,8 @@ function updateEnemyBullets() {
     const dist = Math.hypot(dx, dy);
 
     if (dist < 20) {
-      player.health -= 5;
+      player.health -= ENEMY_BULLET_DAMAGE;
+      spawnExplosion(b.x, b.y, 0.4);
       if (player.health <= 0) {
         lives--;
         if (lives > 0) {
@@ -659,10 +674,11 @@ function updateAllyBullets() {
       const e = enemies[j];
       const dist = Math.hypot(b.x - e.x, b.y - e.y);
       if (dist < ENEMY_SIZE / 2) {
-        e.health -= 20;
+        e.health -= ALLY_BULLET_DAMAGE;
+        spawnExplosion(b.x, b.y, 0.4);// 💥 Add explosion
         allyBullets.splice(i, 1);
         break;
-      }
+      }      
     }
 
     b.life--;
@@ -1189,8 +1205,8 @@ function renderEnemyBullets() {
   enemyBullets.forEach(renderBulletImage);
 }
 
-function spawnExplosion(x, y) {
-  explosions.push({ x, y, timer: EXPLOSION_DURATION });
+function spawnExplosion(x, y, size = 1.0) {
+  explosions.push({ x, y, timer: EXPLOSION_DURATION, size });
 }
 
 function dropFlareFromPlayer() {
@@ -1209,7 +1225,7 @@ function updateExplosions() {
 function renderExplosions() {
   explosions.forEach((e) => {
     const alpha = e.timer / EXPLOSION_DURATION;
-    const size = 64 * alpha; // scale explosion over time
+    const size = 64 * alpha * e.size; // scale explosion over time
     ctx.save();
     ctx.globalAlpha = alpha;
 
