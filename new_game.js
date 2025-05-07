@@ -199,9 +199,13 @@ const player = {
   width: 60,
   height: 60,
   health: 100,
-  throttle: 1.0, // 🟢 full throttle
+  throttle: 1.0,
   throttleTarget: 1.0,
+  orbitAngle: Math.random() * Math.PI * 2,   // ✅ Add this
+  orbitDistance: 300,                        // ✅ Add this
+  orbitSpeed: 0.015                          // ✅ Add this
 };
+
 
 let lives = 3;
 let isGameOver = false;
@@ -495,68 +499,109 @@ function updateMissile(m, index) {
 function runAutopilot(entity, targetList, ownerType = "player") {
   const target = getLockedTarget(entity, targetList);
 
-  // Orbit target or wander
+  // === Aggressive: Chase directly or orbit closely
   if (target) {
-    orbitAroundTarget(entity, target);
+    const dx = target.x - entity.x;
+    const dy = target.y - entity.y;
+    const angleToTarget = Math.atan2(dy, dx);
+    let diff = angleToTarget - entity.angle;
+    while (diff > Math.PI) diff -= 2 * Math.PI;
+    while (diff < -Math.PI) diff += 2 * Math.PI;
+
+    // Turn sharply toward target
+    entity.angle += clamp(diff, -0.08, 0.08);
+
+    // Reduce orbit distance to stay close (simulate dogfighting)
+    entity.orbitDistance = 100;
+
   } else {
-    entity.orbitAngle = (entity.orbitAngle || 0) + 0.01;
+    entity.orbitAngle = (entity.orbitAngle || 0) + 0.02;
     const wanderX = WORLD_WIDTH / 2 + Math.cos(entity.orbitAngle) * 300;
     const wanderY = WORLD_HEIGHT / 2 + Math.sin(entity.orbitAngle) * 300;
     orbitAroundTarget(entity, { x: wanderX, y: wanderY });
   }
 
-  // Throttle control
-  entity.throttleTarget = target ? 1.0 : 0.5;
-  entity.throttle += (entity.throttleTarget - entity.throttle) * 0.05;
-  entity.throttle = clamp(entity.throttle, 0.2, 1.0);
+  // === Throttle control (stay fast)
+  entity.throttleTarget = 1.0;
+  entity.throttle += (entity.throttleTarget - entity.throttle) * 0.1;
+  entity.throttle = clamp(entity.throttle, 0.5, 1.0);
 
-  // Apply throttle to speed and move forward
   entity.speed = MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * entity.throttle;
+
   entity.x += Math.cos(entity.angle) * entity.speed;
   entity.y += Math.sin(entity.angle) * entity.speed;
   entity.x = clamp(entity.x, 0, WORLD_WIDTH);
   entity.y = clamp(entity.y, 0, WORLD_HEIGHT);
 
-  // Fire bullets
-  if (ownerType === "player" && shootCooldown <= 0 && target) {
+  // === Initialize cooldowns if not present
+  entity.cooldown = entity.cooldown || 0;
+  entity.missileCooldown = entity.missileCooldown || 0;
+
+  // === Fire bullets faster
+  entity.cooldown--;
+  if (target && entity.cooldown <= 0) {
     fireBullet({
       origin: entity,
       angle: entity.angle,
       speed: BULLET_SPEED,
       life: BULLET_LIFESPAN,
-      targetArray: bullets,
-      spread: PLAYER_BULLET_SPREAD,
+      targetArray:
+        ownerType === "player"
+          ? bullets
+          : ownerType === "ally"
+          ? allyBullets
+          : enemyBullets,
+      spread:
+        ownerType === "player"
+          ? PLAYER_BULLET_SPREAD
+          : ownerType === "ally"
+          ? ALLY_BULLET_SPREAD
+          : ENEMY_BULLET_SPREAD,
       offset: 30,
     });
-    shootCooldown = 10;
+    entity.cooldown = 5; // 🔥 fire faster
   }
 
-  // Fire missile
-  if (ownerType === "player" && missileCooldown <= 0 && target) {
-    createMissile({
-      x: entity.x,
-      y: entity.y,
-      angle: entity.angle,
-      target,
-      ownerType,
-    });
-    missileCooldown = 60;
+  // === Fire missiles aggressively
+  entity.missileCooldown--;
+  if (target && entity.missileCooldown <= 0) {
+    const dx = target.x - entity.x;
+    const dy = target.y - entity.y;
+    const dist = Math.hypot(dx, dy);
+    const angleToTarget = Math.atan2(dy, dx);
+    const angleDiff = Math.abs(angleToTarget - entity.angle);
+
+    if (angleDiff < MISSILE_CONE * 1.5 && dist < MISSILE_RANGE) {
+      createMissile({
+        x: entity.x,
+        y: entity.y,
+        angle: entity.angle,
+        target,
+        ownerType,
+      });
+
+      entity.missileCooldown =
+        ownerType === "player" ? 40 : ownerType === "ally" ? 120 : 180;
+    }
   }
 
-  // Drop flare if missile locked
+  // === Drop flare if missile locked
   const incomingMissile = missiles.find((m) => m.target === entity);
-  if (incomingMissile && flareCooldown <= 0 && ownerType === "player") {
+  if (incomingMissile && entity.flareCooldown <= 0) {
     createFlare(entity);
-    flareCooldown = FLARE_COOLDOWN_MAX;
+    entity.flareCooldown = FLARE_COOLDOWN_MAX;
     playSound("flare");
   }
 }
 
 
 
+
+
 function updatePlayer() {
   if (autopilotEnabled) {
     runAutopilot(player, enemies, "player");
+    updateWingTrails(player);
     return; // skip manual controls
   }
 
