@@ -1,129 +1,242 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HTML Dogfight</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: #000;
-    }
-    canvas {
-      display: block;
-      background-color: #111;
-    }
-  </style>
-</head>
-<body>
-  <canvas id="gameCanvas"></canvas>
-  <!-- Controls: FIRE, MISSILE, FLARE -->
-  <div id="controls" style="position:fixed; bottom:140px; right:20px; z-index:1000;">
-    <button id="fireBtn" style="padding:10px; margin-bottom: 10px;">
-      <img src="images/shootbullet.png" alt="Fire" width="32" height="32">
-    </button>
-    <button id="missileBtn" style="padding:10px; margin-bottom: 10px;">
-      <img src="images/shootmissile.png" alt="Missile" width="32" height="32">
-    </button>
-    <button id="flareBtn" style="padding:10px;">
-      <img src="images/shootflare.png" alt="Flare" width="32" height="32">
-    </button>
-  </div>
-  
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTML Dogfight</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #000;
+      }
 
-  <div id="joystick" style="position: fixed; left: 20px; bottom: 100px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;">
-    <div id="thumb" style="width: 40px; height: 40px; background: white; border-radius: 50%; position: relative; top: 30px; left: 30px;"></div>
-  </div>
-  <div id="throttleControls" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
-    <button id="throttleUpBtn" style="padding:10px 20px; display: block; margin-bottom: 10px;">🔼</button>
-    <button id="throttleDownBtn" style="padding:10px 20px; display: block;">🔽</button>
-  </div>  
-  
-  <script src="new_game.js"></script>
-  <script>
-    let joyX = 0, joyY = 0;
-  
-    const joystick = document.getElementById("joystick");
-    const thumb = document.getElementById("thumb");
-  
-    joystick.addEventListener("touchmove", e => {
-      const touch = e.touches[0];
-      const rect = joystick.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      const dx = touch.clientX - centerX;
-      const dy = touch.clientY - centerY;
-      joyX = dx / 40;
-      joyY = dy / 40;
-  
-      // Move the thumb visually
-      const maxDistance = 30;
-      const angle = Math.atan2(dy, dx);
-      const distance = Math.min(Math.hypot(dx, dy), maxDistance);
-      thumb.style.left = `${30 + Math.cos(angle) * distance}px`;
-      thumb.style.top = `${30 + Math.sin(angle) * distance}px`;
-  
-      e.preventDefault();
-    }, { passive: false });
-  
-    joystick.addEventListener("touchend", () => {
-      joyX = 0;
-      joyY = 0;
-      thumb.style.left = "30px";
-      thumb.style.top = "30px";
-    });
-  
-    function updatePlayerJoystick() {
-      if (Math.abs(joyX) > 0.1) {
-        player.angle += joyX * 0.05;
+      canvas {
+        display: block;
+        background-color: #111;
       }
-      if (joyY < -0.2) {
-        player.throttleTarget = Math.min(1.0, player.throttleTarget + 0.02);
+
+      #controls button,
+      #throttleControls button {
+        background: rgba(255, 255, 255, 0.05);
+        border: 2px solid #444;
+        border-radius: 12px;
+        padding: 10px;
+        cursor: pointer;
+        box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+        transition: all 0.1s ease-in-out;
+        backdrop-filter: blur(4px);
       }
-      if (joyY > 0.2) {
-        player.throttleTarget = Math.max(0.2, player.throttleTarget - 0.02);
+
+      #controls button img,
+      #throttleControls button img {
+        pointer-events: none;
+        user-select: none;
+        -webkit-user-drag: none;
       }
-    }
-  </script>
-  <script>
-    let throttleInterval = null;
-  
-    function startThrottle(direction) {
-      // direction: +1 for up, -1 for down
-      if (throttleInterval) clearInterval(throttleInterval);
-      throttleInterval = setInterval(() => {
-        player.throttleTarget = clamp(
-          player.throttleTarget + direction * 0.05,
-          0.2,
-          1.0
-        );
-      }, 30); // Adjust interval speed as needed
-    }
-  
-    function stopThrottle() {
-      clearInterval(throttleInterval);
-      throttleInterval = null;
-    }
-  
-    const upBtn = document.getElementById("throttleUpBtn");
-    const downBtn = document.getElementById("throttleDownBtn");
-  
-    upBtn.addEventListener("mousedown", () => startThrottle(1));
-    downBtn.addEventListener("mousedown", () => startThrottle(-1));
-  
-    upBtn.addEventListener("mouseup", stopThrottle);
-    downBtn.addEventListener("mouseup", stopThrottle);
-    upBtn.addEventListener("mouseleave", stopThrottle);
-    downBtn.addEventListener("mouseleave", stopThrottle);
-  
-    // For mobile/touch support
-    upBtn.addEventListener("touchstart", () => startThrottle(1));
-    downBtn.addEventListener("touchstart", () => startThrottle(-1));
-    upBtn.addEventListener("touchend", stopThrottle);
-    downBtn.addEventListener("touchend", stopThrottle);
-  </script>
-   
-</body>
+
+      #controls button:hover,
+      #throttleControls button:hover {
+        box-shadow: 0 0 12px rgba(0, 255, 255, 0.6);
+        transform: scale(1.1);
+      }
+
+      #controls button:active,
+      #throttleControls button:active {
+        transform: scale(0.95);
+        box-shadow: 0 0 6px rgba(0, 255, 255, 0.4);
+      }
+
+      #joystick {
+        position: fixed;
+        left: 20px;
+        bottom: 100px;
+        width: 100px;
+        height: 100px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+        border: 2px solid #555;
+        backdrop-filter: blur(4px);
+      }
+
+      #thumb {
+        width: 40px;
+        height: 40px;
+        background: white;
+        border-radius: 50%;
+        position: relative;
+        top: 30px;
+        left: 30px;
+      }
+      button,
+      img {
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-user-drag: none;
+        user-select: none;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="gameCanvas"></canvas>
+    <!-- Controls: FIRE, MISSILE, FLARE -->
+    <div
+      id="controls"
+      style="position: fixed; bottom: 140px; right: 20px; z-index: 1000"
+    >
+      <button id="flareBtn" style="padding: 10px">
+        <img src="images/shootflare.png" alt="Flare" width="32" height="32" />
+      </button>
+      <button id="missileBtn" style="padding: 10px; margin-bottom: 10px">
+        <img
+          src="images/shootmissile.png"
+          alt="Missile"
+          width="32"
+          height="32"
+        />
+      </button>
+      <button id="fireBtn" style="padding: 10px; margin-bottom: 10px">
+        <img src="images/shootbullet.png" alt="Fire" width="32" height="32" />
+      </button>
+    </div>
+
+    <div
+      id="joystick"
+      style="
+        position: fixed;
+        left: 20px;
+        bottom: 100px;
+        width: 100px;
+        height: 100px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+      "
+    >
+      <div
+        id="thumb"
+        style="
+          width: 40px;
+          height: 40px;
+          background: white;
+          border-radius: 50%;
+          position: relative;
+          top: 30px;
+          left: 30px;
+        "
+      ></div>
+    </div>
+    <div
+      id="throttleControls"
+      style="position: fixed; bottom: 20px; right: 20px; z-index: 1000"
+    >
+      <button
+        id="throttleUpBtn"
+        style="padding: 10px 20px; display: block; margin-bottom: 10px"
+      >
+        🔼
+      </button>
+      <button id="throttleDownBtn" style="padding: 10px 20px; display: block">
+        🔽
+      </button>
+    </div>
+
+    <script src="new_game.js"></script>
+    <script>
+      let joyX = 0,
+        joyY = 0;
+
+      const joystick = document.getElementById("joystick");
+      const thumb = document.getElementById("thumb");
+
+      joystick.addEventListener(
+        "touchmove",
+        (e) => {
+          const touch = e.touches[0];
+          const rect = joystick.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const dx = touch.clientX - centerX;
+          const dy = touch.clientY - centerY;
+          joyX = dx / 40;
+          joyY = dy / 40;
+
+          // Move the thumb visually
+          const maxDistance = 30;
+          const angle = Math.atan2(dy, dx);
+          const distance = Math.min(Math.hypot(dx, dy), maxDistance);
+          thumb.style.left = `${30 + Math.cos(angle) * distance}px`;
+          thumb.style.top = `${30 + Math.sin(angle) * distance}px`;
+
+          e.preventDefault();
+        },
+        { passive: false }
+      );
+
+      joystick.addEventListener("touchend", () => {
+        joyX = 0;
+        joyY = 0;
+        thumb.style.left = "30px";
+        thumb.style.top = "30px";
+      });
+
+      function updatePlayerJoystick() {
+        if (Math.abs(joyX) > 0.1) {
+          player.angle += joyX * 0.05;
+        }
+        if (joyY < -0.2) {
+          player.throttleTarget = Math.min(1.0, player.throttleTarget + 0.02);
+        }
+        if (joyY > 0.2) {
+          player.throttleTarget = Math.max(0.2, player.throttleTarget - 0.02);
+        }
+      }
+    </script>
+    <script>
+      let throttleInterval = null;
+
+      function startThrottle(direction) {
+        // direction: +1 for up, -1 for down
+        if (throttleInterval) clearInterval(throttleInterval);
+        throttleInterval = setInterval(() => {
+          player.throttleTarget = clamp(
+            player.throttleTarget + direction * 0.05,
+            0.2,
+            1.0
+          );
+        }, 30); // Adjust interval speed as needed
+      }
+
+      function stopThrottle() {
+        clearInterval(throttleInterval);
+        throttleInterval = null;
+      }
+
+      const upBtn = document.getElementById("throttleUpBtn");
+      const downBtn = document.getElementById("throttleDownBtn");
+
+      upBtn.addEventListener("mousedown", () => startThrottle(1));
+      downBtn.addEventListener("mousedown", () => startThrottle(-1));
+
+      upBtn.addEventListener("mouseup", stopThrottle);
+      downBtn.addEventListener("mouseup", stopThrottle);
+      upBtn.addEventListener("mouseleave", stopThrottle);
+      downBtn.addEventListener("mouseleave", stopThrottle);
+
+      // For mobile/touch support
+      upBtn.addEventListener("touchstart", () => startThrottle(1));
+      downBtn.addEventListener("touchstart", () => startThrottle(-1));
+      upBtn.addEventListener("touchend", stopThrottle);
+      downBtn.addEventListener("touchend", stopThrottle);
+    </script>
+    <script>
+      // Prevent long press context menu on all buttons and images
+      document.addEventListener("contextmenu", function (e) {
+        if (e.target.closest("button") || e.target.tagName === "IMG") {
+          e.preventDefault();
+        }
+      });
+    </script>
+  </body>
 </html>
