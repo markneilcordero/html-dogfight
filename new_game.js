@@ -79,6 +79,7 @@ const sounds = {
   shoot: new Audio("sounds/shoot.wav"),
   explosion: new Audio("sounds/explosion.wav"),
   missile: new Audio("sounds/missile.wav"),
+  flare: new Audio("sounds/flare.wav"),
 };
 
 function playSound(name) {
@@ -190,6 +191,12 @@ window.addEventListener("keydown", (e) => {
   if (e.key.toLowerCase() === "p") isPaused = !isPaused;
 });
 
+window.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === "f") {
+    dropFlareFromPlayer();
+  }
+});
+
 document
   .getElementById("fireBtn")
   .addEventListener("touchstart", () => (keys[" "] = true));
@@ -202,6 +209,10 @@ document
 document
   .getElementById("missileBtn")
   .addEventListener("touchend", () => (keys["m"] = false));
+document
+  .getElementById("flareBtn")
+  .addEventListener("click", dropFlareFromPlayer);
+
 
 // ======================
 // [6] Update Logic
@@ -460,8 +471,20 @@ function updateAllyBullets() {
 
 function updateFlares() {
   for (let i = flares.length - 1; i >= 0; i--) {
-    flares[i].timer--;
-    if (flares[i].timer <= 0) {
+    const f = flares[i];
+    f.timer--;
+
+    // ✅ Apply velocity to move the flare
+    f.x += f.vx;
+    f.y += f.vy;
+
+    // ✅ Trail logic
+    if (!f.trail) f.trail = [];
+    f.trail.push({ x: f.x, y: f.y, alpha: 1.0 });
+    if (f.trail.length > 15) f.trail.shift();
+    f.trail.forEach(p => p.alpha *= 0.92);
+
+    if (f.timer <= 0) {
       flares.splice(i, 1);
     }
   }
@@ -490,8 +513,11 @@ function updateEnemies() {
         flares.push({
           x: enemy.x,
           y: enemy.y,
+          vx: Math.cos(enemy.angle + Math.PI) * 2,
+          vy: Math.sin(enemy.angle + Math.PI) * 2,
           timer: FLARE_DURATION,
-        });
+          trail: [],
+        });                
       }
     } else {
       // === Chase player ===
@@ -701,6 +727,17 @@ function renderMissileTrail(trail) {
   ctx.shadowBlur = 0;
 }
 
+function renderFlareTrail(trail) {
+  for (let i = 0; i < trail.length; i++) {
+    const p = trail[i];
+    const radius = 3 * p.alpha;
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(255, 150, 50, ${p.alpha})`;
+    ctx.arc(p.x - camera.x, p.y - camera.y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 function renderEnemies() {
   enemies.forEach((e) => {
     ctx.save();
@@ -811,28 +848,27 @@ function renderMissiles() {
 
 function renderFlares() {
   flares.forEach((f) => {
-    const size = 24; // or scale based on remaining timer
+    // 🔥 draw trail first
+    if (f.trail) {
+      renderFlareTrail(f.trail);
+    }
+
+    const size = 24;
     ctx.save();
     ctx.translate(f.x - camera.x, f.y - camera.y);
+
     if (flareImage.complete && flareImage.naturalWidth !== 0) {
-      ctx.drawImage(
-        flareImage,
-        -size / 2,
-        -size / 2,
-        size,
-        size
-      );
+      ctx.drawImage(flareImage, -size / 2, -size / 2, size, size);
     } else {
-      // fallback circle if image fails
       ctx.fillStyle = "orange";
       ctx.beginPath();
       ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
       ctx.fill();
     }
+
     ctx.restore();
   });
 }
-
 
 function renderEnemyBullets() {
   enemyBullets.forEach(renderBulletImage);
@@ -840,6 +876,22 @@ function renderEnemyBullets() {
 
 function spawnExplosion(x, y) {
   explosions.push({ x, y, timer: EXPLOSION_DURATION });
+}
+
+function dropFlareFromPlayer() {
+  const angle = player.angle + (Math.random() - 0.5) * 1.2; // some variation
+  const speed = 2; // tweak for visual effect
+
+  flares.push({
+    x: player.x,
+    y: player.y,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    timer: FLARE_DURATION,
+    trail: [],
+  });
+
+  playSound("flare");
 }
 
 function updateExplosions() {
