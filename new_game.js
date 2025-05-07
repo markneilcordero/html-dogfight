@@ -1574,6 +1574,53 @@ function update() {
   }
 }
 
+function renderRadar() {
+  const radarSize = 150;
+  const padding = 20;
+  const radarX = canvas.width - radarSize - padding;
+  const radarY = padding;
+
+  // Background
+  ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+  ctx.fillRect(radarX, radarY, radarSize, radarSize);
+  ctx.strokeStyle = "white";
+  ctx.strokeRect(radarX, radarY, radarSize, radarSize);
+
+  const worldToRadarX = radarSize / WORLD_WIDTH;
+  const worldToRadarY = radarSize / WORLD_HEIGHT;
+
+  function drawTriangle(worldX, worldY, angle, color) {
+    const rx = radarX + worldX * worldToRadarX;
+    const ry = radarY + worldY * worldToRadarY;
+
+    ctx.save();
+    ctx.translate(rx, ry);
+    ctx.rotate(angle + Math.PI / 2); // ✅ Fix: align with right-facing 0°
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, -4);     // Tip (forward)
+    ctx.lineTo(-3, 3);     // Left base
+    ctx.lineTo(3, 3);      // Right base
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Draw player
+  drawTriangle(player.x, player.y, player.angle, "lime");
+
+  // Draw allies
+  allies.forEach((ally) => {
+    drawTriangle(ally.x, ally.y, ally.angle, "cyan");
+  });
+
+  // Draw enemies
+  enemies.forEach((enemy) => {
+    drawTriangle(enemy.x, enemy.y, enemy.angle, "red");
+  });
+}
+
+
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   renderWorld();
@@ -1588,6 +1635,7 @@ function render() {
   renderMissiles();
   renderEnemyBullets();
   renderHUD();
+  renderRadar();
 }
 
 function restartGame() {
