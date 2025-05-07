@@ -20,18 +20,25 @@
 <body>
   <canvas id="gameCanvas"></canvas>
   <!-- Controls: FIRE, MISSILE, FLARE -->
-<div id="controls" style="position: fixed; bottom: 130px; right: 20px; z-index: 1000;">
-  <button id="fireBtn" style="padding:10px 20px; display: block; margin-bottom: 10px;">🔫</button>
-  <button id="missileBtn" style="padding:10px 20px; display: block; margin-bottom: 10px;">🚀</button>
-  <button id="flareBtn" style="padding:10px 20px; display: block;">Flare</button>
-</div>
+  <div id="controls" style="position:fixed; bottom:140px; right:20px; z-index:1000;">
+    <button id="fireBtn" style="padding:10px; margin-bottom: 10px;">
+      <img src="images/shootbullet.png" alt="Fire" width="32" height="32">
+    </button>
+    <button id="missileBtn" style="padding:10px; margin-bottom: 10px;">
+      <img src="images/shootmissile.png" alt="Missile" width="32" height="32">
+    </button>
+    <button id="flareBtn" style="padding:10px;">
+      <img src="images/shootflare.png" alt="Flare" width="32" height="32">
+    </button>
+  </div>
+  
 
   <div id="joystick" style="position: fixed; left: 20px; bottom: 100px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;">
     <div id="thumb" style="width: 40px; height: 40px; background: white; border-radius: 50%; position: relative; top: 30px; left: 30px;"></div>
   </div>
   <div id="throttleControls" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
-    <button id="throttleUpBtn" style="padding:10px 20px; display: block; margin-bottom: 10px;">🔼 Throttle Up</button>
-    <button id="throttleDownBtn" style="padding:10px 20px; display: block;">🔽 Throttle Down</button>
+    <button id="throttleUpBtn" style="padding:10px 20px; display: block; margin-bottom: 10px;">🔼</button>
+    <button id="throttleDownBtn" style="padding:10px 20px; display: block;">🔽</button>
   </div>  
   
   <script src="new_game.js"></script>
