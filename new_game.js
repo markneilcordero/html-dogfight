@@ -489,15 +489,19 @@ function updateMissile(m, index) {
 
         target.health = Math.max(0, target.health - damage);
 
-        // ✅ Additional logic if target is the player
-        if (target === player && player.health <= 0) {
-          lives--;
-          if (lives > 0) {
-            player.x = WORLD_WIDTH / 2;
-            player.y = WORLD_HEIGHT / 2;
-            player.health = 100;
-          } else {
-            isGameOver = true;
+        if (target.health <= 0) {
+          spawnExplosion(target.x, target.y);
+    
+          // ✅ Optional: handle player-specific logic
+          if (target === player) {
+            lives--;
+            if (lives > 0) {
+              player.x = WORLD_WIDTH / 2;
+              player.y = WORLD_HEIGHT / 2;
+              player.health = 100;
+            } else {
+              isGameOver = true;
+            }
           }
         }
       }
