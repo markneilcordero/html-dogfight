@@ -291,16 +291,72 @@ function fireBullet({
   });
 }
 
-function fireMissile({ origin, target }) {
+function createMissile({ x, y, angle, target }) {
   missiles.push({
-    x: origin.x,
-    y: origin.y,
-    angle: origin.angle,
-    target: target,
+    x,
+    y,
+    angle,
+    target,
     trailHistory: [],
+    lifetime: 300, // 5 seconds at 60 FPS
   });
   playSound("missile");
 }
+
+function isInMissileCone(source, target) {
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+  const angleToTarget = Math.atan2(dy, dx);
+  let diff = angleToTarget - source.angle;
+
+  while (diff > Math.PI) diff -= 2 * Math.PI;
+  while (diff < -Math.PI) diff += 2 * Math.PI;
+
+  const distance = Math.hypot(dx, dy);
+  return Math.abs(diff) < MISSILE_CONE && distance <= MISSILE_RANGE;
+}
+
+function updateMissile(m, index) {
+  const target = m.target;
+
+  // Track if valid & in cone
+  if (
+    target &&
+    enemies.includes(target) && // Or use isAlive(target)
+    isInMissileCone({ x: m.x, y: m.y, angle: m.angle }, target)
+  ) {
+    const dx = target.x - m.x;
+    const dy = target.y - m.y;
+    const desiredAngle = Math.atan2(dy, dx);
+    let diff = desiredAngle - m.angle;
+    while (diff > Math.PI) diff -= 2 * Math.PI;
+    while (diff < -Math.PI) diff += 2 * Math.PI;
+
+    m.angle += clamp(diff, -MISSILE_TURN_RATE, MISSILE_TURN_RATE);
+  }
+
+  // Move forward
+  m.x += Math.cos(m.angle) * MISSILE_SPEED;
+  m.y += Math.sin(m.angle) * MISSILE_SPEED;
+
+  // Trail update
+  m.trailHistory = m.trailHistory || [];
+  m.trailHistory.push({ x: m.x, y: m.y, alpha: 1.0 });
+  if (m.trailHistory.length > 20) m.trailHistory.shift();
+  m.trailHistory.forEach((p) => (p.alpha *= 0.95));
+
+  // Lifetime and detonation
+  m.lifetime--;
+  const dist = target ? Math.hypot(m.x - target.x, m.y - target.y) : Infinity;
+
+  if (dist < 40 || m.lifetime <= 0) {
+    if (target && enemies.includes(target)) target.health -= MISSILE_DAMAGE;
+    spawnExplosion(m.x, m.y);
+    missiles.splice(index, 1);
+  }
+}
+
+
 
 function updatePlayer() {
   if (typeof updatePlayerJoystick === "function") updatePlayerJoystick();
@@ -341,12 +397,7 @@ function updatePlayer() {
   if ((keys["m"] || keys["M"]) && missileCooldown <= 0) {
     const target = getLockedTarget(player, enemies);
     if (target) {
-      missiles.push({
-        x: player.x,
-        y: player.y,
-        angle: player.angle,
-        target: target,
-      });
+      createMissile({ x: player.x, y: player.y, angle: player.angle, target }); // ✅ Use createMissile
       missileCooldown = 60; // cooldown: 1 second
     }
   }
@@ -404,39 +455,7 @@ function updateBullets() {
 
 function updateMissiles() {
   for (let i = missiles.length - 1; i >= 0; i--) {
-    const m = missiles[i];
-
-    if (!m.trailHistory) m.trailHistory = [];
-
-    const target = m.target;
-
-    // Track target if still alive
-    if (target && enemies.includes(target)) {
-      const dx = target.x - m.x;
-      const dy = target.y - m.y;
-      const desiredAngle = Math.atan2(dy, dx);
-      let diff = desiredAngle - m.angle;
-
-      while (diff > Math.PI) diff -= 2 * Math.PI;
-      while (diff < -Math.PI) diff += 2 * Math.PI;
-
-      m.angle += clamp(diff, -MISSILE_TURN_RATE, MISSILE_TURN_RATE);
-
-      // Move forward
-      m.x += Math.cos(m.angle) * MISSILE_SPEED;
-      m.y += Math.sin(m.angle) * MISSILE_SPEED;
-
-      // Check collision
-      const dist = Math.hypot(m.x - target.x, m.y - target.y);
-      if (dist < ENEMY_SIZE / 2) {
-        target.health -= MISSILE_DAMAGE;
-        spawnExplosion(m.x, m.y);
-        missiles.splice(i, 1); // explode
-      }
-    } else {
-      // No target or already dead
-      missiles.splice(i, 1);
-    }
+    updateMissile(missiles[i], i);
   }
 }
 
@@ -618,7 +637,12 @@ function updateEnemies() {
         if (!enemy.missileCooldown) enemy.missileCooldown = 0;
         enemy.missileCooldown--;
         if (enemy.missileCooldown <= 0 && dist < MISSILE_RANGE) {
-          fireMissile({ origin: enemy, target: player });
+          createMissile({
+            x: enemy.x,
+            y: enemy.y,
+            angle: enemy.angle,
+            target: player,
+          });          
           enemy.missileCooldown = 240; // ~4 seconds cooldown
         }
       }
@@ -672,7 +696,12 @@ function updateAllies() {
         if (!ally.missileCooldown) ally.missileCooldown = 0;
         ally.missileCooldown--;
         if (ally.missileCooldown <= 0 && closestDist < MISSILE_RANGE) {
-          fireMissile({ origin: ally, target: closest });
+          createMissile({
+            x: ally.x,
+            y: ally.y,
+            angle: ally.angle,
+            target: closest,
+          });          
           ally.missileCooldown = 180; // ~3 seconds cooldown
         }
       }
