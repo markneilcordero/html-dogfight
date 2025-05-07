@@ -267,7 +267,6 @@ const PLAYER_MISSILE_DAMAGE = 100;
 const ALLY_MISSILE_DAMAGE = 100;
 const ENEMY_MISSILE_DAMAGE = 100;
 
-
 for (let i = 0; i < ENEMY_COUNT; i++) {
   enemies.push({
     x: Math.random() * WORLD_WIDTH,
@@ -454,27 +453,26 @@ function updateMissile(m, index) {
         (m.ownerType === "player" && target === player) ||
         (m.ownerType === "enemy" && enemies.includes(target)) ||
         (m.ownerType === "ally" && allies.includes(target));
-        if (!isFriendlyFire) {
-          let damage = 0;
-          if (m.ownerType === "player") damage = PLAYER_MISSILE_DAMAGE;
-          else if (m.ownerType === "ally") damage = ALLY_MISSILE_DAMAGE;
-          else if (m.ownerType === "enemy") damage = ENEMY_MISSILE_DAMAGE;
-        
-          target.health = Math.max(0, target.health - damage);
-        
-          // ✅ Additional logic if target is the player
-          if (target === player && player.health <= 0) {
-            lives--;
-            if (lives > 0) {
-              player.x = WORLD_WIDTH / 2;
-              player.y = WORLD_HEIGHT / 2;
-              player.health = 100;
-            } else {
-              isGameOver = true;
-            }
+      if (!isFriendlyFire) {
+        let damage = 0;
+        if (m.ownerType === "player") damage = PLAYER_MISSILE_DAMAGE;
+        else if (m.ownerType === "ally") damage = ALLY_MISSILE_DAMAGE;
+        else if (m.ownerType === "enemy") damage = ENEMY_MISSILE_DAMAGE;
+
+        target.health = Math.max(0, target.health - damage);
+
+        // ✅ Additional logic if target is the player
+        if (target === player && player.health <= 0) {
+          lives--;
+          if (lives > 0) {
+            player.x = WORLD_WIDTH / 2;
+            player.y = WORLD_HEIGHT / 2;
+            player.health = 100;
+          } else {
+            isGameOver = true;
           }
         }
-                       
+      }
     }
     spawnExplosion(m.x, m.y);
     missiles.splice(index, 1);
@@ -581,7 +579,7 @@ function updateBullets() {
         e.health -= PLAYER_BULLET_DAMAGE;
         spawnExplosion(b.x, b.y, 0.4); // 💥 Add explosion
         bullets.splice(bi, 1); // remove bullet
-      }      
+      }
     });
   });
 
@@ -642,7 +640,7 @@ function updateEnemyBullets() {
     const dist = Math.hypot(dx, dy);
 
     if (dist < 20) {
-      player.health = Math.max(0, player.health - ENEMY_BULLET_DAMAGE);    
+      player.health = Math.max(0, player.health - ENEMY_BULLET_DAMAGE);
       spawnExplosion(b.x, b.y, 0.4);
       if (player.health <= 0) {
         lives--;
@@ -689,10 +687,10 @@ function updateAllyBullets() {
       const dist = Math.hypot(b.x - e.x, b.y - e.y);
       if (dist < ENEMY_SIZE / 2) {
         e.health -= ALLY_BULLET_DAMAGE;
-        spawnExplosion(b.x, b.y, 0.4);// 💥 Add explosion
+        spawnExplosion(b.x, b.y, 0.4); // 💥 Add explosion
         allyBullets.splice(i, 1);
         break;
-      }      
+      }
     }
 
     b.life--;
@@ -799,7 +797,49 @@ function updateEnemies() {
       }
     } else {
       // === Chase player ===
-      orbitAroundTarget(enemy, player);
+      // === Pick nearest target: player or any ally ===
+      let closestTarget = player;
+      let closestDist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+
+      for (const ally of allies) {
+        const dist = Math.hypot(ally.x - enemy.x, ally.y - enemy.y);
+        if (dist < closestDist) {
+          closestTarget = ally;
+          closestDist = dist;
+        }
+      }
+
+      // === Orbit around the chosen target ===
+      orbitAroundTarget(enemy, closestTarget);
+
+      // === Firing bullets ===
+      enemy.cooldown--;
+      if (enemy.cooldown <= 0 && closestDist < 800) {
+        fireBullet({
+          origin: enemy,
+          angle: enemy.angle,
+          speed: ENEMY_BULLET_SPEED,
+          life: BULLET_LIFESPAN,
+          targetArray: enemyBullets,
+          spread: ENEMY_BULLET_SPREAD,
+          offset: 30,
+        });
+        enemy.cooldown = ENEMY_FIRE_COOLDOWN;
+      }
+
+      // === Fire missile if available
+      enemy.missileCooldown = enemy.missileCooldown || 0;
+      enemy.missileCooldown--;
+      if (enemy.missileCooldown <= 0 && closestDist < MISSILE_RANGE) {
+        createMissile({
+          x: enemy.x,
+          y: enemy.y,
+          angle: enemy.angle,
+          target: closestTarget,
+          ownerType: "enemy",
+        });
+        enemy.missileCooldown = 240;
+      }
     }
 
     avoidMapEdges(enemy);
