@@ -19,11 +19,13 @@
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
-  <div id="controls" style="position:fixed; bottom:20px; left:20px; z-index:1000;">
-    <button id="fireBtn" style="padding:10px 20px;">🔫</button>
-    <button id="missileBtn" style="padding:10px 20px;">🚀</button>
-    <button id="flareBtn">Flare</button>
-  </div>
+  <!-- Controls: FIRE, MISSILE, FLARE -->
+<div id="controls" style="position: fixed; bottom: 130px; right: 20px; z-index: 1000;">
+  <button id="fireBtn" style="padding:10px 20px; display: block; margin-bottom: 10px;">🔫</button>
+  <button id="missileBtn" style="padding:10px 20px; display: block; margin-bottom: 10px;">🚀</button>
+  <button id="flareBtn" style="padding:10px 20px; display: block;">Flare</button>
+</div>
+
   <div id="joystick" style="position: fixed; left: 20px; bottom: 100px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;">
     <div id="thumb" style="width: 40px; height: 40px; background: white; border-radius: 50%; position: relative; top: 30px; left: 30px;"></div>
   </div>
