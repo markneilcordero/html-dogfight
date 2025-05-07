@@ -831,14 +831,17 @@ function updateEnemies() {
       enemy.missileCooldown = enemy.missileCooldown || 0;
       enemy.missileCooldown--;
       if (enemy.missileCooldown <= 0 && closestDist < MISSILE_RANGE) {
-        createMissile({
-          x: enemy.x,
-          y: enemy.y,
-          angle: enemy.angle,
-          target: closestTarget,
-          ownerType: "enemy",
-        });
-        enemy.missileCooldown = 240;
+        const enemyTarget = getLockedTarget(enemy, [player, ...allies]);
+if (enemyTarget) {
+  createMissile({
+    x: enemy.x,
+    y: enemy.y,
+    angle: enemy.angle,
+    target: enemyTarget,
+    ownerType: "enemy",
+  });
+  enemy.missileCooldown = 240;
+}
       }
     }
 
@@ -940,14 +943,18 @@ function updateAllies() {
         if (!ally.missileCooldown) ally.missileCooldown = 0;
         ally.missileCooldown--;
         if (ally.missileCooldown <= 0 && closestDist < MISSILE_RANGE) {
-          createMissile({
-            x: ally.x,
-            y: ally.y,
-            angle: ally.angle,
-            target: closest,
-            ownerType: "ally",
-          });
-          ally.missileCooldown = 180;
+          const allyTarget = getLockedTarget(ally, enemies);
+if (allyTarget) {
+  createMissile({
+    x: ally.x,
+    y: ally.y,
+    angle: ally.angle,
+    target: allyTarget,
+    ownerType: "ally",
+  });
+  ally.missileCooldown = 180;
+}
+
         }
       }
     }
@@ -1077,23 +1084,51 @@ function renderFlareTrail(trail) {
   }
 }
 
-function renderMissileLockLine() {
-  const target = getLockedTarget(player, enemies);
-  if (!target) return;
-
+function renderMissileLockLines() {
   ctx.save();
-  ctx.strokeStyle = "lime";
   ctx.lineWidth = 2;
-  ctx.shadowColor = "lime";
   ctx.shadowBlur = 10;
 
-  ctx.beginPath();
-  ctx.moveTo(player.x - camera.x, player.y - camera.y);
-  ctx.lineTo(target.x - camera.x, target.y - camera.y);
-  ctx.stroke();
+  // === PLAYER Lock Line ===
+  const playerTarget = getLockedTarget(player, enemies);
+  if (playerTarget) {
+    ctx.strokeStyle = "lime";
+    ctx.shadowColor = "lime";
+    ctx.beginPath();
+    ctx.moveTo(player.x - camera.x, player.y - camera.y);
+    ctx.lineTo(playerTarget.x - camera.x, playerTarget.y - camera.y);
+    ctx.stroke();
+  }
+
+  // === ALLY Lock Lines ===
+  allies.forEach((ally) => {
+    const allyTarget = getLockedTarget(ally, enemies);
+    if (allyTarget) {
+      ctx.strokeStyle = "cyan";
+      ctx.shadowColor = "cyan";
+      ctx.beginPath();
+      ctx.moveTo(ally.x - camera.x, ally.y - camera.y);
+      ctx.lineTo(allyTarget.x - camera.x, allyTarget.y - camera.y);
+      ctx.stroke();
+    }
+  });
+
+  // === ENEMY Lock Lines ===
+  enemies.forEach((enemy) => {
+    const enemyTarget = getLockedTarget(enemy, [player, ...allies]);
+    if (enemyTarget) {
+      ctx.strokeStyle = "red";
+      ctx.shadowColor = "red";
+      ctx.beginPath();
+      ctx.moveTo(enemy.x - camera.x, enemy.y - camera.y);
+      ctx.lineTo(enemyTarget.x - camera.x, enemyTarget.y - camera.y);
+      ctx.stroke();
+    }
+  });
 
   ctx.restore();
 }
+
 
 
 function updateWingTrails(plane) {
@@ -1394,7 +1429,7 @@ function render() {
   drawAllWingTrails();
   renderAllies();
   renderEnemies();
-  renderMissileLockLine(); // ✅ Add this
+  renderMissileLockLines(); // ✅ Add this
   renderFlares();
   renderExplosions(); // BOOM
   renderAllyBullets();
