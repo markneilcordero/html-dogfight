@@ -32,11 +32,20 @@ function clamp(value, min, max) {
 
 function createFlare(fromPlane) {
   const rearAngle = fromPlane.angle + Math.PI;
-  const pairSpread = 0.4; // 🧠 angle between two flares in radians
+  const pairSpread = 0.4;
   const speed = 2;
   const flareSize = 12;
-  const flareCount = 10; // 10 pairs = 20 flares total
+  const flareCount = 10;
   let pairsEmitted = 0;
+
+  const ownerType =
+    fromPlane === player
+      ? "player"
+      : allies.includes(fromPlane)
+      ? "ally"
+      : enemies.includes(fromPlane)
+      ? "enemy"
+      : "unknown";
 
   const interval = setInterval(() => {
     if (pairsEmitted >= flareCount) {
@@ -44,8 +53,9 @@ function createFlare(fromPlane) {
       return;
     }
 
-    // Left flare
     let leftAngle = rearAngle - pairSpread / 2;
+    let rightAngle = rearAngle + pairSpread / 2;
+
     flares.push({
       x: fromPlane.x,
       y: fromPlane.y,
@@ -54,10 +64,9 @@ function createFlare(fromPlane) {
       timer: FLARE_DURATION,
       size: flareSize,
       trail: [{ x: fromPlane.x, y: fromPlane.y, alpha: 1.0 }],
+      ownerType, // ✅ Add owner type
     });
 
-    // Right flare
-    let rightAngle = rearAngle + pairSpread / 2;
     flares.push({
       x: fromPlane.x,
       y: fromPlane.y,
@@ -66,12 +75,14 @@ function createFlare(fromPlane) {
       timer: FLARE_DURATION,
       size: flareSize,
       trail: [{ x: fromPlane.x, y: fromPlane.y, alpha: 1.0 }],
+      ownerType, // ✅ Add owner type
     });
 
     playSound("flare");
     pairsEmitted++;
-  }, 100); // delay between each pair
+  }, 100);
 }
+
 
 function getLockedTarget(source, targets) {
   for (const t of targets) {
@@ -428,8 +439,8 @@ function updateMissile(m, index) {
     const dx = f.x - m.x;
     const dy = f.y - m.y;
     const dist = Math.hypot(dx, dy);
-    return dist < 300;
-  });
+    return dist < 300 && f.ownerType !== m.ownerType; // ✅ Only target other team flares
+  });  
 
   if (possibleFlares.length > 0) {
     possibleFlares.sort((a, b) => {
