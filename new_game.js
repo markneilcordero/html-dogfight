@@ -268,6 +268,8 @@ const PLAYER_MISSILE_DAMAGE = 100;
 const ALLY_MISSILE_DAMAGE = 100;
 const ENEMY_MISSILE_DAMAGE = 100;
 
+let autopilotEnabled = false; // 🔁 You can toggle this via a key or button
+
 for (let i = 0; i < ENEMY_COUNT; i++) {
   enemies.push({
     x: Math.random() * WORLD_WIDTH,
@@ -330,6 +332,12 @@ window.addEventListener("keydown", (e) => {
 window.addEventListener("keydown", (e) => {
   if (isGameOver && e.key.toLowerCase() === "r") {
     restartGame();
+  }
+});
+
+window.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === "x") {
+    autopilotEnabled = !autopilotEnabled;
   }
 });
 
@@ -484,7 +492,74 @@ function updateMissile(m, index) {
   }
 }
 
+function runAutopilot(entity, targetList, ownerType = "player") {
+  const target = getLockedTarget(entity, targetList);
+
+  // Orbit target or wander
+  if (target) {
+    orbitAroundTarget(entity, target);
+  } else {
+    entity.orbitAngle = (entity.orbitAngle || 0) + 0.01;
+    const wanderX = WORLD_WIDTH / 2 + Math.cos(entity.orbitAngle) * 300;
+    const wanderY = WORLD_HEIGHT / 2 + Math.sin(entity.orbitAngle) * 300;
+    orbitAroundTarget(entity, { x: wanderX, y: wanderY });
+  }
+
+  // Throttle control
+  entity.throttleTarget = target ? 1.0 : 0.5;
+  entity.throttle += (entity.throttleTarget - entity.throttle) * 0.05;
+  entity.throttle = clamp(entity.throttle, 0.2, 1.0);
+
+  // Apply throttle to speed and move forward
+  entity.speed = MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * entity.throttle;
+  entity.x += Math.cos(entity.angle) * entity.speed;
+  entity.y += Math.sin(entity.angle) * entity.speed;
+  entity.x = clamp(entity.x, 0, WORLD_WIDTH);
+  entity.y = clamp(entity.y, 0, WORLD_HEIGHT);
+
+  // Fire bullets
+  if (ownerType === "player" && shootCooldown <= 0 && target) {
+    fireBullet({
+      origin: entity,
+      angle: entity.angle,
+      speed: BULLET_SPEED,
+      life: BULLET_LIFESPAN,
+      targetArray: bullets,
+      spread: PLAYER_BULLET_SPREAD,
+      offset: 30,
+    });
+    shootCooldown = 10;
+  }
+
+  // Fire missile
+  if (ownerType === "player" && missileCooldown <= 0 && target) {
+    createMissile({
+      x: entity.x,
+      y: entity.y,
+      angle: entity.angle,
+      target,
+      ownerType,
+    });
+    missileCooldown = 60;
+  }
+
+  // Drop flare if missile locked
+  const incomingMissile = missiles.find((m) => m.target === entity);
+  if (incomingMissile && flareCooldown <= 0 && ownerType === "player") {
+    createFlare(entity);
+    flareCooldown = FLARE_COOLDOWN_MAX;
+    playSound("flare");
+  }
+}
+
+
+
 function updatePlayer() {
+  if (autopilotEnabled) {
+    runAutopilot(player, enemies, "player");
+    return; // skip manual controls
+  }
+
   if (typeof updatePlayerJoystick === "function") updatePlayerJoystick();
 
   // 🔵 Throttle input control (W / ArrowUp = up, S / ArrowDown = down)
