@@ -315,6 +315,12 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+window.addEventListener("keydown", (e) => {
+  if (isGameOver && e.key.toLowerCase() === "r") {
+    restartGame();
+  }
+});
+
 document
   .getElementById("fireBtn")
   .addEventListener("touchstart", () => (keys[" "] = true));
@@ -1309,6 +1315,80 @@ function render() {
   renderEnemyBullets();
   renderHUD();
 }
+
+function restartGame() {
+  // Reset state flags
+  isGameOver = false;
+  isPaused = false;
+  lives = 3;
+  score = 0;
+  level = 1;
+
+  // Reset player
+  player.x = WORLD_WIDTH / 2;
+  player.y = WORLD_HEIGHT / 2;
+  player.health = 100;
+  player.angle = 0;
+  player.throttle = 1.0;
+  player.throttleTarget = 1.0;
+
+  // Clear game arrays
+  bullets.length = 0;
+  missiles.length = 0;
+  enemyBullets.length = 0;
+  allyBullets.length = 0;
+  flares.length = 0;
+  explosions.length = 0;
+  enemies.length = 0;
+  allies.length = 0;
+
+  // Respawn enemies
+  for (let i = 0; i < ENEMY_COUNT; i++) {
+    enemies.push({
+      x: Math.random() * WORLD_WIDTH,
+      y: Math.random() * WORLD_HEIGHT,
+      angle: Math.random() * Math.PI * 2,
+      speed: 2,
+      health: ENEMY_HEALTH,
+      turnTimer: Math.floor(Math.random() * 60),
+      image: enemyImage,
+      flareCooldown: 0,
+      missileCooldown: 0,
+      width: ENEMY_SIZE,
+      height: ENEMY_SIZE,
+      orbitAngle: Math.random() * Math.PI * 2,
+      orbitDistance: 250 + Math.random() * 100,
+      orbitSpeed: 0.01 + Math.random() * 0.01,
+      throttle: 1.0,
+      throttleTarget: 1.0,
+    });
+  }
+
+  enemiesRemaining = ENEMY_COUNT;
+
+  // Respawn allies
+  for (let i = 0; i < ALLY_COUNT; i++) {
+    allies.push({
+      x: Math.random() * WORLD_WIDTH,
+      y: Math.random() * WORLD_HEIGHT,
+      angle: Math.random() * Math.PI * 2,
+      speed: 2.5,
+      health: ALLY_HEALTH,
+      cooldown: 0,
+      missileCooldown: 0,
+      image: allyImage,
+      flareCooldown: 0,
+      throttle: 1.0,
+      throttleTarget: 1.0,
+      width: ALLY_SIZE,
+      height: ALLY_SIZE,
+      orbitAngle: Math.random() * Math.PI * 2,
+      orbitDistance: 250 + Math.random() * 100,
+      orbitSpeed: 0.01 + Math.random() * 0.01,
+    });
+  }
+}
+
 
 function gameLoop() {
   if (!isPaused && !isGameOver) {
