@@ -203,6 +203,8 @@ const FLARE_DURATION = 90;
 const explosions = [];
 const EXPLOSION_DURATION = 30;
 
+const wingTrails = [];
+
 for (let i = 0; i < ENEMY_COUNT; i++) {
   enemies.push({
     x: Math.random() * WORLD_WIDTH,
@@ -410,6 +412,8 @@ function updatePlayer() {
 
   player.x = clamp(player.x, 0, WORLD_WIDTH);
   player.y = clamp(player.y, 0, WORLD_HEIGHT);
+
+  updateWingTrails(player);
 
   // Shooting
   if ((keys[" "] || keys["space"]) && shootCooldown <= 0) {
@@ -885,6 +889,46 @@ function renderFlareTrail(trail) {
   }
 }
 
+function updateWingTrails(plane) {
+  if (!plane) return;
+
+  const wingOffset = plane.width * 0.40; // distance from center to wing
+  const backwardOffset = plane.height * 0.30; // how far behind the wings
+
+  const baseX = plane.x - Math.cos(plane.angle) * backwardOffset;
+  const baseY = plane.y - Math.sin(plane.angle) * backwardOffset;
+
+  const leftX = baseX + Math.cos(plane.angle + Math.PI / 2) * wingOffset;
+  const leftY = baseY + Math.sin(plane.angle + Math.PI / 2) * wingOffset;
+  const rightX = baseX + Math.cos(plane.angle - Math.PI / 2) * wingOffset;
+  const rightY = baseY + Math.sin(plane.angle - Math.PI / 2) * wingOffset;
+
+  wingTrails.push({ x: leftX, y: leftY, alpha: 0.5 });
+  wingTrails.push({ x: rightX, y: rightY, alpha: 0.5 });
+
+  // Limit total trails
+  if (wingTrails.length > 100) wingTrails.splice(0, wingTrails.length - 100);
+
+  // Fade alpha
+  wingTrails.forEach((p) => (p.alpha *= 0.90));
+}
+
+
+function drawWingTrails() {
+  for (const trail of wingTrails) {
+    const screenX = trail.x - camera.x;
+    const screenY = trail.y - camera.y;
+
+    ctx.save();
+    ctx.globalAlpha = trail.alpha;
+    ctx.fillStyle = "white"; // or customize to a color like "aqua", "lime", etc.
+    ctx.beginPath();
+    ctx.arc(screenX, screenY, 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 function renderEnemies() {
   enemies.forEach((e) => {
     ctx.save();
@@ -1139,6 +1183,7 @@ function update() {
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   renderWorld();
+  drawWingTrails();
   renderAllies();
   renderEnemies();
   renderFlares();
