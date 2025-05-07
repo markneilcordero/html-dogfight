@@ -459,8 +459,22 @@ function updateMissile(m, index) {
           if (m.ownerType === "player") damage = PLAYER_MISSILE_DAMAGE;
           else if (m.ownerType === "ally") damage = ALLY_MISSILE_DAMAGE;
           else if (m.ownerType === "enemy") damage = ENEMY_MISSILE_DAMAGE;
-          target.health -= damage;
-        }        
+        
+          target.health = Math.max(0, target.health - damage);
+        
+          // ✅ Additional logic if target is the player
+          if (target === player && player.health <= 0) {
+            lives--;
+            if (lives > 0) {
+              player.x = WORLD_WIDTH / 2;
+              player.y = WORLD_HEIGHT / 2;
+              player.health = 100;
+            } else {
+              isGameOver = true;
+            }
+          }
+        }
+                       
     }
     spawnExplosion(m.x, m.y);
     missiles.splice(index, 1);
@@ -628,7 +642,7 @@ function updateEnemyBullets() {
     const dist = Math.hypot(dx, dy);
 
     if (dist < 20) {
-      player.health -= ENEMY_BULLET_DAMAGE;
+      player.health = Math.max(0, player.health - ENEMY_BULLET_DAMAGE);    
       spawnExplosion(b.x, b.y, 0.4);
       if (player.health <= 0) {
         lives--;
