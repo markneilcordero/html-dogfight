@@ -573,14 +573,9 @@ function updateMissile(m, index) {
   m.trailHistory.forEach((p) => (p.alpha *= 0.95));
 
   // === Impact
-  m.lifetime--;
-  const hasHitTarget = target &&
-  m.x > target.x - target.width / 2 &&
-  m.x < target.x + target.width / 2 &&
-  m.y > target.y - target.height / 2 &&
-  m.y < target.y + target.height / 2;
+  const dist = target ? Math.hypot(m.x - target.x, m.y - target.y) : Infinity;
 
-  if (hasHitTarget || m.lifetime <= 0) {
+  if (dist < 40 || m.lifetime <= 0) {
 
     if (target && typeof target.health === "number") {
       // Apply damage only if target is valid and opposite type
@@ -598,20 +593,27 @@ function updateMissile(m, index) {
 
         if (target.health <= 0) {
           spawnExplosion(target.x, target.y);
-    
-          // ✅ Optional: handle player-specific logic
+        
           if (target === player) {
             lives--;
             if (lives > 0) {
               player.x = SPAWN_PLAYER_X;
               player.y = SPAWN_PLAYER_Y;
               player.health = 100;
+        
+              // 🧹 Clear missiles targeting the player
+              for (let i = missiles.length - 1; i >= 0; i--) {
+                if (missiles[i].target === player) {
+                  missiles.splice(i, 1);
+                }
+              }
             } else {
               isGameOver = true;
               autopilotEnabled = false;
             }
           }
         }
+        
       }
     }
     spawnExplosion(m.x, m.y);
