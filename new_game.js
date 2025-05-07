@@ -142,7 +142,6 @@ function avoidMapEdges(entity, buffer = 200, turnSpeed = 0.05) {
   }
 }
 
-
 // ======================
 // [3] Load Images
 // ======================
@@ -199,8 +198,8 @@ const player = {
   width: 60,
   height: 60,
   health: 100,
-  throttle: 1.0,         // 🟢 full throttle
-  throttleTarget: 1.0, 
+  throttle: 1.0, // 🟢 full throttle
+  throttleTarget: 1.0,
 };
 
 let lives = 3;
@@ -256,10 +255,9 @@ const EXPLOSION_DURATION = 30;
 
 const wingTrails = [];
 
-const PLAYER_BULLET_SPREAD = 0.020;  // slightly tighter
-const ENEMY_BULLET_SPREAD  = 0.020; // looser, less accurate
-const ALLY_BULLET_SPREAD   = 0.020; // medium accuracy
-
+const PLAYER_BULLET_SPREAD = 0.02; // slightly tighter
+const ENEMY_BULLET_SPREAD = 0.02; // looser, less accurate
+const ALLY_BULLET_SPREAD = 0.02; // medium accuracy
 
 for (let i = 0; i < ENEMY_COUNT; i++) {
   enemies.push({
@@ -271,7 +269,7 @@ for (let i = 0; i < ENEMY_COUNT; i++) {
     turnTimer: Math.floor(Math.random() * 60),
     image: enemyImage,
     flareCooldown: 0,
-    throttle: 1.0,         // 🟢 full throttle
+    throttle: 1.0, // 🟢 full throttle
     throttleTarget: 1.0,
     width: ENEMY_SIZE,
     height: ENEMY_SIZE,
@@ -292,7 +290,7 @@ for (let i = 0; i < ALLY_COUNT; i++) {
     missileCooldown: 0,
     image: allyImage,
     flareCooldown: 0,
-    throttle: 1.0,         // 🟢 full throttle
+    throttle: 1.0, // 🟢 full throttle
     throttleTarget: 1.0,
     width: ALLY_SIZE,
     height: ALLY_SIZE,
@@ -476,7 +474,8 @@ function updatePlayer() {
   player.throttle = clamp(player.throttle, 0.2, 1.0);
 
   // 🟡 Apply throttle to speed
-  player.speed = MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * player.throttle;
+  player.speed =
+    MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * player.throttle;
 
   // Move
   player.x += Math.cos(player.angle) * player.speed;
@@ -511,7 +510,7 @@ function updatePlayer() {
         y: player.y,
         angle: player.angle,
         target,
-        ownerType: "player"
+        ownerType: "player",
       });
       missileCooldown = 60;
     }
@@ -565,7 +564,7 @@ function updateBullets() {
       enemiesRemaining--;
       score += 100;
       spawnExplosion(deadEnemy.x, deadEnemy.y);
-  
+
       // 🔁 Respawn after delay
       setTimeout(() => {
         enemies.push({
@@ -590,7 +589,6 @@ function updateBullets() {
       }, 2000); // 2-second delay
     }
   }
-  
 }
 
 function updateMissiles() {
@@ -683,7 +681,7 @@ function updateAllyBullets() {
     if (allies[i].health <= 0) {
       const deadAlly = allies.splice(i, 1)[0];
       spawnExplosion(deadAlly.x, deadAlly.y);
-  
+
       // 🔁 Respawn after delay
       setTimeout(() => {
         allies.push({
@@ -707,7 +705,6 @@ function updateAllyBullets() {
       }, 2000); // 2-second delay
     }
   }
-  
 }
 
 function updateFlares() {
@@ -756,7 +753,8 @@ function updateEnemies() {
     // 🟡 Smoothly adjust throttle and apply to speed
     enemy.throttle += (enemy.throttleTarget - enemy.throttle) * 0.05;
     enemy.throttle = clamp(enemy.throttle, 0.2, 1.0);
-    enemy.speed = MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * enemy.throttle;
+    enemy.speed =
+      MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * enemy.throttle;
 
     // === Missile Dodge Check ===
     const incoming = missiles.find((m) => m.target === enemy);
@@ -834,7 +832,8 @@ function updateAllies() {
     // 🟡 Smooth throttle change
     ally.throttle += (ally.throttleTarget - ally.throttle) * 0.05;
     ally.throttle = clamp(ally.throttle, 0.2, 1.0);
-    ally.speed = MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * ally.throttle;
+    ally.speed =
+      MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * ally.throttle;
 
     // === Lock onto closest opponent ===
     let closest = null;
@@ -1026,18 +1025,16 @@ function updateWingTrails(plane) {
   plane.wingTrail.push({ x: leftX, y: leftY, alpha: 0.5 });
   plane.wingTrail.push({ x: rightX, y: rightY, alpha: 0.5 });
 
-  if (plane.wingTrail.length > 100) plane.wingTrail.splice(0, plane.wingTrail.length - 100);
+  if (plane.wingTrail.length > 100)
+    plane.wingTrail.splice(0, plane.wingTrail.length - 100);
   plane.wingTrail.forEach((p) => (p.alpha *= 0.9));
 }
-
-
 
 function drawAllWingTrails() {
   drawWingTrailsFor(player, "white");
   allies.forEach((a) => drawWingTrailsFor(a, "white"));
   enemies.forEach((e) => drawWingTrailsFor(e, "white"));
 }
-
 
 function drawWingTrailsFor(plane, color = "white") {
   if (!plane.wingTrail) return;
@@ -1139,7 +1136,11 @@ function renderMissiles() {
   missiles.forEach((m) => {
     // 🟡 Draw missile trail
     if (!m.trailHistory) m.trailHistory = [];
-    m.trailHistory.push({ x: m.x, y: m.y, alpha: 1.0 });
+    const trailOffset = 20; // how far behind the missile
+    const trailX = m.x - Math.cos(m.angle) * trailOffset;
+    const trailY = m.y - Math.sin(m.angle) * trailOffset;
+    m.trailHistory.push({ x: trailX, y: trailY, alpha: 1.0 });
+
     if (m.trailHistory.length > 20) m.trailHistory.shift();
     m.trailHistory.forEach((p) => (p.alpha *= 0.95));
 
@@ -1393,7 +1394,6 @@ function restartGame() {
     });
   }
 }
-
 
 function gameLoop() {
   if (!isPaused && !isGameOver) {
