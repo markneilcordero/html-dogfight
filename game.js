@@ -574,9 +574,14 @@ function updateMissile(m, index) {
 
   // === Impact
   m.lifetime--;
-  const dist = target ? Math.hypot(m.x - target.x, m.y - target.y) : Infinity;
+  const hasHitTarget = target &&
+  m.x > target.x - target.width / 2 &&
+  m.x < target.x + target.width / 2 &&
+  m.y > target.y - target.height / 2 &&
+  m.y < target.y + target.height / 2;
 
-  if (dist < 40 || m.lifetime <= 0) {
+  if (hasHitTarget || m.lifetime <= 0) {
+
     if (target && typeof target.health === "number") {
       // Apply damage only if target is valid and opposite type
       const isFriendlyFire =
