@@ -1620,6 +1620,52 @@ function renderRadar() {
   });
 }
 
+function drawOffscreenIndicators() {
+  const entities = [...enemies, ...allies]; // You'll change this below to match your variables
+
+  for (const entity of entities) {
+    if (entity.health <= 0) continue;
+
+    const dx = entity.x - player.x;
+    const dy = entity.y - player.y;
+    const angle = Math.atan2(dy, dx);
+
+    const screenX = entity.x - camera.x;
+    const screenY = entity.y - camera.y;
+
+    const isOffscreen =
+      screenX < 0 ||
+      screenX > canvas.width ||
+      screenY < 0 ||
+      screenY > canvas.height;
+
+    if (!isOffscreen) continue;
+
+    // Determine position relative to player screen center
+    const playerScreenX = player.x - camera.x;
+    const playerScreenY = player.y - camera.y;
+    const radius = 80; // or try 60, 100, etc.
+
+    const indicatorX = playerScreenX + Math.cos(angle) * radius;
+    const indicatorY = playerScreenY + Math.sin(angle) * radius;
+
+    // Draw triangle
+    ctx.save();
+    ctx.translate(indicatorX, indicatorY);
+    ctx.rotate(angle + Math.PI / 2);
+
+    ctx.beginPath();
+    ctx.moveTo(0, -10); // Tip
+    ctx.lineTo(-6, 8);
+    ctx.lineTo(6, 8);
+    ctx.closePath();
+
+    ctx.fillStyle = enemies.includes(entity) ? "red" : "cyan"; // match your allies/enemies
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1636,6 +1682,7 @@ function render() {
   renderEnemyBullets();
   renderHUD();
   renderRadar();
+  drawOffscreenIndicators();
 }
 
 function restartGame() {
