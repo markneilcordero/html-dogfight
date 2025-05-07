@@ -222,8 +222,8 @@ let score = 0;
 let isPaused = false;
 
 const bullets = [];
-const BULLET_SPEED = 10;
-const BULLET_LIFESPAN = 1000; // ~1 second @ 60fps
+const BULLET_SPEED = 12;
+const BULLET_LIFESPAN = 100; // ~1 second @ 60fps
 const BULLET_SIZE = 10;
 let shootCooldown = 0;
 
@@ -251,7 +251,7 @@ let enemiesRemaining = ENEMY_COUNT;
 
 const enemyBullets = [];
 const ENEMY_FIRE_COOLDOWN = 10;
-const ENEMY_BULLET_SPEED = 8;
+const ENEMY_BULLET_SPEED = 12;
 
 const allies = [];
 const ALLY_COUNT = 4;
@@ -259,7 +259,7 @@ const ALLY_SIZE = 50;
 const ALLY_HEALTH = 100;
 const allyBullets = [];
 const ALLY_FIRE_COOLDOWN = 10;
-const ALLY_BULLET_SPEED = 8;
+const ALLY_BULLET_SPEED = 12;
 
 const flares = [];
 const FLARE_DURATION = 90;
