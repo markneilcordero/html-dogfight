@@ -217,6 +217,8 @@ for (let i = 0; i < ENEMY_COUNT; i++) {
     flareCooldown: 0,
     throttle: 1.0,         // 🟢 full throttle
     throttleTarget: 1.0,
+    width: ENEMY_SIZE,
+    height: ENEMY_SIZE,
   });
 }
 
@@ -233,6 +235,8 @@ for (let i = 0; i < ALLY_COUNT; i++) {
     flareCooldown: 0,
     throttle: 1.0,         // 🟢 full throttle
     throttleTarget: 1.0,
+    width: ALLY_SIZE,
+    height: ALLY_SIZE,
   });
 }
 
@@ -659,6 +663,8 @@ function updateEnemies() {
     enemy.x += Math.cos(enemy.angle) * enemy.speed;
     enemy.y += Math.sin(enemy.angle) * enemy.speed;
 
+    updateWingTrails(enemy);
+
     enemy.x = clamp(enemy.x, 0, WORLD_WIDTH);
     enemy.y = clamp(enemy.y, 0, WORLD_HEIGHT);
 
@@ -780,6 +786,8 @@ function updateAllies() {
     ally.x += Math.cos(ally.angle) * ally.speed;
     ally.y += Math.sin(ally.angle) * ally.speed;
 
+    updateWingTrails(ally);
+
     ally.x = clamp(ally.x, 0, WORLD_WIDTH);
     ally.y = clamp(ally.y, 0, WORLD_HEIGHT);
   });
@@ -891,9 +899,10 @@ function renderFlareTrail(trail) {
 
 function updateWingTrails(plane) {
   if (!plane) return;
+  if (!plane.wingTrail) plane.wingTrail = [];
 
-  const wingOffset = plane.width * 0.40; // distance from center to wing
-  const backwardOffset = plane.height * 0.30; // how far behind the wings
+  const wingOffset = plane.width * 0.4;
+  const backwardOffset = plane.height * 0.3;
 
   const baseX = plane.x - Math.cos(plane.angle) * backwardOffset;
   const baseY = plane.y - Math.sin(plane.angle) * backwardOffset;
@@ -903,27 +912,33 @@ function updateWingTrails(plane) {
   const rightX = baseX + Math.cos(plane.angle - Math.PI / 2) * wingOffset;
   const rightY = baseY + Math.sin(plane.angle - Math.PI / 2) * wingOffset;
 
-  wingTrails.push({ x: leftX, y: leftY, alpha: 0.5 });
-  wingTrails.push({ x: rightX, y: rightY, alpha: 0.5 });
+  plane.wingTrail.push({ x: leftX, y: leftY, alpha: 0.5 });
+  plane.wingTrail.push({ x: rightX, y: rightY, alpha: 0.5 });
 
-  // Limit total trails
-  if (wingTrails.length > 100) wingTrails.splice(0, wingTrails.length - 100);
-
-  // Fade alpha
-  wingTrails.forEach((p) => (p.alpha *= 0.90));
+  if (plane.wingTrail.length > 100) plane.wingTrail.splice(0, plane.wingTrail.length - 100);
+  plane.wingTrail.forEach((p) => (p.alpha *= 0.9));
 }
 
 
-function drawWingTrails() {
-  for (const trail of wingTrails) {
+
+function drawAllWingTrails() {
+  drawWingTrailsFor(player, "white");
+  allies.forEach((a) => drawWingTrailsFor(a, "white"));
+  enemies.forEach((e) => drawWingTrailsFor(e, "white"));
+}
+
+
+function drawWingTrailsFor(plane, color = "white") {
+  if (!plane.wingTrail) return;
+  for (const trail of plane.wingTrail) {
     const screenX = trail.x - camera.x;
     const screenY = trail.y - camera.y;
 
     ctx.save();
     ctx.globalAlpha = trail.alpha;
-    ctx.fillStyle = "white"; // or customize to a color like "aqua", "lime", etc.
+    ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(screenX, screenY, 1, 0, Math.PI * 2);
+    ctx.arc(screenX, screenY, 1.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
@@ -1183,7 +1198,7 @@ function update() {
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   renderWorld();
-  drawWingTrails();
+  drawAllWingTrails();
   renderAllies();
   renderEnemies();
   renderFlares();
