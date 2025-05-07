@@ -256,6 +256,11 @@ const EXPLOSION_DURATION = 30;
 
 const wingTrails = [];
 
+const PLAYER_BULLET_SPREAD = 0.020;  // slightly tighter
+const ENEMY_BULLET_SPREAD  = 0.020; // looser, less accurate
+const ALLY_BULLET_SPREAD   = 0.020; // medium accuracy
+
+
 for (let i = 0; i < ENEMY_COUNT; i++) {
   enemies.push({
     x: Math.random() * WORLD_WIDTH,
@@ -490,7 +495,7 @@ function updatePlayer() {
       speed: BULLET_SPEED,
       life: BULLET_LIFESPAN,
       targetArray: bullets,
-      spread: 0.2,
+      spread: PLAYER_BULLET_SPREAD,
       offset: 30,
     });
     shootCooldown = 10;
@@ -795,7 +800,7 @@ function updateEnemies() {
           speed: ENEMY_BULLET_SPEED,
           life: BULLET_LIFESPAN,
           targetArray: enemyBullets,
-          spread: 0.3,
+          spread: ENEMY_BULLET_SPREAD,
           offset: 30,
         });
         enemy.cooldown = ENEMY_FIRE_COOLDOWN;
@@ -857,7 +862,7 @@ function updateAllies() {
           speed: ALLY_BULLET_SPEED,
           life: BULLET_LIFESPAN,
           targetArray: allyBullets,
-          spread: 0.2,
+          spread: ALLY_BULLET_SPREAD,
           offset: 30,
         });
         ally.cooldown = ALLY_FIRE_COOLDOWN;
