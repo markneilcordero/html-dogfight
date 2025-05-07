@@ -291,14 +291,15 @@ function fireBullet({
   });
 }
 
-function createMissile({ x, y, angle, target }) {
+function createMissile({ x, y, angle, target, ownerType }) {
   missiles.push({
     x,
     y,
     angle,
     target,
+    ownerType, // ✅ Now defined
     trailHistory: [],
-    lifetime: 300, // 5 seconds at 60 FPS
+    lifetime: 300,
   });
   playSound("missile");
 }
@@ -317,45 +318,63 @@ function isInMissileCone(source, target) {
 }
 
 function updateMissile(m, index) {
-  const target = m.target;
+  let target = m.target;
 
-  // Track if valid & in cone
-  if (
-    target &&
-    enemies.includes(target) && // Or use isAlive(target)
-    isInMissileCone({ x: m.x, y: m.y, angle: m.angle }, target)
-  ) {
+  // === Flare Redirect ===
+  const possibleFlares = flares.filter((f) => {
+    const dx = f.x - m.x;
+    const dy = f.y - m.y;
+    const dist = Math.hypot(dx, dy);
+    return dist < 300;
+  });
+
+  if (possibleFlares.length > 0) {
+    possibleFlares.sort((a, b) => {
+      const da = Math.hypot(a.x - m.x, a.y - m.y);
+      const db = Math.hypot(b.x - m.x, b.y - m.y);
+      return da - db;
+    });
+    target = possibleFlares[0];
+  }
+
+  // === Homing Movement
+  if (target) {
     const dx = target.x - m.x;
     const dy = target.y - m.y;
     const desiredAngle = Math.atan2(dy, dx);
     let diff = desiredAngle - m.angle;
     while (diff > Math.PI) diff -= 2 * Math.PI;
     while (diff < -Math.PI) diff += 2 * Math.PI;
-
     m.angle += clamp(diff, -MISSILE_TURN_RATE, MISSILE_TURN_RATE);
   }
 
-  // Move forward
   m.x += Math.cos(m.angle) * MISSILE_SPEED;
   m.y += Math.sin(m.angle) * MISSILE_SPEED;
 
-  // Trail update
   m.trailHistory = m.trailHistory || [];
   m.trailHistory.push({ x: m.x, y: m.y, alpha: 1.0 });
   if (m.trailHistory.length > 20) m.trailHistory.shift();
   m.trailHistory.forEach((p) => (p.alpha *= 0.95));
 
-  // Lifetime and detonation
+  // === Impact
   m.lifetime--;
   const dist = target ? Math.hypot(m.x - target.x, m.y - target.y) : Infinity;
 
   if (dist < 40 || m.lifetime <= 0) {
-    if (target && enemies.includes(target)) target.health -= MISSILE_DAMAGE;
+    if (target && typeof target.health === "number") {
+      // Apply damage only if target is valid and opposite type
+      const isFriendlyFire =
+        (m.ownerType === "player" && target === player) ||
+        (m.ownerType === "enemy" && enemies.includes(target)) ||
+        (m.ownerType === "ally" && allies.includes(target));
+      if (!isFriendlyFire) {
+        target.health -= MISSILE_DAMAGE;
+      }
+    }
     spawnExplosion(m.x, m.y);
     missiles.splice(index, 1);
   }
 }
-
 
 
 function updatePlayer() {
@@ -397,7 +416,7 @@ function updatePlayer() {
   if ((keys["m"] || keys["M"]) && missileCooldown <= 0) {
     const target = getLockedTarget(player, enemies);
     if (target) {
-      createMissile({ x: player.x, y: player.y, angle: player.angle, target }); // ✅ Use createMissile
+      createMissile({ x: player.x, y: player.y, angle: player.angle, target, ownerType: "player" }); // ✅ Use createMissile
       missileCooldown = 60; // cooldown: 1 second
     }
   }
@@ -642,7 +661,8 @@ function updateEnemies() {
             y: enemy.y,
             angle: enemy.angle,
             target: player,
-          });          
+            ownerType: "enemy"
+          });
           enemy.missileCooldown = 240; // ~4 seconds cooldown
         }
       }
@@ -701,7 +721,8 @@ function updateAllies() {
             y: ally.y,
             angle: ally.angle,
             target: closest,
-          });          
+            ownerType: "ally"
+          });
           ally.missileCooldown = 180; // ~3 seconds cooldown
         }
       }
