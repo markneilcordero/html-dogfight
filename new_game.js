@@ -134,12 +134,16 @@ function playSound(name) {
 // ======================
 // [4] Player
 // ======================
+
+const MIN_PLANE_SPEED = 3;
+const MAX_PLANE_SPEED = 5;
+
 const player = {
   x: WORLD_WIDTH / 2,
   y: WORLD_HEIGHT / 2,
   angle: 0,
   speed: 0,
-  maxSpeed: 5,
+  maxSpeed: MAX_PLANE_SPEED,
   rotationSpeed: 0.05,
   acceleration: 0.1,
   image: playerImage,
@@ -154,8 +158,6 @@ let lives = 3;
 let isGameOver = false;
 let score = 0;
 let isPaused = false;
-
-const MIN_PLANE_SPEED = 5;
 
 const bullets = [];
 const BULLET_SPEED = 10;
@@ -408,7 +410,7 @@ function updatePlayer() {
   player.throttle = clamp(player.throttle, 0.2, 1.0);
 
   // 🟡 Apply throttle to speed
-  player.speed = player.maxSpeed * player.throttle;
+  player.speed = MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * player.throttle;
 
   // Move
   player.x += Math.cos(player.angle) * player.speed;
@@ -633,7 +635,7 @@ function updateEnemies() {
     // 🟡 Smoothly adjust throttle and apply to speed
     enemy.throttle += (enemy.throttleTarget - enemy.throttle) * 0.05;
     enemy.throttle = clamp(enemy.throttle, 0.2, 1.0);
-    enemy.speed = enemy.throttle * player.maxSpeed;
+    enemy.speed = MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * enemy.throttle;
 
     // === Missile Dodge Check ===
     const incoming = missiles.find((m) => m.target === enemy);
@@ -717,7 +719,7 @@ function updateAllies() {
     // 🟡 Smooth throttle change
     ally.throttle += (ally.throttleTarget - ally.throttle) * 0.05;
     ally.throttle = clamp(ally.throttle, 0.2, 1.0);
-    ally.speed = ally.throttle * player.maxSpeed;
+    ally.speed = MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * ally.throttle;
 
     // === Lock onto closest opponent ===
     let closest = null;
