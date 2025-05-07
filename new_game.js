@@ -146,6 +146,8 @@ const player = {
   width: 60,
   height: 60,
   health: 100,
+  throttle: 1.0,         // 🟢 full throttle
+  throttleTarget: 1.0, 
 };
 
 let lives = 3;
@@ -211,6 +213,8 @@ for (let i = 0; i < ENEMY_COUNT; i++) {
     turnTimer: Math.floor(Math.random() * 60),
     image: enemyImage,
     flareCooldown: 0,
+    throttle: 1.0,         // 🟢 full throttle
+    throttleTarget: 1.0,
   });
 }
 
@@ -225,6 +229,8 @@ for (let i = 0; i < ALLY_COUNT; i++) {
     missileCooldown: 0,
     image: allyImage,
     flareCooldown: 0,
+    throttle: 1.0,         // 🟢 full throttle
+    throttleTarget: 1.0,
   });
 }
 
@@ -376,21 +382,29 @@ function updateMissile(m, index) {
   }
 }
 
-
 function updatePlayer() {
   if (typeof updatePlayerJoystick === "function") updatePlayerJoystick();
-  if (keys["a"] || keys["arrowleft"]) player.angle -= player.rotationSpeed;
-  if (keys["d"] || keys["arrowright"]) player.angle += player.rotationSpeed;
+
+  // 🔵 Throttle input control (W / ArrowUp = up, S / ArrowDown = down)
   if (keys["w"] || keys["arrowup"]) {
-    player.speed = Math.min(
-      player.speed + player.acceleration,
-      player.maxSpeed
-    );
-  } else {
-    player.speed *= 0.98;
-    player.speed = Math.max(player.speed, MIN_PLANE_SPEED);
+    player.throttleTarget = Math.min(1.0, player.throttleTarget + 0.02);
+  }
+  if (keys["s"] || keys["arrowdown"]) {
+    player.throttleTarget = Math.max(0.2, player.throttleTarget - 0.02);
   }
 
+  // Turn
+  if (keys["a"] || keys["arrowleft"]) player.angle -= player.rotationSpeed;
+  if (keys["d"] || keys["arrowright"]) player.angle += player.rotationSpeed;
+
+  // 🟡 Throttle smoothing
+  player.throttle += (player.throttleTarget - player.throttle) * 0.1;
+  player.throttle = clamp(player.throttle, 0.2, 1.0);
+
+  // 🟡 Apply throttle to speed
+  player.speed = player.maxSpeed * player.throttle;
+
+  // Move
   player.x += Math.cos(player.angle) * player.speed;
   player.y += Math.sin(player.angle) * player.speed;
 
@@ -405,19 +419,25 @@ function updatePlayer() {
       speed: BULLET_SPEED,
       life: BULLET_LIFESPAN,
       targetArray: bullets,
-      spread: 0.2, // optional
-      offset: 30, // optional
+      spread: 0.2,
+      offset: 30,
     });
     shootCooldown = 10;
   }
   if (shootCooldown > 0) shootCooldown--;
 
-  // Lock-on and fire missile
+  // Missile
   if ((keys["m"] || keys["M"]) && missileCooldown <= 0) {
     const target = getLockedTarget(player, enemies);
     if (target) {
-      createMissile({ x: player.x, y: player.y, angle: player.angle, target, ownerType: "player" }); // ✅ Use createMissile
-      missileCooldown = 60; // cooldown: 1 second
+      createMissile({
+        x: player.x,
+        y: player.y,
+        angle: player.angle,
+        target,
+        ownerType: "player"
+      });
+      missileCooldown = 60;
     }
   }
   if (missileCooldown > 0) missileCooldown--;
@@ -595,18 +615,25 @@ function updateCamera() {
 
 function updateEnemies() {
   enemies.forEach((enemy) => {
-    // === Missile Dodge Check ===
     if (enemy.flareCooldown > 0) enemy.flareCooldown--;
+
+    // 🟣 Occasionally change throttle target for realism
+    if (Math.random() < 0.01) {
+      enemy.throttleTarget = 0.4 + Math.random() * 0.6;
+    }
+
+    // 🟡 Smoothly adjust throttle and apply to speed
+    enemy.throttle += (enemy.throttleTarget - enemy.throttle) * 0.05;
+    enemy.throttle = clamp(enemy.throttle, 0.2, 1.0);
+    enemy.speed = enemy.throttle * player.maxSpeed;
+
+    // === Missile Dodge Check ===
     const incoming = missiles.find((m) => m.target === enemy);
     if (incoming) {
-      // Dodge by turning away
       const dodgeDir = Math.random() > 0.5 ? 1 : -1;
       enemy.angle += 0.1 * dodgeDir;
 
-      // Drop flare occasionally
-      if (enemy.flareCooldown > 0) enemy.flareCooldown--;
-
-      if (incoming && enemy.flareCooldown <= 0) {
+      if (enemy.flareCooldown <= 0) {
         createFlare(enemy);
         enemy.flareCooldown = 300;
         playSound("flare");
@@ -625,8 +652,6 @@ function updateEnemies() {
     }
 
     // === Move Forward ===
-    enemy.speed = Math.max(enemy.speed, MIN_PLANE_SPEED);
-
     enemy.x += Math.cos(enemy.angle) * enemy.speed;
     enemy.y += Math.sin(enemy.angle) * enemy.speed;
 
@@ -648,7 +673,7 @@ function updateEnemies() {
           speed: ENEMY_BULLET_SPEED,
           life: BULLET_LIFESPAN,
           targetArray: enemyBullets,
-          spread: 0.3, // slightly more inaccurate
+          spread: 0.3,
           offset: 30,
         });
         enemy.cooldown = ENEMY_FIRE_COOLDOWN;
@@ -661,9 +686,9 @@ function updateEnemies() {
             y: enemy.y,
             angle: enemy.angle,
             target: player,
-            ownerType: "enemy"
+            ownerType: "enemy",
           });
-          enemy.missileCooldown = 240; // ~4 seconds cooldown
+          enemy.missileCooldown = 240;
         }
       }
     }
@@ -673,10 +698,21 @@ function updateEnemies() {
 function updateAllies() {
   allies.forEach((ally) => {
     if (ally.flareCooldown > 0) ally.flareCooldown--;
+
+    // 🟣 Randomly vary throttle target
+    if (Math.random() < 0.01) {
+      ally.throttleTarget = 0.4 + Math.random() * 0.6;
+    }
+
+    // 🟡 Smooth throttle change
+    ally.throttle += (ally.throttleTarget - ally.throttle) * 0.05;
+    ally.throttle = clamp(ally.throttle, 0.2, 1.0);
+    ally.speed = ally.throttle * player.maxSpeed;
+
     // === Lock onto closest opponent ===
     let closest = null;
     let closestDist = Infinity;
-    opponentsLoop: for (const opp of enemies) {
+    for (const opp of enemies) {
       const dx = opp.x - ally.x;
       const dy = opp.y - ally.y;
       const dist = Math.hypot(dx, dy);
@@ -721,9 +757,9 @@ function updateAllies() {
             y: ally.y,
             angle: ally.angle,
             target: closest,
-            ownerType: "ally"
+            ownerType: "ally",
           });
-          ally.missileCooldown = 180; // ~3 seconds cooldown
+          ally.missileCooldown = 180;
         }
       }
     }
@@ -737,8 +773,6 @@ function updateAllies() {
     }
 
     // Move forward
-    ally.speed = Math.max(ally.speed, MIN_PLANE_SPEED);
-
     ally.x += Math.cos(ally.angle) * ally.speed;
     ally.y += Math.sin(ally.angle) * ally.speed;
 
