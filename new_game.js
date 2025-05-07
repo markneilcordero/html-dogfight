@@ -519,12 +519,8 @@ function runAutopilot(entity, targetList, ownerType = "player") {
     while (diff > Math.PI) diff -= 2 * Math.PI;
     while (diff < -Math.PI) diff += 2 * Math.PI;
 
-    // Turn sharply toward target
     entity.angle += clamp(diff, -0.08, 0.08);
-
-    // Reduce orbit distance to stay close (simulate dogfighting)
     entity.orbitDistance = 100;
-
   } else {
     entity.orbitAngle = (entity.orbitAngle || 0) + 0.02;
     const wanderX = WORLD_WIDTH / 2 + Math.cos(entity.orbitAngle) * 300;
@@ -532,11 +528,10 @@ function runAutopilot(entity, targetList, ownerType = "player") {
     orbitAroundTarget(entity, { x: wanderX, y: wanderY });
   }
 
-  // === Throttle control (stay fast)
+  // === Throttle control
   entity.throttleTarget = 1.0;
   entity.throttle += (entity.throttleTarget - entity.throttle) * 0.1;
   entity.throttle = clamp(entity.throttle, 0.5, 1.0);
-
   entity.speed = MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * entity.throttle;
 
   entity.x += Math.cos(entity.angle) * entity.speed;
@@ -547,9 +542,14 @@ function runAutopilot(entity, targetList, ownerType = "player") {
   // === Initialize cooldowns if not present
   entity.cooldown = entity.cooldown || 0;
   entity.missileCooldown = entity.missileCooldown || 0;
+  entity.flareCooldown = entity.flareCooldown || 0;
 
-  // === Fire bullets faster
+  // === Decrease cooldowns
   entity.cooldown--;
+  entity.missileCooldown--;
+  if (entity.flareCooldown > 0) entity.flareCooldown--;
+
+  // === Fire bullets
   if (target && entity.cooldown <= 0) {
     fireBullet({
       origin: entity,
@@ -570,11 +570,10 @@ function runAutopilot(entity, targetList, ownerType = "player") {
           : ENEMY_BULLET_SPREAD,
       offset: 30,
     });
-    entity.cooldown = 5; // 🔥 fire faster
+    entity.cooldown = 5;
   }
 
-  // === Fire missiles aggressively
-  entity.missileCooldown--;
+  // === Fire missiles
   if (target && entity.missileCooldown <= 0) {
     const dx = target.x - entity.x;
     const dy = target.y - entity.y;
@@ -590,24 +589,25 @@ function runAutopilot(entity, targetList, ownerType = "player") {
         target,
         ownerType,
       });
-
       entity.missileCooldown =
         ownerType === "player" ? 40 : ownerType === "ally" ? 120 : 180;
     }
   }
 
-  // === Drop flare if missile locked
-  const incomingMissile = missiles.find((m) => m.target === entity);
+  // === Drop flare if missile locked AND close
+  const MISSILE_DANGER_RADIUS = 300;
+  const incomingMissile = missiles.find(
+    (m) =>
+      m.target === entity &&
+      Math.hypot(m.x - entity.x, m.y - entity.y) < MISSILE_DANGER_RADIUS
+  );
+
   if (incomingMissile && entity.flareCooldown <= 0) {
     createFlare(entity);
     entity.flareCooldown = FLARE_COOLDOWN_MAX;
     playSound("flare");
   }
 }
-
-
-
-
 
 function updatePlayer() {
   if (autopilotEnabled) {
@@ -1198,8 +1198,8 @@ function renderBulletTrail(trail) {
     const p1 = trail[i];
     const p2 = trail[i + 1];
     ctx.beginPath();
-    ctx.strokeStyle = `rgba(255, 255, 255, ${p1.alpha})`;
-    ctx.lineWidth = 0.05;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${p1.alpha})`; // white
+    ctx.lineWidth = 0.1;
     ctx.moveTo(p1.x - camera.x, p1.y - camera.y);
     ctx.lineTo(p2.x - camera.x, p2.y - camera.y);
     ctx.stroke();
