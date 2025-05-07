@@ -162,6 +162,7 @@ const bulletImage = loadImage("images/bullet.png");
 const missileImage = loadImage("images/missile.png");
 const explosionImage = loadImage("images/explosion.png");
 const flareImage = loadImage("images/flare.png");
+const skyImage = loadImage("images/sky.jpg");
 
 // ======================
 // [3.1] Load Sounds
@@ -985,8 +986,21 @@ if (allyTarget) {
 // ======================
 function renderWorld() {
   // Sky background
-  ctx.fillStyle = "#111";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (skyImage.loaded) {
+    // Draw the sky image to cover the full world, adjusting for camera position
+    ctx.drawImage(
+      skyImage,
+      -camera.x,
+      -camera.y,
+      WORLD_WIDTH,
+      WORLD_HEIGHT
+    );
+  } else {
+    // Fallback color while image is still loading
+    ctx.fillStyle = "#111";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  
 
   // Optional: grid lines
   ctx.strokeStyle = "rgba(255, 255, 255, 1)";
@@ -1365,7 +1379,7 @@ function renderHUD() {
   const now = performance.now();
   const fps = Math.round(1000 / (now - lastFrameTime));
   lastFrameTime = now;
-  ctx.fillStyle = "#aaa";
+  ctx.fillStyle = "#00ffcc";
   ctx.fillText(`FPS: ${fps}`, 20, 80);
   ctx.fillText(`Lives: ${lives}`, 20, 105);
 
