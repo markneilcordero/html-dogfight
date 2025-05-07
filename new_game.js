@@ -350,7 +350,11 @@ document.getElementById("flareBtn").addEventListener("click", () => {
     dropFlareFromPlayer();
     flareCooldown = FLARE_COOLDOWN_MAX;
   }
-});
+  document.getElementById("restartBtn").addEventListener("click", () => {
+    restartGame();
+  });
+  
+}); 
 
 // ======================
 // [6] Update Logic
@@ -1367,29 +1371,27 @@ function renderHUD() {
 
   ctx.font = "16px monospace";
   ctx.fillStyle = "#00ffcc";
-  ctx.fillText(
-    `Throttle: ${((player.speed / player.maxSpeed) * 100).toFixed(0)}%`,
-    20,
-    30
-  );
+  ctx.fillText(`Throttle: ${((player.speed / player.maxSpeed) * 100).toFixed(0)}%`, 20, 30);
   ctx.fillText(`Health: ${player.health}%`, 20, 55);
   ctx.fillText(`Score: ${score}`, 20, 130);
 
-  // Optional: FPS counter
   const now = performance.now();
   const fps = Math.round(1000 / (now - lastFrameTime));
   lastFrameTime = now;
-  ctx.fillStyle = "#00ffcc";
   ctx.fillText(`FPS: ${fps}`, 20, 80);
   ctx.fillText(`Lives: ${lives}`, 20, 105);
-
-  ctx.fillStyle = "#00ffcc";
   ctx.fillText(`Level: ${level}`, 20, 155);
+
+  const restartBtn = document.getElementById("restartBtn");
 
   if (isGameOver) {
     ctx.fillStyle = "red";
     ctx.font = "48px sans-serif";
     ctx.fillText("GAME OVER", canvas.width / 2 - 120, canvas.height / 2);
+
+    restartBtn.style.display = "block"; // ✅ Show button
+  } else {
+    restartBtn.style.display = "none"; // ✅ Hide button when playing
   }
 
   if (isPaused && !isGameOver) {
@@ -1400,6 +1402,7 @@ function renderHUD() {
 
   ctx.restore();
 }
+
 
 let lastFrameTime = performance.now();
 

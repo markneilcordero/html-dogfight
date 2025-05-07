@@ -81,6 +81,24 @@
   </head>
   <body>
     <canvas id="gameCanvas"></canvas>
+    <button id="restartBtn" style="
+  display: none;
+  position: fixed;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 16px 32px;
+  font-size: 20px;
+  background: red;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  z-index: 9999;
+  cursor: pointer;
+">
+  🔄 Restart Game
+</button>
+
     <!-- Controls: FIRE, MISSILE, FLARE -->
     <div
       id="controls"
