@@ -94,6 +94,29 @@ function getLockedTarget(source, targets) {
   return null;
 }
 
+function orbitAroundTarget(flyer, target) {
+  if (!flyer || !target) return;
+
+  // Update angle of orbit
+  flyer.orbitAngle += flyer.orbitSpeed;
+
+  // Calculate desired orbit position
+  const orbitX = target.x + Math.cos(flyer.orbitAngle) * flyer.orbitDistance;
+  const orbitY = target.y + Math.sin(flyer.orbitAngle) * flyer.orbitDistance;
+
+  // Calculate angle to move toward orbit point
+  const dx = orbitX - flyer.x;
+  const dy = orbitY - flyer.y;
+  const desiredAngle = Math.atan2(dy, dx);
+  let diff = desiredAngle - flyer.angle;
+
+  // Normalize to [-PI, PI]
+  while (diff > Math.PI) diff -= 2 * Math.PI;
+  while (diff < -Math.PI) diff += 2 * Math.PI;
+
+  flyer.angle += clamp(diff, -0.05, 0.05); // turning speed
+}
+
 // ======================
 // [3] Load Images
 // ======================
@@ -221,6 +244,9 @@ for (let i = 0; i < ENEMY_COUNT; i++) {
     throttleTarget: 1.0,
     width: ENEMY_SIZE,
     height: ENEMY_SIZE,
+    orbitAngle: Math.random() * Math.PI * 2,
+    orbitDistance: 250 + Math.random() * 100,
+    orbitSpeed: 0.01 + Math.random() * 0.01,
   });
 }
 
@@ -239,6 +265,9 @@ for (let i = 0; i < ALLY_COUNT; i++) {
     throttleTarget: 1.0,
     width: ALLY_SIZE,
     height: ALLY_SIZE,
+    orbitAngle: Math.random() * Math.PI * 2,
+    orbitDistance: 250 + Math.random() * 100,
+    orbitSpeed: 0.01 + Math.random() * 0.01,
   });
 }
 
@@ -650,15 +679,7 @@ function updateEnemies() {
       }
     } else {
       // === Chase player ===
-      const dx = player.x - enemy.x;
-      const dy = player.y - enemy.y;
-      const desiredAngle = Math.atan2(dy, dx);
-      let diff = desiredAngle - enemy.angle;
-
-      while (diff > Math.PI) diff -= 2 * Math.PI;
-      while (diff < -Math.PI) diff += 2 * Math.PI;
-
-      enemy.angle += clamp(diff, -0.05, 0.05);
+      orbitAroundTarget(enemy, player);
     }
 
     // === Move Forward ===
@@ -736,15 +757,7 @@ function updateAllies() {
 
     if (closest) {
       // Aim & turn toward enemy
-      const dx = closest.x - ally.x;
-      const dy = closest.y - ally.y;
-      const angleToTarget = Math.atan2(dy, dx);
-      let diff = angleToTarget - ally.angle;
-
-      while (diff > Math.PI) diff -= 2 * Math.PI;
-      while (diff < -Math.PI) diff += 2 * Math.PI;
-
-      ally.angle += clamp(diff, -0.05, 0.05);
+      orbitAroundTarget(ally, closest);
 
       // Fire bullets
       ally.cooldown--;
