@@ -373,11 +373,10 @@ document.getElementById("flareBtn").addEventListener("click", () => {
     dropFlareFromPlayer();
     flareCooldown = FLARE_COOLDOWN_MAX;
   }
-  document.getElementById("restartBtn").addEventListener("click", () => {
-    restartGame();
-  });
-  
 }); 
+document.getElementById("restartBtn").addEventListener("click", () => {
+  restartGame();
+});
 
 // ======================
 // [6] Update Logic
