@@ -213,7 +213,6 @@ document
   .getElementById("flareBtn")
   .addEventListener("click", dropFlareFromPlayer);
 
-
 // ======================
 // [6] Update Logic
 // ======================
@@ -482,7 +481,7 @@ function updateFlares() {
     if (!f.trail) f.trail = [];
     f.trail.push({ x: f.x, y: f.y, alpha: 1.0 });
     if (f.trail.length > 15) f.trail.shift();
-    f.trail.forEach(p => p.alpha *= 0.92);
+    f.trail.forEach((p) => (p.alpha *= 0.92));
 
     if (f.timer <= 0) {
       flares.splice(i, 1);
@@ -517,7 +516,7 @@ function updateEnemies() {
           vy: Math.sin(enemy.angle + Math.PI) * 2,
           timer: FLARE_DURATION,
           trail: [],
-        });                
+        });
       }
     } else {
       // === Chase player ===
@@ -621,6 +620,20 @@ function updateAllies() {
           ally.missileCooldown = 180; // ~3 seconds cooldown
         }
       }
+    }
+
+    // === Drop flare if missile locked ===
+    const incoming = missiles.find((m) => m.target === ally);
+    if (incoming && Math.random() < 0.02) {
+      flares.push({
+        x: ally.x,
+        y: ally.y,
+        vx: Math.cos(ally.angle + Math.PI) * 2,
+        vy: Math.sin(ally.angle + Math.PI) * 2,
+        timer: FLARE_DURATION,
+        trail: [],
+      });
+      playSound("flare");
     }
 
     // Move forward
@@ -924,7 +937,6 @@ function renderExplosions() {
     ctx.restore();
   });
 }
-
 
 // ======================
 // [8] Render HUD
