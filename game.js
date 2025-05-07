@@ -892,9 +892,13 @@ function updateBullets() {
 
 function updateMissiles() {
   for (let i = missiles.length - 1; i >= 0; i--) {
-    updateMissile(missiles[i], i);
+    const m = missiles[i];
+    if (m) {
+      updateMissile(m, i);
+    }
   }
 }
+
 
 function updateEnemyBullets() {
   for (let i = enemyBullets.length - 1; i >= 0; i--) {
