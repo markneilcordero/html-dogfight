@@ -573,7 +573,11 @@ function updateMissile(m, index) {
   m.trailHistory.forEach((p) => (p.alpha *= 0.95));
 
   // === Impact
-  const dist = target ? Math.hypot(m.x - target.x, m.y - target.y) : Infinity;
+  let dist = Infinity;
+if (target && (typeof target.health === "number" || target === player || flares.includes(target))) {
+  dist = Math.hypot(m.x - target.x, m.y - target.y);
+}
+
 
   if (dist < 40 || m.lifetime <= 0) {
 
@@ -591,7 +595,7 @@ function updateMissile(m, index) {
 
         target.health = Math.max(0, target.health - damage);
 
-        if (target.health <= 0) {
+        if (typeof target.health === "number" && target.health <= 0) {
           spawnExplosion(target.x, target.y);
         
           if (target === player) {
@@ -601,7 +605,7 @@ function updateMissile(m, index) {
               player.y = SPAWN_PLAYER_Y;
               player.health = 100;
         
-              // 🧹 Clear missiles targeting the player
+              // Clear missiles still targeting the player
               for (let i = missiles.length - 1; i >= 0; i--) {
                 if (missiles[i].target === player) {
                   missiles.splice(i, 1);
@@ -613,6 +617,7 @@ function updateMissile(m, index) {
             }
           }
         }
+        
         
       }
     }
