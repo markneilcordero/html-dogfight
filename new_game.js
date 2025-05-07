@@ -117,6 +117,32 @@ function orbitAroundTarget(flyer, target) {
   flyer.angle += clamp(diff, -0.05, 0.05); // turning speed
 }
 
+function rotateToward(entity, targetAngle, turnSpeed = 0.05) {
+  let diff = targetAngle - entity.angle;
+  while (diff > Math.PI) diff -= 2 * Math.PI;
+  while (diff < -Math.PI) diff += 2 * Math.PI;
+  entity.angle += clamp(diff, -turnSpeed, turnSpeed);
+}
+
+function avoidMapEdges(entity, buffer = 200, turnSpeed = 0.05) {
+  let turnAwayAngle = null;
+
+  if (entity.x < buffer) {
+    turnAwayAngle = 0; // Face right
+  } else if (entity.x > WORLD_WIDTH - buffer) {
+    turnAwayAngle = Math.PI; // Face left
+  } else if (entity.y < buffer) {
+    turnAwayAngle = Math.PI / 2; // Face down
+  } else if (entity.y > WORLD_HEIGHT - buffer) {
+    turnAwayAngle = -Math.PI / 2; // Face up
+  }
+
+  if (turnAwayAngle !== null) {
+    rotateToward(entity, turnAwayAngle, turnSpeed);
+  }
+}
+
+
 // ======================
 // [3] Load Images
 // ======================
@@ -682,6 +708,8 @@ function updateEnemies() {
       orbitAroundTarget(enemy, player);
     }
 
+    avoidMapEdges(enemy);
+
     // === Move Forward ===
     enemy.x += Math.cos(enemy.angle) * enemy.speed;
     enemy.y += Math.sin(enemy.angle) * enemy.speed;
@@ -796,6 +824,8 @@ function updateAllies() {
       ally.flareCooldown = 300;
       playSound("flare");
     }
+
+    avoidMapEdges(ally);
 
     // Move forward
     ally.x += Math.cos(ally.angle) * ally.speed;
