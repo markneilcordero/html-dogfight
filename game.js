@@ -608,6 +608,7 @@ function updateMissile(m, index) {
               player.health = 100;
             } else {
               isGameOver = true;
+              autopilotEnabled = false;
             }
           }
         }
@@ -721,6 +722,7 @@ function runAutopilot(entity, targetList, ownerType = "player") {
 }
 
 function updatePlayer() {
+  if (isGameOver) return;
   if (autopilotEnabled) {
     runAutopilot(player, enemies, "player");
     updateWingTrails(player);
