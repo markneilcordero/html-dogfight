@@ -30,6 +30,22 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(value, max));
 }
 
+function createFlare(fromPlane) {
+  const rearAngle = fromPlane.angle + Math.PI; // rear direction
+  const speed = 2;
+
+  flares.push({
+    x: fromPlane.x,
+    y: fromPlane.y,
+    vx: Math.cos(rearAngle) * speed,
+    vy: Math.sin(rearAngle) * speed,
+    timer: FLARE_DURATION,
+    trail: [],
+  });
+
+  playSound("flare");
+}
+
 function getLockedTarget(source, targets) {
   for (const t of targets) {
     const dx = t.x - source.x;
@@ -509,14 +525,7 @@ function updateEnemies() {
 
       // Drop flare occasionally
       if (Math.random() < 0.02) {
-        flares.push({
-          x: enemy.x,
-          y: enemy.y,
-          vx: Math.cos(enemy.angle + Math.PI) * 2,
-          vy: Math.sin(enemy.angle + Math.PI) * 2,
-          timer: FLARE_DURATION,
-          trail: [],
-        });
+        createFlare(enemy);
       }
     } else {
       // === Chase player ===
@@ -625,14 +634,7 @@ function updateAllies() {
     // === Drop flare if missile locked ===
     const incoming = missiles.find((m) => m.target === ally);
     if (incoming && Math.random() < 0.02) {
-      flares.push({
-        x: ally.x,
-        y: ally.y,
-        vx: Math.cos(ally.angle + Math.PI) * 2,
-        vy: Math.sin(ally.angle + Math.PI) * 2,
-        timer: FLARE_DURATION,
-        trail: [],
-      });
+      createFlare(ally);
       playSound("flare");
     }
 
@@ -892,20 +894,9 @@ function spawnExplosion(x, y) {
 }
 
 function dropFlareFromPlayer() {
-  const angle = player.angle + (Math.random() - 0.5) * 1.2; // some variation
-  const speed = 2; // tweak for visual effect
-
-  flares.push({
-    x: player.x,
-    y: player.y,
-    vx: Math.cos(angle) * speed,
-    vy: Math.sin(angle) * speed,
-    timer: FLARE_DURATION,
-    trail: [],
-  });
-
-  playSound("flare");
+  createFlare(player);
 }
+
 
 function updateExplosions() {
   for (let i = explosions.length - 1; i >= 0; i--) {
