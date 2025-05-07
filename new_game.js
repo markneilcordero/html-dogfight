@@ -1077,6 +1077,28 @@ function renderFlareTrail(trail) {
   }
 }
 
+function renderMissileLockLine() {
+  const target = getLockedTarget(player, enemies);
+  if (!target) return;
+
+  const lineLength = 1000;
+  const startX = player.x;
+  const startY = player.y;
+  const endX = startX + Math.cos(player.angle) * lineLength;
+  const endY = startY + Math.sin(player.angle) * lineLength;
+
+  ctx.save();
+  ctx.strokeStyle = "lime";
+  ctx.lineWidth = 2;
+  ctx.shadowColor = "lime";
+  ctx.shadowBlur = 10;
+  ctx.beginPath();
+  ctx.moveTo(startX - camera.x, startY - camera.y);
+  ctx.lineTo(endX - camera.x, endY - camera.y);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function updateWingTrails(plane) {
   if (!plane) return;
   if (!plane.wingTrail) plane.wingTrail = [];
@@ -1154,15 +1176,7 @@ function renderEnemies() {
       (e.health / ENEMY_HEALTH) * 50,
       6
     );
-
-    // Draw lock-on ring if player is locking
-    if (getLockedTarget(player, [e]) === e) {
-      ctx.strokeStyle = "lime";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(e.x - camera.x, e.y - camera.y, ENEMY_SIZE, 0, Math.PI * 2);
-      ctx.stroke();
-    }
+    
   });
 }
 
@@ -1383,6 +1397,7 @@ function render() {
   drawAllWingTrails();
   renderAllies();
   renderEnemies();
+  renderMissileLockLine(); // ✅ Add this
   renderFlares();
   renderExplosions(); // BOOM
   renderAllyBullets();
