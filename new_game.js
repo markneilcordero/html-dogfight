@@ -294,6 +294,9 @@ const SPAWN_ALLY_Y = WORLD_HEIGHT - 300;
 const SPAWN_ENEMY_X = 200;
 const SPAWN_ENEMY_Y = 200;
 
+let joyX = 0;
+let joyY = 0;
+
 
 for (let i = 0; i < ENEMY_COUNT; i++) {
   enemies.push({
@@ -692,6 +695,28 @@ function updatePlayer() {
   if (missileCooldown > 0) missileCooldown--;
   if (flareCooldown > 0) flareCooldown--;
 }
+
+function updatePlayerJoystick() {
+  const magnitude = Math.hypot(joyX, joyY);
+  if (magnitude > 0.2) {
+    const desiredAngle = Math.atan2(joyY, joyX); // joystick gives direction
+    let diff = desiredAngle - player.angle;
+
+    while (diff > Math.PI) diff -= 2 * Math.PI;
+    while (diff < -Math.PI) diff += 2 * Math.PI;
+
+    // Smoothly rotate toward the joystick direction
+    player.angle += clamp(diff, -0.08, 0.08);
+
+    // Apply throttle based on joystick forward push
+    player.throttleTarget = clamp(magnitude, 0.2, 1.0);
+  } else {
+    // No strong input? Idle
+    player.throttleTarget = 0.2;
+  }
+}
+
+
 
 function updateBullets() {
   for (let i = bullets.length - 1; i >= 0; i--) {
