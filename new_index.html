@@ -18,12 +18,23 @@
         background-color: #111;
       }
 
+      #controls {
+  position: fixed;
+  bottom: 60px;
+  right: 100px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* ← Clean spacing between all buttons */
+}
+
+
       #controls button,
       #throttleControls button {
         background: rgba(255, 255, 255, 0.05);
         border: 2px solid #444;
         border-radius: 12px;
-        padding: 10px;
+        padding: 8px;
         cursor: pointer;
         box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
         transition: all 0.1s ease-in-out;
@@ -77,47 +88,65 @@
         -webkit-user-drag: none;
         user-select: none;
       }
+      #throttleControls {
+  position: fixed;
+  bottom: 60px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* Adds spacing between Up/Down buttons */
+}
+
     </style>
   </head>
   <body>
     <canvas id="gameCanvas"></canvas>
-    <button id="restartBtn" style="
-  display: none;
-  position: fixed;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  padding: 16px 32px;
-  font-size: 20px;
-  background: red;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  z-index: 9999;
-  cursor: pointer;
-">
-  🔄 Restart Game
-</button>
+    <button
+      id="restartBtn"
+      style="
+        display: none;
+        position: fixed;
+        top: 40%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 16px 32px;
+        font-size: 20px;
+        background: red;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        z-index: 9999;
+        cursor: pointer;
+      "
+    >
+      🔄 Restart Game
+    </button>
 
     <!-- Controls: FIRE, MISSILE, FLARE -->
     <div
       id="controls"
-      style="position: fixed; bottom: 140px; right: 20px; z-index: 1000"
     >
-      <button id="flareBtn" style="padding: 10px">
-        <img src="images/shootflare.png" alt="Flare" width="32" height="32" />
+      <button
+        id="autopilotBtn"
+        style="padding: 10px;"
+        title="Toggle Autopilot"
+      >
+        <img src="images/ai.png" alt="Autopilot" width="32" height="32" />
       </button>
-      <button id="missileBtn" style="padding: 10px; margin-bottom: 10px">
+
+
+      </button>
+      <button id="fireBtn" style="padding: 10px;">
+        <img src="images/shootbullet.png" alt="Fire" width="32" height="32" />
+      </button>
+      <button id="missileBtn" style="padding: 10px;">
         <img
           src="images/shootmissile.png"
           alt="Missile"
           width="32"
           height="32"
         />
-      </button>
-      <button id="fireBtn" style="padding: 10px; margin-bottom: 10px">
-        <img src="images/shootbullet.png" alt="Fire" width="32" height="32" />
-      </button>
     </div>
 
     <div
@@ -147,15 +176,17 @@
     </div>
     <div
       id="throttleControls"
-      style="position: fixed; bottom: 20px; right: 20px; z-index: 1000"
     >
+    <button id="flareBtn" style="padding: 10px">
+      <img src="images/shootflare.png" alt="Flare" width="32" height="32" />
+    </button>
       <button
         id="throttleUpBtn"
-        style="padding: 10px 20px; display: block; margin-bottom: 10px"
+        style="padding: 20px 20px; display: block;"
       >
         🔼
       </button>
-      <button id="throttleDownBtn" style="padding: 10px 20px; display: block">
+      <button id="throttleDownBtn" style="padding: 20px 20px; display: block">
         🔽
       </button>
     </div>
@@ -254,6 +285,16 @@
         if (e.target.closest("button") || e.target.tagName === "IMG") {
           e.preventDefault();
         }
+      });
+    </script>
+    <script>
+      const autopilotBtn = document.getElementById("autopilotBtn");
+
+      autopilotBtn.addEventListener("click", () => {
+        autopilotEnabled = !autopilotEnabled;
+        autopilotBtn.style.border = autopilotEnabled
+          ? "2px solid lime"
+          : "2px solid #444";
       });
     </script>
   </body>
