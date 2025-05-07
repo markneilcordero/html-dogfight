@@ -97,6 +97,11 @@
   flex-direction: column;
   gap: 12px; /* Adds spacing between Up/Down buttons */
 }
+button,
+#joystick,
+#thumb {
+  touch-action: none;
+}
 
     </style>
   </head>
@@ -264,6 +269,19 @@
       downBtn.addEventListener("touchstart", () => startThrottle(-1));
       upBtn.addEventListener("touchend", stopThrottle);
       downBtn.addEventListener("touchend", stopThrottle);
+      document.getElementById("fireBtn").addEventListener("touchstart", (e) => {
+  e.preventDefault();
+  shootBullet(); // Replace with your actual shooting function
+});
+document.getElementById("missileBtn").addEventListener("touchstart", (e) => {
+  e.preventDefault();
+  fireMissile(); // Replace with your missile firing logic
+});
+document.getElementById("flareBtn").addEventListener("touchstart", (e) => {
+  e.preventDefault();
+  createFlare(player); // Assuming this is your flare function
+});
+
     </script>
     <script>
       // Prevent long press context menu on all buttons and images
