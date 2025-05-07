@@ -199,8 +199,8 @@ const MIN_PLANE_SPEED = 3;
 const MAX_PLANE_SPEED = 5;
 
 const player = {
-  x: WORLD_WIDTH / 2,
-  y: WORLD_HEIGHT / 2,
+  x: WORLD_WIDTH - 300, // near bottom-right
+  y: WORLD_HEIGHT - 300,
   angle: 0,
   speed: 0,
   maxSpeed: MAX_PLANE_SPEED,
@@ -287,8 +287,8 @@ let autopilotEnabled = false; // 🔁 You can toggle this via a key or button
 
 for (let i = 0; i < ENEMY_COUNT; i++) {
   enemies.push({
-    x: Math.random() * WORLD_WIDTH,
-    y: Math.random() * WORLD_HEIGHT,
+    x: 200 + Math.random() * 100, // Top-left cluster
+    y: 200 + Math.random() * 100,
     angle: Math.random() * Math.PI * 2,
     speed: 2,
     health: ENEMY_HEALTH,
@@ -307,8 +307,8 @@ for (let i = 0; i < ENEMY_COUNT; i++) {
 
 for (let i = 0; i < ALLY_COUNT; i++) {
   allies.push({
-    x: Math.random() * WORLD_WIDTH,
-    y: Math.random() * WORLD_HEIGHT,
+    x: WORLD_WIDTH - 300 + Math.random() * 100, // Bottom-right cluster
+    y: WORLD_HEIGHT - 300 + Math.random() * 100,
     angle: Math.random() * Math.PI * 2,
     speed: 2.5,
     health: ALLY_HEALTH,
@@ -1677,9 +1677,9 @@ function restartGame() {
   score = 0;
   level = 1;
 
-  // Reset player
-  player.x = WORLD_WIDTH / 2;
-  player.y = WORLD_HEIGHT / 2;
+  // Reset player at bottom-right
+  player.x = WORLD_WIDTH - 300;
+  player.y = WORLD_HEIGHT - 300;
   player.health = 100;
   player.angle = 0;
   player.throttle = 1.0;
@@ -1695,11 +1695,11 @@ function restartGame() {
   enemies.length = 0;
   allies.length = 0;
 
-  // Respawn enemies
+  // Respawn enemies at top-left
   for (let i = 0; i < ENEMY_COUNT; i++) {
     enemies.push({
-      x: Math.random() * WORLD_WIDTH,
-      y: Math.random() * WORLD_HEIGHT,
+      x: 200 + Math.random() * 100,
+      y: 200 + Math.random() * 100,
       angle: Math.random() * Math.PI * 2,
       speed: 2,
       health: ENEMY_HEALTH,
@@ -1719,11 +1719,11 @@ function restartGame() {
 
   enemiesRemaining = ENEMY_COUNT;
 
-  // Respawn allies
+  // Respawn allies near bottom-right
   for (let i = 0; i < ALLY_COUNT; i++) {
     allies.push({
-      x: Math.random() * WORLD_WIDTH,
-      y: Math.random() * WORLD_HEIGHT,
+      x: WORLD_WIDTH - 300 + Math.random() * 100,
+      y: WORLD_HEIGHT - 300 + Math.random() * 100,
       angle: Math.random() * Math.PI * 2,
       speed: 2.5,
       health: ALLY_HEALTH,
