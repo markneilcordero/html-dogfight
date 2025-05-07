@@ -550,11 +550,36 @@ function updateBullets() {
   // Remove dead enemies
   for (let i = enemies.length - 1; i >= 0; i--) {
     if (enemies[i].health <= 0) {
-      enemies.splice(i, 1);
+      const deadEnemy = enemies.splice(i, 1)[0];
       enemiesRemaining--;
       score += 100;
+      spawnExplosion(deadEnemy.x, deadEnemy.y);
+  
+      // 🔁 Respawn after delay
+      setTimeout(() => {
+        enemies.push({
+          x: Math.random() * WORLD_WIDTH,
+          y: Math.random() * WORLD_HEIGHT,
+          angle: Math.random() * Math.PI * 2,
+          speed: 2 + level * 0.2,
+          health: ENEMY_HEALTH + level * 10,
+          turnTimer: Math.floor(Math.random() * 60),
+          image: enemyImage,
+          flareCooldown: 0,
+          missileCooldown: 0,
+          width: ENEMY_SIZE,
+          height: ENEMY_SIZE,
+          orbitAngle: Math.random() * Math.PI * 2,
+          orbitDistance: 250 + Math.random() * 100,
+          orbitSpeed: 0.01 + Math.random() * 0.01,
+          throttle: 1.0,
+          throttleTarget: 1.0,
+        });
+        enemiesRemaining++;
+      }, 2000); // 2-second delay
     }
   }
+  
 }
 
 function updateMissiles() {
@@ -642,6 +667,36 @@ function updateAllyBullets() {
       allyBullets.splice(i, 1);
     }
   }
+
+  for (let i = allies.length - 1; i >= 0; i--) {
+    if (allies[i].health <= 0) {
+      const deadAlly = allies.splice(i, 1)[0];
+      spawnExplosion(deadAlly.x, deadAlly.y);
+  
+      // 🔁 Respawn after delay
+      setTimeout(() => {
+        allies.push({
+          x: Math.random() * WORLD_WIDTH,
+          y: Math.random() * WORLD_HEIGHT,
+          angle: Math.random() * Math.PI * 2,
+          speed: 2.5,
+          health: ALLY_HEALTH,
+          cooldown: 0,
+          missileCooldown: 0,
+          image: allyImage,
+          flareCooldown: 0,
+          throttle: 1.0,
+          throttleTarget: 1.0,
+          width: ALLY_SIZE,
+          height: ALLY_SIZE,
+          orbitAngle: Math.random() * Math.PI * 2,
+          orbitDistance: 250 + Math.random() * 100,
+          orbitSpeed: 0.01 + Math.random() * 0.01,
+        });
+      }, 2000); // 2-second delay
+    }
+  }
+  
 }
 
 function updateFlares() {
