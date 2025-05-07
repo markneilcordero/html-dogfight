@@ -217,9 +217,7 @@ const player = {
   orbitSpeed: 0.015                          // ✅ Add this
 };
 
-
-let lives = 3;
-let isGameOver = false;
+let kills = 0;
 let score = 0;
 let isPaused = false;
 
@@ -597,25 +595,23 @@ if (target && (typeof target.health === "number" || target === player || flares.
 
         if (typeof target.health === "number" && target.health <= 0) {
           spawnExplosion(target.x, target.y);
+          
+          if (m.ownerType === "player" && enemies.includes(target)) {
+            kills++;
+          }          
         
           if (target === player) {
-            lives--;
-            if (lives > 0) {
-              player.x = SPAWN_PLAYER_X;
-              player.y = SPAWN_PLAYER_Y;
-              player.health = 100;
-        
-              // Clear missiles still targeting the player
-              for (let i = missiles.length - 1; i >= 0; i--) {
-                if (missiles[i].target === player) {
-                  missiles.splice(i, 1);
-                }
+            player.x = SPAWN_PLAYER_X;
+            player.y = SPAWN_PLAYER_Y;
+            player.health = 100;
+          
+            // Clear missiles still targeting the player
+            for (let i = missiles.length - 1; i >= 0; i--) {
+              if (missiles[i].target === player) {
+                missiles.splice(i, 1);
               }
-            } else {
-              isGameOver = true;
-              autopilotEnabled = false;
             }
-          }
+          }          
         }
         
         
@@ -729,7 +725,6 @@ function runAutopilot(entity, targetList, ownerType = "player") {
 }
 
 function updatePlayer() {
-  if (isGameOver) return;
   if (autopilotEnabled) {
     runAutopilot(player, enemies, "player");
     updateWingTrails(player);
@@ -921,15 +916,10 @@ function updateEnemyBullets() {
       player.health = Math.max(0, player.health - ENEMY_BULLET_DAMAGE);
       spawnExplosion(b.x, b.y, 0.4);
       if (player.health <= 0) {
-        lives--;
-        if (lives > 0) {
-          player.x = SPAWN_PLAYER_X;
-          player.y = SPAWN_PLAYER_Y;
-          player.health = 100;
-        } else {
-          isGameOver = true;
-        }
-      }
+        player.x = SPAWN_PLAYER_X;
+        player.y = SPAWN_PLAYER_Y;
+        player.health = 100;
+      }      
 
       enemyBullets.splice(i, 1);
       continue;
@@ -1630,26 +1620,18 @@ function renderHUD() {
   ctx.fillStyle = "#00ffcc";
   ctx.fillText(`Throttle: ${((player.speed / player.maxSpeed) * 100).toFixed(0)}%`, 20, 30);
   ctx.fillText(`Health: ${player.health}%`, 20, 55);
+  ctx.fillText(`Kills: ${kills}`, 20, 105);
   ctx.fillText(`Score: ${score}`, 20, 130);
 
   const now = performance.now();
   const fps = Math.round(1000 / (now - lastFrameTime));
   lastFrameTime = now;
   ctx.fillText(`FPS: ${fps}`, 20, 80);
-  ctx.fillText(`Lives: ${lives}`, 20, 105);
   ctx.fillText(`Level: ${level}`, 20, 155);
 
   const restartBtn = document.getElementById("restartBtn");
 
-  if (isGameOver) {
-    ctx.fillStyle = "red";
-    ctx.font = "48px sans-serif";
-    ctx.fillText("GAME OVER", canvas.width / 2 - 120, canvas.height / 2);
-
-    restartBtn.style.display = "block"; // ✅ Show button
-  } else {
-    restartBtn.style.display = "none"; // ✅ Hide button when playing
-  }
+  restartBtn.style.display = "none";
 
   if (isPaused && !isGameOver) {
     ctx.fillStyle = "yellow";
@@ -1812,7 +1794,7 @@ function restartGame() {
   // Reset state flags
   isGameOver = false;
   isPaused = false;
-  lives = 3;
+  kills = 0;
   score = 0;
   level = 1;
 
