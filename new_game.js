@@ -391,6 +391,96 @@ document.getElementById("restartBtn").addEventListener("click", () => {
   restartGame();
 });
 
+function setupUI() {
+  const joystick = document.getElementById("joystick");
+  const thumb = document.getElementById("thumb");
+
+  joystick.addEventListener("touchmove", (e) => {
+    const touch = e.touches[0];
+    const rect = joystick.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = touch.clientX - centerX;
+    const dy = touch.clientY - centerY;
+    joyX = dx / 40;
+    joyY = dy / 40;
+
+    const maxDistance = 30;
+    const angle = Math.atan2(dy, dx);
+    const distance = Math.min(Math.hypot(dx, dy), maxDistance);
+    thumb.style.left = `${30 + Math.cos(angle) * distance}px`;
+    thumb.style.top = `${30 + Math.sin(angle) * distance}px`;
+
+    e.preventDefault();
+  }, { passive: false });
+
+  joystick.addEventListener("touchend", () => {
+    joyX = 0;
+    joyY = 0;
+    thumb.style.left = "30px";
+    thumb.style.top = "30px";
+  });
+
+  const upBtn = document.getElementById("throttleUpBtn");
+  const downBtn = document.getElementById("throttleDownBtn");
+  let throttleInterval = null;
+
+  function startThrottle(direction) {
+    if (throttleInterval) clearInterval(throttleInterval);
+    throttleInterval = setInterval(() => {
+      player.throttleTarget = clamp(player.throttleTarget + direction * 0.05, 0.2, 1.0);
+    }, 30);
+  }
+
+  function stopThrottle() {
+    clearInterval(throttleInterval);
+    throttleInterval = null;
+  }
+
+  upBtn.addEventListener("mousedown", () => startThrottle(1));
+  downBtn.addEventListener("mousedown", () => startThrottle(-1));
+  upBtn.addEventListener("mouseup", stopThrottle);
+  downBtn.addEventListener("mouseup", stopThrottle);
+  upBtn.addEventListener("mouseleave", stopThrottle);
+  downBtn.addEventListener("mouseleave", stopThrottle);
+  upBtn.addEventListener("touchstart", () => startThrottle(1));
+  downBtn.addEventListener("touchstart", () => startThrottle(-1));
+  upBtn.addEventListener("touchend", stopThrottle);
+  downBtn.addEventListener("touchend", stopThrottle);
+
+  document.getElementById("fireBtn").addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    shootBullet(); // or keys[" "] = true
+  });
+
+  document.getElementById("missileBtn").addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    fireMissile(); // or keys["m"] = true
+  });
+
+  document.getElementById("flareBtn").addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    createFlare(player);
+  });
+
+  document.getElementById("restartBtn").addEventListener("click", () => {
+    restartGame();
+  });
+
+  document.addEventListener("contextmenu", (e) => {
+    if (e.target.closest("button") || e.target.tagName === "IMG") {
+      e.preventDefault();
+    }
+  });
+
+  const autopilotBtn = document.getElementById("autopilotBtn");
+  autopilotBtn.addEventListener("click", () => {
+    autopilotEnabled = !autopilotEnabled;
+    autopilotBtn.style.border = autopilotEnabled ? "2px solid lime" : "2px solid #444";
+  });
+}
+
+
 // ======================
 // [6] Update Logic
 // ======================
@@ -1778,11 +1868,10 @@ function restartGame() {
 }
 
 function gameLoop() {
-  if (!isPaused && !isGameOver) {
-    update();
-  }
+  update();
   render();
   requestAnimationFrame(gameLoop);
 }
-
 gameLoop();
+
+setupUI();
