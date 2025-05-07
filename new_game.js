@@ -1138,22 +1138,6 @@ function renderWorld() {
     ctx.fillStyle = "#111";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
-  
-
-  // Optional: grid lines
-  ctx.strokeStyle = "rgba(255, 255, 255, 1)";
-  for (let x = 0; x < WORLD_WIDTH; x += 200) {
-    ctx.beginPath();
-    ctx.moveTo(x - camera.x, 0 - camera.y);
-    ctx.lineTo(x - camera.x, WORLD_HEIGHT - camera.y);
-    ctx.stroke();
-  }
-  for (let y = 0; y < WORLD_HEIGHT; y += 200) {
-    ctx.beginPath();
-    ctx.moveTo(0 - camera.x, y - camera.y);
-    ctx.lineTo(WORLD_WIDTH - camera.x, y - camera.y);
-    ctx.stroke();
-  }
 
   // Draw player
   ctx.save();
