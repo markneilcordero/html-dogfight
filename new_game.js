@@ -285,10 +285,20 @@ const ENEMY_MISSILE_DAMAGE = 100;
 
 let autopilotEnabled = false; // 🔁 You can toggle this via a key or button
 
+const SPAWN_PLAYER_X = WORLD_WIDTH - 300;
+const SPAWN_PLAYER_Y = WORLD_HEIGHT - 300;
+
+const SPAWN_ALLY_X = WORLD_WIDTH - 300;
+const SPAWN_ALLY_Y = WORLD_HEIGHT - 300;
+
+const SPAWN_ENEMY_X = 200;
+const SPAWN_ENEMY_Y = 200;
+
+
 for (let i = 0; i < ENEMY_COUNT; i++) {
   enemies.push({
-    x: 200 + Math.random() * 100, // Top-left cluster
-    y: 200 + Math.random() * 100,
+    x: SPAWN_ENEMY_X + Math.random() * 100,
+    y: SPAWN_ENEMY_Y + Math.random() * 100,
     angle: Math.random() * Math.PI * 2,
     speed: 2,
     health: ENEMY_HEALTH,
@@ -307,8 +317,8 @@ for (let i = 0; i < ENEMY_COUNT; i++) {
 
 for (let i = 0; i < ALLY_COUNT; i++) {
   allies.push({
-    x: WORLD_WIDTH - 300 + Math.random() * 100, // Bottom-right cluster
-    y: WORLD_HEIGHT - 300 + Math.random() * 100,
+    x: SPAWN_ALLY_X + Math.random() * 100,
+    y: SPAWN_ALLY_Y + Math.random() * 100,
     angle: Math.random() * Math.PI * 2,
     speed: 2.5,
     health: ALLY_HEALTH,
@@ -495,8 +505,8 @@ function updateMissile(m, index) {
           if (target === player) {
             lives--;
             if (lives > 0) {
-              player.x = WORLD_WIDTH / 2;
-              player.y = WORLD_HEIGHT / 2;
+              player.x = SPAWN_PLAYER_X;
+              player.y = SPAWN_PLAYER_Y;
               player.health = 100;
             } else {
               isGameOver = true;
@@ -784,8 +794,8 @@ function updateEnemyBullets() {
       if (player.health <= 0) {
         lives--;
         if (lives > 0) {
-          player.x = WORLD_WIDTH / 2;
-          player.y = WORLD_HEIGHT / 2;
+          player.x = SPAWN_PLAYER_X;
+          player.y = SPAWN_PLAYER_Y;
           player.health = 100;
         } else {
           isGameOver = true;
