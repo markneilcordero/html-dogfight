@@ -227,18 +227,6 @@
         thumb.style.left = "30px";
         thumb.style.top = "30px";
       });
-
-      function updatePlayerJoystick() {
-        if (Math.abs(joyX) > 0.1) {
-          player.angle += joyX * 0.05;
-        }
-        if (joyY < -0.2) {
-          player.throttleTarget = Math.min(1.0, player.throttleTarget + 0.02);
-        }
-        if (joyY > 0.2) {
-          player.throttleTarget = Math.max(0.2, player.throttleTarget - 0.02);
-        }
-      }
     </script>
     <script>
       let throttleInterval = null;
