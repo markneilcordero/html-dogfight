@@ -31,19 +31,46 @@ function clamp(value, min, max) {
 }
 
 function createFlare(fromPlane) {
-  const rearAngle = fromPlane.angle + Math.PI; // rear direction
+  const rearAngle = fromPlane.angle + Math.PI;
+  const pairSpread = 0.4; // 🧠 angle between two flares in radians
   const speed = 2;
+  const flareSize = 12;
+  const flareCount = 10; // 10 pairs = 20 flares total
+  let pairsEmitted = 0;
 
-  flares.push({
-    x: fromPlane.x,
-    y: fromPlane.y,
-    vx: Math.cos(rearAngle) * speed,
-    vy: Math.sin(rearAngle) * speed,
-    timer: FLARE_DURATION,
-    trail: [],
-  });
+  const interval = setInterval(() => {
+    if (pairsEmitted >= flareCount) {
+      clearInterval(interval);
+      return;
+    }
 
-  playSound("flare");
+    // Left flare
+    let leftAngle = rearAngle - pairSpread / 2;
+    flares.push({
+      x: fromPlane.x,
+      y: fromPlane.y,
+      vx: Math.cos(leftAngle) * speed,
+      vy: Math.sin(leftAngle) * speed,
+      timer: FLARE_DURATION,
+      size: flareSize,
+      trail: [{ x: fromPlane.x, y: fromPlane.y, alpha: 1.0 }],
+    });
+
+    // Right flare
+    let rightAngle = rearAngle + pairSpread / 2;
+    flares.push({
+      x: fromPlane.x,
+      y: fromPlane.y,
+      vx: Math.cos(rightAngle) * speed,
+      vy: Math.sin(rightAngle) * speed,
+      timer: FLARE_DURATION,
+      size: flareSize,
+      trail: [{ x: fromPlane.x, y: fromPlane.y, alpha: 1.0 }],
+    });
+
+    playSound("flare");
+    pairsEmitted++;
+  }, 100); // delay between each pair
 }
 
 function getLockedTarget(source, targets) {
@@ -145,6 +172,9 @@ const MISSILE_CONE = Math.PI / 6; // ~30°
 const MISSILE_DAMAGE = 50;
 let missileCooldown = 0;
 
+let flareCooldown = 0;
+const FLARE_COOLDOWN_MAX = 300; // ~5 seconds @ 60 FPS
+
 const enemies = [];
 const ENEMY_COUNT = 5;
 const ENEMY_SIZE = 50;
@@ -180,6 +210,7 @@ for (let i = 0; i < ENEMY_COUNT; i++) {
     health: ENEMY_HEALTH,
     turnTimer: Math.floor(Math.random() * 60),
     image: enemyImage,
+    flareCooldown: 0,
   });
 }
 
@@ -193,6 +224,7 @@ for (let i = 0; i < ALLY_COUNT; i++) {
     cooldown: 0,
     missileCooldown: 0,
     image: allyImage,
+    flareCooldown: 0,
   });
 }
 
@@ -208,8 +240,9 @@ window.addEventListener("keydown", (e) => {
 });
 
 window.addEventListener("keydown", (e) => {
-  if (e.key.toLowerCase() === "f") {
+  if (e.key.toLowerCase() === "f" && flareCooldown <= 0) {
     dropFlareFromPlayer();
+    flareCooldown = FLARE_COOLDOWN_MAX;
   }
 });
 
@@ -225,9 +258,12 @@ document
 document
   .getElementById("missileBtn")
   .addEventListener("touchend", () => (keys["m"] = false));
-document
-  .getElementById("flareBtn")
-  .addEventListener("click", dropFlareFromPlayer);
+document.getElementById("flareBtn").addEventListener("click", () => {
+  if (flareCooldown <= 0) {
+    dropFlareFromPlayer();
+    flareCooldown = FLARE_COOLDOWN_MAX;
+  }
+});
 
 // ======================
 // [6] Update Logic
@@ -315,6 +351,7 @@ function updatePlayer() {
     }
   }
   if (missileCooldown > 0) missileCooldown--;
+  if (flareCooldown > 0) flareCooldown--;
 }
 
 function updateBullets() {
@@ -489,15 +526,19 @@ function updateFlares() {
     const f = flares[i];
     f.timer--;
 
+    // ✅ Trail logic
+    if (!f.trail) f.trail = [];
+    f.trail.push({
+      x: Math.round(f.x),
+      y: Math.round(f.y),
+      alpha: 1.0,
+    }); // <-- updated line
+    if (f.trail.length > 15) f.trail.shift();
+    f.trail.forEach((p) => (p.alpha *= 0.92));
+
     // ✅ Apply velocity to move the flare
     f.x += f.vx;
     f.y += f.vy;
-
-    // ✅ Trail logic
-    if (!f.trail) f.trail = [];
-    f.trail.push({ x: f.x, y: f.y, alpha: 1.0 });
-    if (f.trail.length > 15) f.trail.shift();
-    f.trail.forEach((p) => (p.alpha *= 0.92));
 
     if (f.timer <= 0) {
       flares.splice(i, 1);
@@ -517,6 +558,7 @@ function updateCamera() {
 function updateEnemies() {
   enemies.forEach((enemy) => {
     // === Missile Dodge Check ===
+    if (enemy.flareCooldown > 0) enemy.flareCooldown--;
     const incoming = missiles.find((m) => m.target === enemy);
     if (incoming) {
       // Dodge by turning away
@@ -524,8 +566,12 @@ function updateEnemies() {
       enemy.angle += 0.1 * dodgeDir;
 
       // Drop flare occasionally
-      if (Math.random() < 0.02) {
+      if (enemy.flareCooldown > 0) enemy.flareCooldown--;
+
+      if (incoming && enemy.flareCooldown <= 0) {
         createFlare(enemy);
+        enemy.flareCooldown = 300;
+        playSound("flare");
       }
     } else {
       // === Chase player ===
@@ -582,6 +628,7 @@ function updateEnemies() {
 
 function updateAllies() {
   allies.forEach((ally) => {
+    if (ally.flareCooldown > 0) ally.flareCooldown--;
     // === Lock onto closest opponent ===
     let closest = null;
     let closestDist = Infinity;
@@ -633,8 +680,9 @@ function updateAllies() {
 
     // === Drop flare if missile locked ===
     const incoming = missiles.find((m) => m.target === ally);
-    if (incoming && Math.random() < 0.02) {
+    if (incoming && ally.flareCooldown <= 0) {
       createFlare(ally);
+      ally.flareCooldown = 300;
       playSound("flare");
     }
 
@@ -747,7 +795,7 @@ function renderFlareTrail(trail) {
     const p = trail[i];
     const radius = 3 * p.alpha;
     ctx.beginPath();
-    ctx.fillStyle = `rgba(255, 150, 50, ${p.alpha})`;
+    ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
     ctx.arc(p.x - camera.x, p.y - camera.y, radius, 0, Math.PI * 2);
     ctx.fill();
   }
@@ -863,19 +911,16 @@ function renderMissiles() {
 
 function renderFlares() {
   flares.forEach((f) => {
-    // 🔥 draw trail first
-    if (f.trail) {
-      renderFlareTrail(f.trail);
-    }
+    if (f.trail) renderFlareTrail(f.trail);
 
-    const size = 24;
+    const size = f.size || 24; // use custom size or default
     ctx.save();
     ctx.translate(f.x - camera.x, f.y - camera.y);
 
     if (flareImage.complete && flareImage.naturalWidth !== 0) {
       ctx.drawImage(flareImage, -size / 2, -size / 2, size, size);
     } else {
-      ctx.fillStyle = "orange";
+      ctx.fillStyle = "white";
       ctx.beginPath();
       ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
       ctx.fill();
@@ -896,7 +941,6 @@ function spawnExplosion(x, y) {
 function dropFlareFromPlayer() {
   createFlare(player);
 }
-
 
 function updateExplosions() {
   for (let i = explosions.length - 1; i >= 0; i--) {
