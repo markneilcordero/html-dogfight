@@ -83,7 +83,6 @@ function createFlare(fromPlane) {
   }, 100);
 }
 
-
 function getLockedTarget(source, targets) {
   for (const t of targets) {
     const dx = t.x - source.x;
@@ -212,9 +211,9 @@ const player = {
   health: 100,
   throttle: 1.0,
   throttleTarget: 1.0,
-  orbitAngle: Math.random() * Math.PI * 2,   // ✅ Add this
-  orbitDistance: 300,                        // ✅ Add this
-  orbitSpeed: 0.015                          // ✅ Add this
+  orbitAngle: Math.random() * Math.PI * 2, // ✅ Add this
+  orbitDistance: 300, // ✅ Add this
+  orbitSpeed: 0.015, // ✅ Add this
 };
 
 let kills = 0;
@@ -294,7 +293,6 @@ const SPAWN_ENEMY_Y = 200;
 
 let joyX = 0;
 let joyY = 0;
-
 
 for (let i = 0; i < ENEMY_COUNT; i++) {
   enemies.push({
@@ -384,7 +382,7 @@ document.getElementById("flareBtn").addEventListener("click", () => {
     dropFlareFromPlayer();
     flareCooldown = FLARE_COOLDOWN_MAX;
   }
-}); 
+});
 document.getElementById("restartBtn").addEventListener("click", () => {
   restartGame();
 });
@@ -393,24 +391,28 @@ function setupUI() {
   const joystick = document.getElementById("joystick");
   const thumb = document.getElementById("thumb");
 
-  joystick.addEventListener("touchmove", (e) => {
-    const touch = e.touches[0];
-    const rect = joystick.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const dx = touch.clientX - centerX;
-    const dy = touch.clientY - centerY;
-    joyX = dx / 40;
-    joyY = dy / 40;
+  joystick.addEventListener(
+    "touchmove",
+    (e) => {
+      const touch = e.touches[0];
+      const rect = joystick.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const dx = touch.clientX - centerX;
+      const dy = touch.clientY - centerY;
+      joyX = dx / 40;
+      joyY = dy / 40;
 
-    const maxDistance = 30;
-    const angle = Math.atan2(dy, dx);
-    const distance = Math.min(Math.hypot(dx, dy), maxDistance);
-    thumb.style.left = `${30 + Math.cos(angle) * distance}px`;
-    thumb.style.top = `${30 + Math.sin(angle) * distance}px`;
+      const maxDistance = 30;
+      const angle = Math.atan2(dy, dx);
+      const distance = Math.min(Math.hypot(dx, dy), maxDistance);
+      thumb.style.left = `${30 + Math.cos(angle) * distance}px`;
+      thumb.style.top = `${30 + Math.sin(angle) * distance}px`;
 
-    e.preventDefault();
-  }, { passive: false });
+      e.preventDefault();
+    },
+    { passive: false }
+  );
 
   joystick.addEventListener("touchend", () => {
     joyX = 0;
@@ -426,7 +428,11 @@ function setupUI() {
   function startThrottle(direction) {
     if (throttleInterval) clearInterval(throttleInterval);
     throttleInterval = setInterval(() => {
-      player.throttleTarget = clamp(player.throttleTarget + direction * 0.05, 0.2, 1.0);
+      player.throttleTarget = clamp(
+        player.throttleTarget + direction * 0.05,
+        0.2,
+        1.0
+      );
     }, 30);
   }
 
@@ -474,10 +480,11 @@ function setupUI() {
   const autopilotBtn = document.getElementById("autopilotBtn");
   autopilotBtn.addEventListener("click", () => {
     autopilotEnabled = !autopilotEnabled;
-    autopilotBtn.style.border = autopilotEnabled ? "2px solid lime" : "2px solid #444";
+    autopilotBtn.style.border = autopilotEnabled
+      ? "2px solid lime"
+      : "2px solid #444";
   });
 }
-
 
 // ======================
 // [6] Update Logic
@@ -540,7 +547,7 @@ function updateMissile(m, index) {
     const dy = f.y - m.y;
     const dist = Math.hypot(dx, dy);
     return dist < 300 && f.ownerType !== m.ownerType; // ✅ Only target other team flares
-  });  
+  });
 
   if (possibleFlares.length > 0) {
     possibleFlares.sort((a, b) => {
@@ -572,13 +579,16 @@ function updateMissile(m, index) {
 
   // === Impact
   let dist = Infinity;
-if (target && (typeof target.health === "number" || target === player || flares.includes(target))) {
-  dist = Math.hypot(m.x - target.x, m.y - target.y);
-}
-
+  if (
+    target &&
+    (typeof target.health === "number" ||
+      target === player ||
+      flares.includes(target))
+  ) {
+    dist = Math.hypot(m.x - target.x, m.y - target.y);
+  }
 
   if (dist < 40 || m.lifetime <= 0) {
-
     if (target && typeof target.health === "number") {
       // Apply damage only if target is valid and opposite type
       const isFriendlyFire =
@@ -595,26 +605,24 @@ if (target && (typeof target.health === "number" || target === player || flares.
 
         if (typeof target.health === "number" && target.health <= 0) {
           spawnExplosion(target.x, target.y);
-          
+
           if (m.ownerType === "player" && enemies.includes(target)) {
             kills++;
-          }          
-        
+          }
+
           if (target === player) {
             player.x = SPAWN_PLAYER_X;
             player.y = SPAWN_PLAYER_Y;
             player.health = 100;
-          
+
             // Clear missiles still targeting the player
             for (let i = missiles.length - 1; i >= 0; i--) {
               if (missiles[i].target === player) {
                 missiles.splice(i, 1);
               }
             }
-          }          
+          }
         }
-        
-        
       }
     }
     spawnExplosion(m.x, m.y);
@@ -647,7 +655,31 @@ function runAutopilot(entity, targetList, ownerType = "player") {
   entity.throttleTarget = 1.0;
   entity.throttle += (entity.throttleTarget - entity.throttle) * 0.1;
   entity.throttle = clamp(entity.throttle, 0.5, 1.0);
-  entity.speed = MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * entity.throttle;
+  entity.speed =
+    MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * entity.throttle;
+
+  // === [NEW] Separation: Avoid clustering with nearby allies/opponents
+  const others =
+    ownerType === "ally" ? allies : ownerType === "enemy" ? enemies : [];
+  const SEPARATION_RADIUS = 1000;
+  let repulseX = 0;
+  let repulseY = 0;
+
+  for (const other of others) {
+    if (other === entity || other.health <= 0) continue;
+    const dx = entity.x - other.x;
+    const dy = entity.y - other.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 0 && dist < SEPARATION_RADIUS) {
+      const force = (SEPARATION_RADIUS - dist) / SEPARATION_RADIUS;
+      repulseX += (dx / dist) * force;
+      repulseY += (dy / dist) * force;
+    }
+  }
+
+  // Apply separation repulsion
+  entity.x += repulseX * 0.5;
+  entity.y += repulseY * 0.5;
 
   entity.x += Math.cos(entity.angle) * entity.speed;
   entity.y += Math.sin(entity.angle) * entity.speed;
@@ -815,8 +847,6 @@ function updatePlayerJoystick() {
   }
 }
 
-
-
 function updateBullets() {
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
@@ -899,7 +929,6 @@ function updateMissiles() {
   }
 }
 
-
 function updateEnemyBullets() {
   for (let i = enemyBullets.length - 1; i >= 0; i--) {
     const b = enemyBullets[i];
@@ -923,7 +952,7 @@ function updateEnemyBullets() {
         player.x = SPAWN_PLAYER_X;
         player.y = SPAWN_PLAYER_Y;
         player.health = 100;
-      }      
+      }
 
       enemyBullets.splice(i, 1);
       continue;
@@ -1043,212 +1072,13 @@ function updateCamera() {
 
 function updateEnemies() {
   enemies.forEach((enemy) => {
-    if (enemy.flareCooldown > 0) enemy.flareCooldown--;
-
-    // 🟣 Occasionally change throttle target for realism
-    if (Math.random() < 0.01) {
-      enemy.throttleTarget = 0.4 + Math.random() * 0.6;
-    }
-
-    // 🟡 Smoothly adjust throttle and apply to speed
-    enemy.throttle += (enemy.throttleTarget - enemy.throttle) * 0.05;
-    enemy.throttle = clamp(enemy.throttle, 0.2, 1.0);
-    enemy.speed =
-      MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * enemy.throttle;
-
-    // === Missile Dodge Check ===
-    const incoming = missiles.find((m) => m.target === enemy);
-    if (incoming) {
-      const dodgeDir = Math.random() > 0.5 ? 1 : -1;
-      enemy.angle += 0.1 * dodgeDir;
-
-      if (enemy.flareCooldown <= 0) {
-        createFlare(enemy);
-        enemy.flareCooldown = 300;
-        playSound("flare");
-      }
-    } else {
-      // === Chase player ===
-      // === Pick nearest target: player or any ally ===
-      let closestTarget = player;
-      let closestDist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
-
-      for (const ally of allies) {
-        const dist = Math.hypot(ally.x - enemy.x, ally.y - enemy.y);
-        if (dist < closestDist) {
-          closestTarget = ally;
-          closestDist = dist;
-        }
-      }
-
-      // === Orbit around the chosen target ===
-      orbitAroundTarget(enemy, closestTarget);
-
-      // === Firing bullets ===
-      enemy.cooldown--;
-      if (enemy.cooldown <= 0 && closestDist < 800) {
-        fireBullet({
-          origin: enemy,
-          angle: enemy.angle,
-          speed: ENEMY_BULLET_SPEED,
-          life: BULLET_LIFESPAN,
-          targetArray: enemyBullets,
-          spread: ENEMY_BULLET_SPREAD,
-          offset: 30,
-        });
-        enemy.cooldown = ENEMY_FIRE_COOLDOWN;
-      }
-
-      // === Fire missile if available
-      enemy.missileCooldown = enemy.missileCooldown || 0;
-      enemy.missileCooldown--;
-      if (enemy.missileCooldown <= 0 && closestDist < MISSILE_RANGE) {
-        const enemyTarget = getLockedTarget(enemy, [player, ...allies]);
-if (enemyTarget) {
-  createMissile({
-    x: enemy.x,
-    y: enemy.y,
-    angle: enemy.angle,
-    target: enemyTarget,
-    ownerType: "enemy",
-  });
-  enemy.missileCooldown = 240;
-}
-      }
-    }
-
-    avoidMapEdges(enemy);
-
-    // === Move Forward ===
-    enemy.x += Math.cos(enemy.angle) * enemy.speed;
-    enemy.y += Math.sin(enemy.angle) * enemy.speed;
-
-    updateWingTrails(enemy);
-
-    enemy.x = clamp(enemy.x, 0, WORLD_WIDTH);
-    enemy.y = clamp(enemy.y, 0, WORLD_HEIGHT);
-
-    // === Shooting ===
-    if (!enemy.cooldown) enemy.cooldown = 0;
-    enemy.cooldown--;
-    if (enemy.cooldown <= 0) {
-      const dx = player.x - enemy.x;
-      const dy = player.y - enemy.y;
-      const dist = Math.hypot(dx, dy);
-
-      if (dist < 800) {
-        fireBullet({
-          origin: enemy,
-          angle: enemy.angle,
-          speed: ENEMY_BULLET_SPEED,
-          life: BULLET_LIFESPAN,
-          targetArray: enemyBullets,
-          spread: ENEMY_BULLET_SPREAD,
-          offset: 30,
-        });
-        enemy.cooldown = ENEMY_FIRE_COOLDOWN;
-
-        if (!enemy.missileCooldown) enemy.missileCooldown = 0;
-        enemy.missileCooldown--;
-        if (enemy.missileCooldown <= 0 && dist < MISSILE_RANGE) {
-          createMissile({
-            x: enemy.x,
-            y: enemy.y,
-            angle: enemy.angle,
-            target: player,
-            ownerType: "enemy",
-          });
-          enemy.missileCooldown = 240;
-        }
-      }
-    }
+    runAutopilot(enemy, [player, ...allies], "enemy");
   });
 }
 
 function updateAllies() {
   allies.forEach((ally) => {
-    if (ally.flareCooldown > 0) ally.flareCooldown--;
-
-    // 🟣 Randomly vary throttle target
-    if (Math.random() < 0.01) {
-      ally.throttleTarget = 0.4 + Math.random() * 0.6;
-    }
-
-    // 🟡 Smooth throttle change
-    ally.throttle += (ally.throttleTarget - ally.throttle) * 0.05;
-    ally.throttle = clamp(ally.throttle, 0.2, 1.0);
-    ally.speed =
-      MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * ally.throttle;
-
-    // === Lock onto closest opponent ===
-    let closest = null;
-    let closestDist = Infinity;
-    for (const opp of enemies) {
-      const dx = opp.x - ally.x;
-      const dy = opp.y - ally.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < closestDist) {
-        closest = opp;
-        closestDist = dist;
-      }
-    }
-
-    if (closest) {
-      // Aim & turn toward enemy
-      orbitAroundTarget(ally, closest);
-
-      // Fire bullets
-      ally.cooldown--;
-      if (ally.cooldown <= 0 && closestDist < 800) {
-        fireBullet({
-          origin: ally,
-          angle: ally.angle,
-          speed: ALLY_BULLET_SPEED,
-          life: BULLET_LIFESPAN,
-          targetArray: allyBullets,
-          spread: ALLY_BULLET_SPREAD,
-          offset: 30,
-        });
-        ally.cooldown = ALLY_FIRE_COOLDOWN;
-
-        // Fire missile if not on cooldown
-        if (!ally.missileCooldown) ally.missileCooldown = 0;
-        ally.missileCooldown--;
-        if (ally.missileCooldown <= 0 && closestDist < MISSILE_RANGE) {
-          const allyTarget = getLockedTarget(ally, enemies);
-if (allyTarget) {
-  createMissile({
-    x: ally.x,
-    y: ally.y,
-    angle: ally.angle,
-    target: allyTarget,
-    ownerType: "ally",
-  });
-  ally.missileCooldown = 180;
-}
-
-        }
-      }
-    }
-
-    // === Drop flare if missile locked ===
-    const incoming = missiles.find((m) => m.target === ally);
-    if (incoming && ally.flareCooldown <= 0) {
-      createFlare(ally);
-      ally.flareCooldown = 300;
-      playSound("flare");
-    }
-
-    avoidMapEdges(ally);
-
-    // Move forward
-    ally.x += Math.cos(ally.angle) * ally.speed;
-    ally.y += Math.sin(ally.angle) * ally.speed;
-
-    updateWingTrails(ally);
-
-    ally.x = clamp(ally.x, 0, WORLD_WIDTH);
-    ally.y = clamp(ally.y, 0, WORLD_HEIGHT);
+    runAutopilot(ally, enemies, "ally");
   });
 }
 
@@ -1259,13 +1089,7 @@ function renderWorld() {
   // Sky background
   if (skyImage.loaded) {
     // Draw the sky image to cover the full world, adjusting for camera position
-    ctx.drawImage(
-      skyImage,
-      -camera.x,
-      -camera.y,
-      WORLD_WIDTH,
-      WORLD_HEIGHT
-    );
+    ctx.drawImage(skyImage, -camera.x, -camera.y, WORLD_WIDTH, WORLD_HEIGHT);
   } else {
     // Fallback color while image is still loading
     ctx.fillStyle = "#111";
@@ -1398,8 +1222,6 @@ function renderMissileLockLines() {
   ctx.restore();
 }
 
-
-
 function updateWingTrails(plane) {
   if (!plane) return;
   if (!plane.wingTrail) plane.wingTrail = [];
@@ -1477,7 +1299,6 @@ function renderEnemies() {
       (e.health / ENEMY_HEALTH) * 50,
       6
     );
-    
   });
 }
 
@@ -1622,7 +1443,11 @@ function renderHUD() {
 
   ctx.font = "16px monospace";
   ctx.fillStyle = "#00ffcc";
-  ctx.fillText(`Throttle: ${((player.speed / player.maxSpeed) * 100).toFixed(0)}%`, 20, 30);
+  ctx.fillText(
+    `Throttle: ${((player.speed / player.maxSpeed) * 100).toFixed(0)}%`,
+    20,
+    30
+  );
   ctx.fillText(`Health: ${player.health}%`, 20, 55);
   ctx.fillText(`Kills: ${kills}`, 20, 105);
   ctx.fillText(`Score: ${score}`, 20, 130);
@@ -1645,7 +1470,6 @@ function renderHUD() {
 
   ctx.restore();
 }
-
 
 let lastFrameTime = performance.now();
 
@@ -1707,9 +1531,9 @@ function renderRadar() {
     ctx.rotate(angle + Math.PI / 2); // ✅ Fix: align with right-facing 0°
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.moveTo(0, -4);     // Tip (forward)
-    ctx.lineTo(-3, 3);     // Left base
-    ctx.lineTo(3, 3);      // Right base
+    ctx.moveTo(0, -4); // Tip (forward)
+    ctx.lineTo(-3, 3); // Left base
+    ctx.lineTo(3, 3); // Right base
     ctx.closePath();
     ctx.fill();
     ctx.restore();
@@ -1774,7 +1598,6 @@ function drawOffscreenIndicators() {
     ctx.restore();
   }
 }
-
 
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
