@@ -1198,12 +1198,23 @@ function renderFlareTrail(trail) {
   }
 }
 
+function drawLockEmoji(source, target, color = "white") {
+  ctx.save();
+  ctx.font = "20px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 6;
+  ctx.fillText("🔒", target.x - camera.x, target.y - camera.y - 40);
+  ctx.restore();
+}
+
 function renderMissileLockLines() {
   ctx.save();
   ctx.lineWidth = 2;
   ctx.shadowBlur = 10;
 
-  // === PLAYER Lock Line ===
+  // === PLAYER Lock Line + Lock Emoji
   const playerTarget = getLockedTarget(player, enemies);
   if (playerTarget) {
     ctx.globalAlpha = 0.3;
@@ -1213,10 +1224,11 @@ function renderMissileLockLines() {
     ctx.moveTo(player.x - camera.x, player.y - camera.y);
     ctx.lineTo(playerTarget.x - camera.x, playerTarget.y - camera.y);
     ctx.stroke();
+    drawLockEmoji(player, playerTarget, "lime");
     ctx.globalAlpha = 1.0;
   }
 
-  // === ALLY Lock Lines ===
+  // === ALLY Lock Lines + Lock Emoji
   allies.forEach((ally) => {
     const allyTarget = getLockedTarget(ally, enemies);
     if (allyTarget) {
@@ -1227,11 +1239,12 @@ function renderMissileLockLines() {
       ctx.moveTo(ally.x - camera.x, ally.y - camera.y);
       ctx.lineTo(allyTarget.x - camera.x, allyTarget.y - camera.y);
       ctx.stroke();
+      drawLockEmoji(ally, allyTarget, "cyan");
       ctx.globalAlpha = 1.0;
     }
   });
 
-  // === ENEMY Lock Lines ===
+  // === ENEMY Lock Lines + Lock Emoji
   enemies.forEach((enemy) => {
     const enemyTarget = getLockedTarget(enemy, [player, ...allies]);
     if (enemyTarget) {
@@ -1242,6 +1255,7 @@ function renderMissileLockLines() {
       ctx.moveTo(enemy.x - camera.x, enemy.y - camera.y);
       ctx.lineTo(enemyTarget.x - camera.x, enemyTarget.y - camera.y);
       ctx.stroke();
+      drawLockEmoji(enemy, enemyTarget, "red");
       ctx.globalAlpha = 1.0;
     }
   });
