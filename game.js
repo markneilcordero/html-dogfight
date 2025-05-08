@@ -1292,7 +1292,7 @@ function renderEnemies() {
       50,
       6
     );
-    ctx.fillStyle = "lime";
+    ctx.fillStyle = "red";
     ctx.fillRect(
       e.x - 25 - camera.x,
       e.y - ENEMY_SIZE / 2 - 20 - camera.y,
@@ -1324,7 +1324,7 @@ function renderAllies() {
       50,
       6
     );
-    ctx.fillStyle = "cyan";
+    ctx.fillStyle = "lime";
     ctx.fillRect(
       a.x - 25 - camera.x,
       a.y - ALLY_SIZE / 2 - 20 - camera.y,
