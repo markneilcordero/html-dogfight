@@ -206,8 +206,8 @@ const player = {
   rotationSpeed: 0.05,
   acceleration: 0.1,
   image: playerImage,
-  width: 60,
-  height: 60,
+  width: 50,
+  height: 50,
   health: 100,
   throttle: 1.0,
   throttleTarget: 1.0,
@@ -1397,7 +1397,7 @@ function renderMissiles() {
   missiles.forEach((m) => {
     // 🟡 Draw missile trail
     if (!m.trailHistory) m.trailHistory = [];
-    const trailOffset = 20; // how far behind the missile
+    const trailOffset = 22; // how far behind the missile
     const trailX = m.x - Math.cos(m.angle) * trailOffset;
     const trailY = m.y - Math.sin(m.angle) * trailOffset;
     m.trailHistory.push({ x: trailX, y: trailY, alpha: 1.0 });
