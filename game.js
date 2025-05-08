@@ -244,6 +244,7 @@ const MISSILE_RANGE = 900;
 const MISSILE_CONE = Math.PI / 6; // ~30°
 const MISSILE_DAMAGE = 50;
 let missileCooldown = 0;
+const MISSILE_LIFESPAN = 180; // Change this value to increase/decrease
 
 let flareCooldown = 0;
 const FLARE_COOLDOWN_MAX = 300; // ~5 seconds @ 60 FPS
@@ -528,7 +529,7 @@ function createMissile({ x, y, angle, target, ownerType }) {
     target,
     ownerType, // ✅ Now defined
     trailHistory: [],
-    lifetime: 300,
+    lifetime: MISSILE_LIFESPAN,
   });
   playSound("missile");
 }
