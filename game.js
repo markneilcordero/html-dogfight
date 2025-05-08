@@ -668,7 +668,7 @@ function runAutopilot(entity, targetList, ownerType = "player") {
   // === Separation: Avoid clustering with nearby allies/opponents
   const others =
     ownerType === "ally" ? allies : ownerType === "enemy" ? enemies : [];
-  const SEPARATION_RADIUS = 1000;
+  const SEPARATION_RADIUS = 2000;
   let repulseX = 0;
   let repulseY = 0;
 
@@ -704,26 +704,39 @@ function runAutopilot(entity, targetList, ownerType = "player") {
 
   // === Fire bullets
   if (target && entity.cooldown <= 0) {
-    fireBullet({
-      origin: entity,
-      angle: entity.angle,
-      speed: BULLET_SPEED,
-      life: BULLET_LIFESPAN,
-      targetArray:
-        ownerType === "player"
-          ? bullets
-          : ownerType === "ally"
-          ? allyBullets
-          : enemyBullets,
-      spread:
-        ownerType === "player"
-          ? PLAYER_BULLET_SPREAD
-          : ownerType === "ally"
-          ? ALLY_BULLET_SPREAD
-          : ENEMY_BULLET_SPREAD,
-      offset: 30,
-    });
-    entity.cooldown = 5;
+    const dx = target.x - entity.x;
+    const dy = target.y - entity.y;
+    const dist = Math.hypot(dx, dy);
+    const angleToTarget = Math.atan2(dy, dx);
+    let angleDiff = angleToTarget - entity.angle;
+    while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+    while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+    const angleThreshold = Math.PI / 2; // 90° forward cone
+
+    const TOO_CLOSE_DIST = 80; // Avoid shooting when very close
+
+    if (Math.abs(angleDiff) < angleThreshold && dist > TOO_CLOSE_DIST) {
+      fireBullet({
+        origin: entity,
+        angle: entity.angle,
+        speed: BULLET_SPEED,
+        life: BULLET_LIFESPAN,
+        targetArray:
+          ownerType === "player"
+            ? bullets
+            : ownerType === "ally"
+            ? allyBullets
+            : enemyBullets,
+        spread:
+          ownerType === "player"
+            ? PLAYER_BULLET_SPREAD
+            : ownerType === "ally"
+            ? ALLY_BULLET_SPREAD
+            : ENEMY_BULLET_SPREAD,
+        offset: 30,
+      });
+      entity.cooldown = 5;
+    }
   }
 
   // === Fire missiles with cooldown
@@ -731,25 +744,29 @@ function runAutopilot(entity, targetList, ownerType = "player") {
     const dx = target.x - entity.x;
     const dy = target.y - entity.y;
     const dist = Math.hypot(dx, dy);
-    let angleToTarget = Math.atan2(dy, dx);
+    const angleToTarget = Math.atan2(dy, dx);
     let angleDiff = angleToTarget - entity.angle;
-    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+    while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+    while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
     angleDiff = Math.abs(angleDiff);
 
-    if (angleDiff < MISSILE_CONE * 1.5 && dist < MISSILE_RANGE) {
+    const angleThreshold = MISSILE_CONE * 1.5;
+    const TOO_CLOSE_DIST = 120; // Prevent missile spam under own body
+
+    if (
+      angleDiff < angleThreshold &&
+      dist > TOO_CLOSE_DIST &&
+      dist < MISSILE_RANGE
+    ) {
       createMissile({
         x: entity.x,
         y: entity.y,
         angle: entity.angle,
         target,
         ownerType,
-        owner: entity, // for tracking ownership
+        owner: entity,
       });
 
-      // Set missile cooldown based on type
-      // entity.missileCooldown =
-      //   ownerType === "player" ? 40 : ownerType === "ally" ? 120 : 180;
       entity.missileCooldown = 600;
     }
   }
@@ -768,7 +785,6 @@ function runAutopilot(entity, targetList, ownerType = "player") {
     playSound("flare");
   }
 }
-
 
 function updatePlayer() {
   if (autopilotEnabled) {
@@ -835,7 +851,7 @@ function updatePlayer() {
         target,
         ownerType: "player",
       });
-      missileCooldown = 600 ;
+      missileCooldown = 600;
     }
   }
   if (missileCooldown > 0) missileCooldown--;
@@ -1268,7 +1284,7 @@ function updateEngineTrail(plane) {
   if (!plane.engineTrail) plane.engineTrail = [];
 
   const backwardOffset = plane.height * 0.5;
-  const sideOffset = plane.width * 0.10;
+  const sideOffset = plane.width * 0.1;
 
   const baseX = plane.x - Math.cos(plane.angle) * backwardOffset;
   const baseY = plane.y - Math.sin(plane.angle) * backwardOffset;
@@ -1288,7 +1304,6 @@ function updateEngineTrail(plane) {
   plane.engineTrail.forEach((p) => (p.alpha *= 0.92));
 }
 
-
 function drawAllEngineTrails() {
   drawEngineTrailFor(player, "white");
   allies.forEach((a) => drawEngineTrailFor(a, "white"));
@@ -1302,7 +1317,7 @@ function drawEngineTrailFor(plane, color = "white") {
     const screenY = t.y - camera.y;
 
     ctx.save();
-    ctx.globalAlpha = t.alpha * 0.20;
+    ctx.globalAlpha = t.alpha * 0.2;
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.arc(screenX, screenY, 4, 0, Math.PI * 2);
@@ -1597,14 +1612,13 @@ function update() {
   }
 
   // === Update Patrol Center Every Few Seconds ===
-patrolCenter.timer--;
-if (patrolCenter.timer <= 0) {
-  patrolCenter.x = 200 + Math.random() * (WORLD_WIDTH - 400);
-  patrolCenter.y = 200 + Math.random() * (WORLD_HEIGHT - 400);
-  patrolCenter.timer = 300; // 1 second
-  // patrolCenter.timer = 600 + Math.random() * 600;
-}
-
+  patrolCenter.timer--;
+  if (patrolCenter.timer <= 0) {
+    patrolCenter.x = 200 + Math.random() * (WORLD_WIDTH - 400);
+    patrolCenter.y = 200 + Math.random() * (WORLD_HEIGHT - 400);
+    patrolCenter.timer = 300; // 1 second
+    // patrolCenter.timer = 600 + Math.random() * 600;
+  }
 }
 
 function renderRadar() {
