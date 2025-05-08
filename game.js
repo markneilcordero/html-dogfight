@@ -26,6 +26,12 @@ resizeCanvas();
 const WORLD_WIDTH = 4000;
 const WORLD_HEIGHT = 4000;
 
+let patrolCenter = {
+  x: WORLD_WIDTH / 2,
+  y: WORLD_HEIGHT / 2,
+  timer: 0,
+};
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(value, max));
 }
@@ -646,8 +652,8 @@ function runAutopilot(entity, targetList, ownerType = "player") {
     entity.orbitDistance = 250;              // 🧲 Increase orbit distance
   } else {
     entity.orbitAngle = (entity.orbitAngle || 0) + 0.01;
-    const wanderX = WORLD_WIDTH / 2 + Math.cos(entity.orbitAngle) * 300;
-    const wanderY = WORLD_HEIGHT / 2 + Math.sin(entity.orbitAngle) * 300;
+    const wanderX = patrolCenter.x + Math.cos(entity.orbitAngle) * 300;
+const wanderY = patrolCenter.y + Math.sin(entity.orbitAngle) * 300;
     orbitAroundTarget(entity, { x: wanderX, y: wanderY });
   }
 
@@ -1561,6 +1567,15 @@ function update() {
       });
     }
   }
+
+  // === Update Patrol Center Every Few Seconds ===
+patrolCenter.timer--;
+if (patrolCenter.timer <= 0) {
+  patrolCenter.x = 200 + Math.random() * (WORLD_WIDTH - 400);
+  patrolCenter.y = 200 + Math.random() * (WORLD_HEIGHT - 400);
+  patrolCenter.timer = 600 + Math.random() * 600; // ~10–20 seconds
+}
+
 }
 
 function renderRadar() {
