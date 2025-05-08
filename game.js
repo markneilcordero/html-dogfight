@@ -760,6 +760,7 @@ function updatePlayer() {
   if (autopilotEnabled) {
     runAutopilot(player, enemies, "player");
     updateWingTrails(player);
+    updateEngineTrail(player);
     return; // skip manual controls
   }
 
@@ -825,6 +826,8 @@ function updatePlayer() {
   }
   if (missileCooldown > 0) missileCooldown--;
   if (flareCooldown > 0) flareCooldown--;
+  updateWingTrails(player);
+  updateEngineTrail(player);
 }
 
 function updatePlayerJoystick() {
@@ -1074,6 +1077,7 @@ function updateEnemies() {
   enemies.forEach((enemy) => {
     runAutopilot(enemy, [player, ...allies], "enemy");
     updateWingTrails(enemy);
+    updateEngineTrail(enemy);
   });
 }
 
@@ -1081,6 +1085,7 @@ function updateAllies() {
   allies.forEach((ally) => {
     runAutopilot(ally, enemies, "ally");
     updateWingTrails(ally);
+    updateEngineTrail(ally);
   });
 }
 
@@ -1222,6 +1227,54 @@ function renderMissileLockLines() {
   });
 
   ctx.restore();
+}
+
+function updateEngineTrail(plane) {
+  if (!plane) return;
+  if (!plane.engineTrail) plane.engineTrail = [];
+
+  const backwardOffset = plane.height * 0.5;
+  const sideOffset = plane.width * 0.2;
+
+  const baseX = plane.x - Math.cos(plane.angle) * backwardOffset;
+  const baseY = plane.y - Math.sin(plane.angle) * backwardOffset;
+
+  const leftX = baseX + Math.cos(plane.angle + Math.PI / 2) * sideOffset;
+  const leftY = baseY + Math.sin(plane.angle + Math.PI / 2) * sideOffset;
+
+  const rightX = baseX + Math.cos(plane.angle - Math.PI / 2) * sideOffset;
+  const rightY = baseY + Math.sin(plane.angle - Math.PI / 2) * sideOffset;
+
+  plane.engineTrail.push({ x: leftX, y: leftY, alpha: 0.6 });
+  plane.engineTrail.push({ x: rightX, y: rightY, alpha: 0.6 });
+
+  if (plane.engineTrail.length > 100)
+    plane.engineTrail.splice(0, plane.engineTrail.length - 100);
+
+  plane.engineTrail.forEach((p) => (p.alpha *= 0.92));
+}
+
+
+function drawAllEngineTrails() {
+  drawEngineTrailFor(player, "orange");
+  allies.forEach((a) => drawEngineTrailFor(a, "cyan"));
+  enemies.forEach((e) => drawEngineTrailFor(e, "red"));
+}
+
+function drawEngineTrailFor(plane, color = "white") {
+  if (!plane.engineTrail) return;
+  for (const t of plane.engineTrail) {
+    const screenX = t.x - camera.x;
+    const screenY = t.y - camera.y;
+
+    ctx.save();
+    ctx.globalAlpha = t.alpha;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(screenX, screenY, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 }
 
 function updateWingTrails(plane) {
@@ -1464,7 +1517,7 @@ function renderHUD() {
 
   restartBtn.style.display = "none";
 
-  if (isPaused && !isGameOver) {
+  if (isPaused) {
     ctx.fillStyle = "yellow";
     ctx.font = "36px sans-serif";
     ctx.fillText("PAUSED", canvas.width / 2 - 60, canvas.height / 2);
@@ -1479,6 +1532,7 @@ let lastFrameTime = performance.now();
 // [9] Game Loop
 // ======================
 function update() {
+  if (isPaused) return;
   updatePlayer();
   updateBullets();
   updateMissiles();
@@ -1605,6 +1659,7 @@ function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   renderWorld();
   drawAllWingTrails();
+  drawAllEngineTrails();
   renderAllies();
   renderEnemies();
   renderMissileLockLines(); // ✅ Add this
