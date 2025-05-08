@@ -237,7 +237,7 @@ const trails = [];
 
 const missiles = [];
 const MISSILE_SPEED = 6;
-const MISSILE_TURN_RATE = 0.08;
+const MISSILE_TURN_RATE = 0.02;
 const MISSILE_SIZE = 30;
 const MISSILE_RANGE = 900;
 const MISSILE_CONE = Math.PI / 6; // ~30°
@@ -581,7 +581,8 @@ function updateMissile(m, index) {
     let diff = desiredAngle - m.angle;
     while (diff > Math.PI) diff -= 2 * Math.PI;
     while (diff < -Math.PI) diff += 2 * Math.PI;
-    m.angle += clamp(diff, -MISSILE_TURN_RATE, MISSILE_TURN_RATE);
+    m.angle += clamp(diff, -MISSILE_TURN_RATE * 0.6, MISSILE_TURN_RATE * 0.6);
+    // m.angle += clamp(diff, -MISSILE_TURN_RATE, MISSILE_TURN_RATE);
   }
 
   m.x += Math.cos(m.angle) * MISSILE_SPEED;
