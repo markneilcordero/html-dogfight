@@ -767,7 +767,7 @@ function updatePlayer() {
 
   // 🔵 Throttle input control (W / ArrowUp = up, S / ArrowDown = down)
   if (keys["w"] || keys["arrowup"]) {
-    player.throttleTarget = Math.min(1.0, player.throttleTarget + 0.02);
+    player.throttleTarget = 1.0;
   }
   if (keys["s"] || keys["arrowdown"]) {
     player.throttleTarget = Math.max(0.2, player.throttleTarget - 0.02);
