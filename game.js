@@ -37,7 +37,8 @@ function clamp(value, min, max) {
 }
 
 function createFlare(fromPlane) {
-  if (!fromPlane || typeof fromPlane.x !== "number" || fromPlane.health <= 0) return;
+  if (!fromPlane || typeof fromPlane.x !== "number" || fromPlane.health <= 0)
+    return;
   const rearAngle = fromPlane.angle + Math.PI;
   const pairSpread = 0.4;
   const speed = 3;
@@ -554,15 +555,14 @@ function updateMissile(m, index) {
     const dy = f.y - m.y;
     const dist = Math.hypot(dx, dy);
     if (dist > 300 || f.ownerType === m.ownerType) return false;
-  
+
     const angleToFlare = Math.atan2(dy, dx);
     let angleDiff = angleToFlare - m.angle;
     while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
     while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-  
+
     return Math.abs(angleDiff) < MISSILE_CONE; // ✅ Only flares in front cone
   });
-  
 
   if (possibleFlares.length > 0) {
     possibleFlares.sort((a, b) => {
@@ -696,6 +696,33 @@ function runAutopilot(entity, targetList, ownerType = "player") {
 
   entity.x += repulseX * 0.5;
   entity.y += repulseY * 0.5;
+
+  // === Rear Avoidance: Don't get too close behind other planes
+  const REAR_AVOID_DIST = 100; // how close is "too close"
+  const REAR_AVOID_ANGLE = Math.PI / 3; // 60° rear cone
+
+  const avoidTargets = [...allies, ...enemies, player].filter(
+    (other) => other !== entity && other.health > 0
+  );
+
+  for (const other of avoidTargets) {
+    const dx = other.x - entity.x;
+    const dy = other.y - entity.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < REAR_AVOID_DIST) {
+      const angleToEntity = Math.atan2(entity.y - other.y, entity.x - other.x);
+      let rearDiff = angleToEntity - other.angle;
+      while (rearDiff > Math.PI) rearDiff -= 2 * Math.PI;
+      while (rearDiff < -Math.PI) rearDiff += 2 * Math.PI;
+
+      // If we're inside the other plane's rear cone, back off
+      if (Math.abs(rearDiff) < REAR_AVOID_ANGLE) {
+        // Steer slightly away from the target's rear
+        const avoidAngle = Math.atan2(dy, dx) + Math.PI; // move opposite of other
+        entity.angle += clamp(avoidAngle - entity.angle, -0.05, 0.05);
+      }
+    }
+  }
 
   entity.x += Math.cos(entity.angle) * entity.speed;
   entity.y += Math.sin(entity.angle) * entity.speed;
@@ -1207,7 +1234,7 @@ function renderMissileTrail(trail) {
 
     ctx.beginPath();
     ctx.fillStyle = `rgba(${rgb}, ${p.alpha * 0.99})`; // Higher opacity
-    ctx.shadowColor = `rgba(${rgb}, ${p.alpha * 0.50})`; // Brighter glow
+    ctx.shadowColor = `rgba(${rgb}, ${p.alpha * 0.5})`; // Brighter glow
     ctx.shadowBlur = 12; // Stronger glow
     ctx.arc(p.x - camera.x, p.y - camera.y, radius, 0, Math.PI * 2);
     ctx.fill();
@@ -1215,8 +1242,6 @@ function renderMissileTrail(trail) {
 
   ctx.shadowBlur = 0;
 }
-
-
 
 function renderFlareTrail(trail) {
   for (let i = 0; i < trail.length; i++) {
