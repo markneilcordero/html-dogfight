@@ -40,8 +40,8 @@ function createFlare(fromPlane) {
   if (!fromPlane || typeof fromPlane.x !== "number" || fromPlane.health <= 0) return;
   const rearAngle = fromPlane.angle + Math.PI;
   const pairSpread = 0.4;
-  const speed = 2;
-  const flareSize = 12;
+  const speed = 3;
+  const flareSize = 7;
   const flareCount = 10;
   let pairsEmitted = 0;
 
