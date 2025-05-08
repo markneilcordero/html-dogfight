@@ -552,8 +552,16 @@ function updateMissile(m, index) {
     const dx = f.x - m.x;
     const dy = f.y - m.y;
     const dist = Math.hypot(dx, dy);
-    return dist < 300 && f.ownerType !== m.ownerType; // ✅ Only target other team flares
+    if (dist > 300 || f.ownerType === m.ownerType) return false;
+  
+    const angleToFlare = Math.atan2(dy, dx);
+    let angleDiff = angleToFlare - m.angle;
+    while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+    while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+  
+    return Math.abs(angleDiff) < MISSILE_CONE; // ✅ Only flares in front cone
   });
+  
 
   if (possibleFlares.length > 0) {
     possibleFlares.sort((a, b) => {
