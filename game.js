@@ -633,7 +633,7 @@ function updateMissile(m, index) {
 function runAutopilot(entity, targetList, ownerType = "player") {
   const target = getLockedTarget(entity, targetList);
 
-  // === Aggressive: Chase directly or orbit closely
+  // === Less aggressive targeting
   if (target) {
     const dx = target.x - entity.x;
     const dy = target.y - entity.y;
@@ -642,29 +642,26 @@ function runAutopilot(entity, targetList, ownerType = "player") {
     while (diff > Math.PI) diff -= 2 * Math.PI;
     while (diff < -Math.PI) diff += 2 * Math.PI;
 
-    entity.angle += clamp(diff, -0.08, 0.08);
-    entity.orbitDistance = 100;
+    entity.angle += clamp(diff, -0.03, 0.03); // 🔁 Slower turn rate
+    entity.orbitDistance = 250;              // 🧲 Increase orbit distance
   } else {
-    entity.orbitAngle = (entity.orbitAngle || 0) + 0.02;
+    entity.orbitAngle = (entity.orbitAngle || 0) + 0.01;
     const wanderX = WORLD_WIDTH / 2 + Math.cos(entity.orbitAngle) * 300;
     const wanderY = WORLD_HEIGHT / 2 + Math.sin(entity.orbitAngle) * 300;
     orbitAroundTarget(entity, { x: wanderX, y: wanderY });
   }
 
-  // === Throttle control
-  entity.throttleTarget = 1.0;
-  entity.throttle += (entity.throttleTarget - entity.throttle) * 0.1;
-  entity.throttle = clamp(entity.throttle, 0.5, 1.0);
-  entity.speed =
-    MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * entity.throttle;
+  // === Lower throttle for calmer movement
+  entity.throttleTarget = target ? 0.5 : 0.3;
+  entity.throttle += (entity.throttleTarget - entity.throttle) * 0.05;
+  entity.throttle = clamp(entity.throttle, 0.2, 0.6);
+  entity.speed = MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * entity.throttle;
 
-  // === [NEW] Separation: Avoid clustering with nearby allies/opponents
-  const others =
-    ownerType === "ally" ? allies : ownerType === "enemy" ? enemies : [];
+  // === Separation (unchanged)
+  const others = ownerType === "ally" ? allies : ownerType === "enemy" ? enemies : [];
   const SEPARATION_RADIUS = 1000;
   let repulseX = 0;
   let repulseY = 0;
-
   for (const other of others) {
     if (other === entity || other.health <= 0) continue;
     const dx = entity.x - other.x;
@@ -676,8 +673,6 @@ function runAutopilot(entity, targetList, ownerType = "player") {
       repulseY += (dy / dist) * force;
     }
   }
-
-  // Apply separation repulsion
   entity.x += repulseX * 0.5;
   entity.y += repulseY * 0.5;
 
@@ -686,41 +681,47 @@ function runAutopilot(entity, targetList, ownerType = "player") {
   entity.x = clamp(entity.x, 0, WORLD_WIDTH);
   entity.y = clamp(entity.y, 0, WORLD_HEIGHT);
 
-  // === Initialize cooldowns if not present
+  // === Cooldowns
   entity.cooldown = entity.cooldown || 0;
   entity.missileCooldown = entity.missileCooldown || 0;
   entity.flareCooldown = entity.flareCooldown || 0;
-
-  // === Decrease cooldowns
   entity.cooldown--;
   entity.missileCooldown--;
   if (entity.flareCooldown > 0) entity.flareCooldown--;
 
-  // === Fire bullets
+  // === Fire bullets (only when close + aligned)
   if (target && entity.cooldown <= 0) {
-    fireBullet({
-      origin: entity,
-      angle: entity.angle,
-      speed: BULLET_SPEED,
-      life: BULLET_LIFESPAN,
-      targetArray:
-        ownerType === "player"
-          ? bullets
-          : ownerType === "ally"
-          ? allyBullets
-          : enemyBullets,
-      spread:
-        ownerType === "player"
-          ? PLAYER_BULLET_SPREAD
-          : ownerType === "ally"
-          ? ALLY_BULLET_SPREAD
-          : ENEMY_BULLET_SPREAD,
-      offset: 30,
-    });
-    entity.cooldown = 5;
+    const dx = target.x - entity.x;
+    const dy = target.y - entity.y;
+    const dist = Math.hypot(dx, dy);
+    const angleToTarget = Math.atan2(dy, dx);
+    const angleDiff = Math.abs(angleToTarget - entity.angle);
+
+    if (dist < 600 && angleDiff < 0.3) {
+      fireBullet({
+        origin: entity,
+        angle: entity.angle,
+        speed: BULLET_SPEED,
+        life: BULLET_LIFESPAN,
+        targetArray:
+          ownerType === "player"
+            ? bullets
+            : ownerType === "ally"
+            ? allyBullets
+            : enemyBullets,
+        spread:
+          ownerType === "player"
+            ? PLAYER_BULLET_SPREAD
+            : ownerType === "ally"
+            ? ALLY_BULLET_SPREAD
+            : ENEMY_BULLET_SPREAD,
+        offset: 30,
+      });
+      entity.cooldown = 12; // ⏱️ Increase cooldown
+    }
   }
 
-  // === Fire missiles
+  // === Fire missiles (more cautious conditions)
   if (target && entity.missileCooldown <= 0) {
     const dx = target.x - entity.x;
     const dy = target.y - entity.y;
@@ -728,7 +729,7 @@ function runAutopilot(entity, targetList, ownerType = "player") {
     const angleToTarget = Math.atan2(dy, dx);
     const angleDiff = Math.abs(angleToTarget - entity.angle);
 
-    if (angleDiff < MISSILE_CONE * 1.5 && dist < MISSILE_RANGE) {
+    if (angleDiff < MISSILE_CONE * 0.6 && dist < MISSILE_RANGE * 0.6) {
       createMissile({
         x: entity.x,
         y: entity.y,
@@ -737,18 +738,17 @@ function runAutopilot(entity, targetList, ownerType = "player") {
         ownerType,
       });
       entity.missileCooldown =
-        ownerType === "player" ? 40 : ownerType === "ally" ? 120 : 180;
+        ownerType === "player" ? 60 : ownerType === "ally" ? 160 : 200; // ⏳ Slower missile rate
     }
   }
 
-  // === Drop flare if missile locked AND close
+  // === Drop flare if missile is close
   const MISSILE_DANGER_RADIUS = 300;
   const incomingMissile = missiles.find(
     (m) =>
       m.target === entity &&
       Math.hypot(m.x - entity.x, m.y - entity.y) < MISSILE_DANGER_RADIUS
   );
-
   if (incomingMissile && entity.flareCooldown <= 0) {
     createFlare(entity);
     entity.flareCooldown = FLARE_COOLDOWN_MAX;
