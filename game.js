@@ -1206,24 +1206,28 @@ function renderMissileLockLines() {
   // === PLAYER Lock Line ===
   const playerTarget = getLockedTarget(player, enemies);
   if (playerTarget) {
+    ctx.globalAlpha = 0.3;
     ctx.strokeStyle = "lime";
     ctx.shadowColor = "lime";
     ctx.beginPath();
     ctx.moveTo(player.x - camera.x, player.y - camera.y);
     ctx.lineTo(playerTarget.x - camera.x, playerTarget.y - camera.y);
     ctx.stroke();
+    ctx.globalAlpha = 1.0;
   }
 
   // === ALLY Lock Lines ===
   allies.forEach((ally) => {
     const allyTarget = getLockedTarget(ally, enemies);
     if (allyTarget) {
+      ctx.globalAlpha = 0.3;
       ctx.strokeStyle = "cyan";
       ctx.shadowColor = "cyan";
       ctx.beginPath();
       ctx.moveTo(ally.x - camera.x, ally.y - camera.y);
       ctx.lineTo(allyTarget.x - camera.x, allyTarget.y - camera.y);
       ctx.stroke();
+      ctx.globalAlpha = 1.0;
     }
   });
 
@@ -1231,12 +1235,14 @@ function renderMissileLockLines() {
   enemies.forEach((enemy) => {
     const enemyTarget = getLockedTarget(enemy, [player, ...allies]);
     if (enemyTarget) {
+      ctx.globalAlpha = 0.3;
       ctx.strokeStyle = "red";
       ctx.shadowColor = "red";
       ctx.beginPath();
       ctx.moveTo(enemy.x - camera.x, enemy.y - camera.y);
       ctx.lineTo(enemyTarget.x - camera.x, enemyTarget.y - camera.y);
       ctx.stroke();
+      ctx.globalAlpha = 1.0;
     }
   });
 
