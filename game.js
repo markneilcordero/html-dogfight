@@ -1199,18 +1199,23 @@ function renderBulletTrail(trail) {
 function renderMissileTrail(trail) {
   for (let i = 0; i < trail.length; i++) {
     const p = trail[i];
-    const radius = 4 * p.alpha; // size fades with alpha
+    const radius = 3 * p.alpha; // Increased size
+
+    let rgb = "220, 220, 220"; // Brighter gray
+    if (p.color === "white") rgb = "255, 255, 255";
+
     ctx.beginPath();
-    ctx.fillStyle = `rgba(200, 200, 200, ${p.alpha * 0.6})`; // light gray smoke
-    ctx.shadowColor = `rgba(200, 200, 200, ${p.alpha * 0.5})`;
-    ctx.shadowBlur = 5;
+    ctx.fillStyle = `rgba(${rgb}, ${p.alpha * 0.99})`; // Higher opacity
+    ctx.shadowColor = `rgba(${rgb}, ${p.alpha * 0.50})`; // Brighter glow
+    ctx.shadowBlur = 12; // Stronger glow
     ctx.arc(p.x - camera.x, p.y - camera.y, radius, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Reset shadow blur after drawing
   ctx.shadowBlur = 0;
 }
+
+
 
 function renderFlareTrail(trail) {
   for (let i = 0; i < trail.length; i++) {
