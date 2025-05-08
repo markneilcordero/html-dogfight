@@ -777,7 +777,7 @@ function runAutopilot(entity, targetList, ownerType = "player") {
         owner: entity,
       });
 
-      entity.missileCooldown = 600;
+      entity.missileCooldown = 180;
     }
   }
 
