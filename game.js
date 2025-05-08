@@ -1234,7 +1234,7 @@ function updateEngineTrail(plane) {
   if (!plane.engineTrail) plane.engineTrail = [];
 
   const backwardOffset = plane.height * 0.5;
-  const sideOffset = plane.width * 0.2;
+  const sideOffset = plane.width * 0.10;
 
   const baseX = plane.x - Math.cos(plane.angle) * backwardOffset;
   const baseY = plane.y - Math.sin(plane.angle) * backwardOffset;
@@ -1256,9 +1256,9 @@ function updateEngineTrail(plane) {
 
 
 function drawAllEngineTrails() {
-  drawEngineTrailFor(player, "orange");
-  allies.forEach((a) => drawEngineTrailFor(a, "cyan"));
-  enemies.forEach((e) => drawEngineTrailFor(e, "red"));
+  drawEngineTrailFor(player, "white");
+  allies.forEach((a) => drawEngineTrailFor(a, "white"));
+  enemies.forEach((e) => drawEngineTrailFor(e, "white"));
 }
 
 function drawEngineTrailFor(plane, color = "white") {
@@ -1268,10 +1268,10 @@ function drawEngineTrailFor(plane, color = "white") {
     const screenY = t.y - camera.y;
 
     ctx.save();
-    ctx.globalAlpha = t.alpha;
+    ctx.globalAlpha = t.alpha * 0.20;
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(screenX, screenY, 2, 0, Math.PI * 2);
+    ctx.arc(screenX, screenY, 4, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
