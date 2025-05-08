@@ -1073,12 +1073,14 @@ function updateCamera() {
 function updateEnemies() {
   enemies.forEach((enemy) => {
     runAutopilot(enemy, [player, ...allies], "enemy");
+    updateWingTrails(enemy);
   });
 }
 
 function updateAllies() {
   allies.forEach((ally) => {
     runAutopilot(ally, enemies, "ally");
+    updateWingTrails(ally);
   });
 }
 
