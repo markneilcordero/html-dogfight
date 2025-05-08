@@ -665,7 +665,7 @@ function runAutopilot(entity, targetList, ownerType = "player") {
   entity.speed =
     MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * entity.throttle;
 
-  // === [NEW] Separation: Avoid clustering with nearby allies/opponents
+  // === Separation: Avoid clustering with nearby allies/opponents
   const others =
     ownerType === "ally" ? allies : ownerType === "enemy" ? enemies : [];
   const SEPARATION_RADIUS = 1000;
@@ -684,7 +684,6 @@ function runAutopilot(entity, targetList, ownerType = "player") {
     }
   }
 
-  // Apply separation repulsion
   entity.x += repulseX * 0.5;
   entity.y += repulseY * 0.5;
 
@@ -694,13 +693,13 @@ function runAutopilot(entity, targetList, ownerType = "player") {
   entity.y = clamp(entity.y, 0, WORLD_HEIGHT);
 
   // === Initialize cooldowns if not present
-  entity.cooldown = entity.cooldown || 0;
-  entity.missileCooldown = entity.missileCooldown || 0;
-  entity.flareCooldown = entity.flareCooldown || 0;
+  entity.cooldown = entity.cooldown ?? 0;
+  entity.missileCooldown = entity.missileCooldown ?? 0;
+  entity.flareCooldown = entity.flareCooldown ?? 0;
 
   // === Decrease cooldowns
-  entity.cooldown--;
-  entity.missileCooldown--;
+  if (entity.cooldown > 0) entity.cooldown--;
+  if (entity.missileCooldown > 0) entity.missileCooldown--;
   if (entity.flareCooldown > 0) entity.flareCooldown--;
 
   // === Fire bullets
@@ -727,13 +726,16 @@ function runAutopilot(entity, targetList, ownerType = "player") {
     entity.cooldown = 5;
   }
 
-  // === Fire missiles
+  // === Fire missiles with cooldown
   if (target && entity.missileCooldown <= 0) {
     const dx = target.x - entity.x;
     const dy = target.y - entity.y;
     const dist = Math.hypot(dx, dy);
-    const angleToTarget = Math.atan2(dy, dx);
-    const angleDiff = Math.abs(angleToTarget - entity.angle);
+    let angleToTarget = Math.atan2(dy, dx);
+    let angleDiff = angleToTarget - entity.angle;
+    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+    angleDiff = Math.abs(angleDiff);
 
     if (angleDiff < MISSILE_CONE * 1.5 && dist < MISSILE_RANGE) {
       createMissile({
@@ -742,13 +744,16 @@ function runAutopilot(entity, targetList, ownerType = "player") {
         angle: entity.angle,
         target,
         ownerType,
+        owner: entity, // for tracking ownership
       });
+
+      // Set missile cooldown based on type
       entity.missileCooldown =
         ownerType === "player" ? 40 : ownerType === "ally" ? 120 : 180;
     }
   }
 
-  // === Drop flare if missile locked AND close
+  // === Drop flare if missile is near and cooldown expired
   const MISSILE_DANGER_RADIUS = 300;
   const incomingMissile = missiles.find(
     (m) =>
@@ -762,6 +767,7 @@ function runAutopilot(entity, targetList, ownerType = "player") {
     playSound("flare");
   }
 }
+
 
 function updatePlayer() {
   if (autopilotEnabled) {
