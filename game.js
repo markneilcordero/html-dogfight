@@ -37,6 +37,7 @@ function clamp(value, min, max) {
 }
 
 function createFlare(fromPlane) {
+  if (!fromPlane || typeof fromPlane.x !== "number" || fromPlane.health <= 0) return;
   const rearAngle = fromPlane.angle + Math.PI;
   const pairSpread = 0.4;
   const speed = 2;
