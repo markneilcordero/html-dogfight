@@ -353,7 +353,7 @@ window.addEventListener("keydown", (e) => {
 });
 
 window.addEventListener("keydown", (e) => {
-  if (e.key.toLowerCase() === "f" && flareCooldown <= 0) {
+  if (e.key.toLowerCase() === "h" && flareCooldown <= 0) {
     dropFlareFromPlayer();
     flareCooldown = FLARE_COOLDOWN_MAX;
   }
@@ -366,7 +366,7 @@ window.addEventListener("keydown", (e) => {
 });
 
 window.addEventListener("keydown", (e) => {
-  if (e.key.toLowerCase() === "x") {
+  if (e.key.toLowerCase() === "j") {
     autopilotEnabled = !autopilotEnabled;
   }
 });
@@ -748,8 +748,9 @@ function runAutopilot(entity, targetList, ownerType = "player") {
       });
 
       // Set missile cooldown based on type
-      entity.missileCooldown =
-        ownerType === "player" ? 40 : ownerType === "ally" ? 120 : 180;
+      // entity.missileCooldown =
+      //   ownerType === "player" ? 40 : ownerType === "ally" ? 120 : 180;
+      entity.missileCooldown = 600;
     }
   }
 
@@ -809,7 +810,7 @@ function updatePlayer() {
   updateWingTrails(player);
 
   // Shooting
-  if ((keys[" "] || keys["space"]) && shootCooldown <= 0) {
+  if ((keys["f"] || keys["F"]) && shootCooldown <= 0) {
     fireBullet({
       origin: player,
       angle: player.angle,
@@ -824,7 +825,7 @@ function updatePlayer() {
   if (shootCooldown > 0) shootCooldown--;
 
   // Missile
-  if ((keys["m"] || keys["M"]) && missileCooldown <= 0) {
+  if ((keys["g"] || keys["G"]) && missileCooldown <= 0) {
     const target = getLockedTarget(player, enemies);
     if (target) {
       createMissile({
@@ -834,7 +835,7 @@ function updatePlayer() {
         target,
         ownerType: "player",
       });
-      missileCooldown = 60;
+      missileCooldown = 600 ;
     }
   }
   if (missileCooldown > 0) missileCooldown--;
@@ -1580,7 +1581,8 @@ patrolCenter.timer--;
 if (patrolCenter.timer <= 0) {
   patrolCenter.x = 200 + Math.random() * (WORLD_WIDTH - 400);
   patrolCenter.y = 200 + Math.random() * (WORLD_HEIGHT - 400);
-  patrolCenter.timer = 600 + Math.random() * 600; // ~10–20 seconds
+  patrolCenter.timer = 300; // 1 second
+  // patrolCenter.timer = 600 + Math.random() * 600;
 }
 
 }
