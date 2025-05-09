@@ -1026,6 +1026,24 @@ function updatePlayerJoystick() {
     // No strong input? Idle
     player.throttleTarget = 0.2;
   }
+  // === Boost via joystick if full throttle forward
+  if (
+    joyY < -0.95 && // joystick pushed almost fully forward (up direction)
+    !player.boosting &&
+    player.throttle >= 0.99
+  ) {
+    player.boosting = true;
+    player.boostTimer = player.boostDuration;
+
+    sonicBooms.push({
+      x: player.x,
+      y: player.y,
+      radius: 0,
+      alpha: 1.0,
+      angle: player.angle,
+    });
+    playSound("sonicboom");
+  }
 }
 
 function updateBullets() {
