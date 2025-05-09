@@ -718,21 +718,20 @@ function runAutopilot(entity, targetList, ownerType = "player") {
   const shouldBoost =
     missiles.find((m) => m.target === entity) || Math.random() < 0.001; // rare random boost
   if (!entity.boosting && shouldBoost) {
-  entity.boosting = true;
-  entity.boostTimer = entity.boostDuration;
+    entity.boosting = true;
+    entity.boostTimer = entity.boostDuration;
 
-  // Add sonic boom when boosting starts
-  sonicBooms.push({
-    x: entity.x,
-    y: entity.y,
-    radius: 0,
-    alpha: 1.0,
-    angle: entity.angle,
-  });
+    // Add sonic boom when boosting starts
+    sonicBooms.push({
+      x: entity.x,
+      y: entity.y,
+      radius: 0,
+      alpha: 1.0,
+      angle: entity.angle,
+    });
 
-  playSound("sonicboom");
-}
-
+    playSound("sonicboom");
+  }
 
   // === Separation: Avoid clustering with nearby allies/opponents
   const others =
@@ -1634,14 +1633,13 @@ function updateExplosions() {
 function updateSonicBooms() {
   for (let i = sonicBooms.length - 1; i >= 0; i--) {
     const boom = sonicBooms[i];
-    boom.radius += 8;        // slower expansion
-    boom.alpha *= 0.92;      // slower fade
+    boom.radius += 8; // slower expansion
+    boom.alpha *= 0.92; // slower fade
     if (boom.alpha < 0.05) {
       sonicBooms.splice(i, 1);
     }
   }
 }
-
 
 function renderExplosions() {
   explosions.forEach((e) => {
@@ -1676,7 +1674,7 @@ function renderSonicBooms() {
     // 🔺 Draw sonic shock cone (like in the photo)
     ctx.save();
     ctx.translate(x + Math.cos(boom.angle) * 25, y + Math.sin(boom.angle) * 25);
-    ctx.rotate(boom.angle || 0);// face direction of player
+    ctx.rotate((boom.angle || 0) + Math.PI); // 🔄 Correct the cone direction
 
     const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, coneLength);
     gradient.addColorStop(0, `rgba(255, 255, 255, ${boom.alpha * 0.6})`);
@@ -1704,8 +1702,6 @@ function renderSonicBooms() {
 
   ctx.globalAlpha = 1.0;
 }
-
-
 
 // ======================
 // [8] Render HUD
@@ -1891,6 +1887,7 @@ function render() {
   renderAllies();
   renderEnemies();
   renderMissileLockLines(); // ✅ Add this
+  renderSonicBooms();
   renderFlares();
   renderExplosions(); // BOOM
   renderAllyBullets();
