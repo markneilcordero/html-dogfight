@@ -179,23 +179,104 @@ button,
         "
       ></div>
     </div>
-    <div
-      id="throttleControls"
-    >
-    <button id="flareBtn" style="padding: 10px">
-      <img src="images/shootflare.png" alt="Flare" width="32" height="32" />
-    </button>
-      <button
-        id="throttleUpBtn"
-        style="padding: 20px 20px; display: block;"
-      >
-        🔼
-      </button>
-      <button id="throttleDownBtn" style="padding: 20px 20px; display: block">
-        🔽
-      </button>
-    </div>
+    <div id="throttleControls">
+  <button id="settingsBtn" title="Game Settings">
+    ⚙️
+  </button>
+  <button id="flareBtn">
+    <img src="images/shootflare.png" alt="Flare" width="32" height="32" />
+  </button>
+  <button id="throttleUpBtn">🔼</button>
+  <button id="throttleDownBtn">🔽</button>
+</div>
+
+
+<!-- Settings Modal -->
+<div id="settingsModal" style="
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.95);
+  padding: 20px;
+  border-radius: 12px;
+  z-index: 9999;
+  color: white;
+  font-family: sans-serif;
+">
+  <h3>Game Settings</h3>
+  <label>Allies: <input id="allyCountInput" type="number" min="0" max="20" value="4" /></label><br><br>
+  <label>Enemies: <input id="enemyCountInput" type="number" min="0" max="20" value="5" /></label><br><br>
+  <button id="applySettingsBtn" style="padding: 8px 16px; background: lime; border: none; border-radius: 6px; cursor: pointer;">Apply</button>
+  <button id="closeSettingsBtn" style="padding: 8px 16px; background: red; border: none; border-radius: 6px; cursor: pointer; margin-left: 10px;">Close</button>
+</div>
+
 
     <script src="game.js"></script>
+    <script>
+      document.getElementById("settingsBtn").addEventListener("click", () => {
+  document.getElementById("settingsModal").style.display = "block";
+});
+
+document.getElementById("closeSettingsBtn").addEventListener("click", () => {
+  document.getElementById("settingsModal").style.display = "none";
+});
+
+document.getElementById("applySettingsBtn").addEventListener("click", () => {
+  const newAllyCount = parseInt(document.getElementById("allyCountInput").value, 10);
+  const newEnemyCount = parseInt(document.getElementById("enemyCountInput").value, 10);
+
+  // Clear existing
+  allies.length = 0;
+  enemies.length = 0;
+
+  for (let i = 0; i < newAllyCount; i++) {
+    allies.push({
+      x: SPAWN_ALLY_X + Math.random() * 100,
+      y: SPAWN_ALLY_Y + Math.random() * 100,
+      angle: Math.random() * Math.PI * 2,
+      speed: 2.5,
+      health: ALLY_HEALTH,
+      cooldown: 0,
+      missileCooldown: 0,
+      image: allyImage,
+      flareCooldown: 0,
+      throttle: 1.0,
+      throttleTarget: 1.0,
+      width: ALLY_SIZE,
+      height: ALLY_SIZE,
+      orbitAngle: Math.random() * Math.PI * 2,
+      orbitDistance: 250 + Math.random() * 100,
+      orbitSpeed: 0.01 + Math.random() * 0.01,
+    });
+  }
+
+  for (let i = 0; i < newEnemyCount; i++) {
+    enemies.push({
+      x: SPAWN_ENEMY_X + Math.random() * 100,
+      y: SPAWN_ENEMY_Y + Math.random() * 100,
+      angle: Math.random() * Math.PI * 2,
+      speed: 2,
+      health: ENEMY_HEALTH,
+      turnTimer: Math.floor(Math.random() * 60),
+      image: enemyImage,
+      flareCooldown: 0,
+      missileCooldown: 0,
+      width: ENEMY_SIZE,
+      height: ENEMY_SIZE,
+      orbitAngle: Math.random() * Math.PI * 2,
+      orbitDistance: 250 + Math.random() * 100,
+      orbitSpeed: 0.01 + Math.random() * 0.01,
+      throttle: 1.0,
+      throttleTarget: 1.0,
+    });
+  }
+
+  enemiesRemaining = newEnemyCount;
+  document.getElementById("settingsModal").style.display = "none";
+});
+
+    </script>
   </body>
 </html>
