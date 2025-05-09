@@ -718,9 +718,21 @@ function runAutopilot(entity, targetList, ownerType = "player") {
   const shouldBoost =
     missiles.find((m) => m.target === entity) || Math.random() < 0.001; // rare random boost
   if (!entity.boosting && shouldBoost) {
-    entity.boosting = true;
-    entity.boostTimer = entity.boostDuration;
-  }
+  entity.boosting = true;
+  entity.boostTimer = entity.boostDuration;
+
+  // Add sonic boom when boosting starts
+  sonicBooms.push({
+    x: entity.x,
+    y: entity.y,
+    radius: 0,
+    alpha: 1.0,
+    angle: entity.angle,
+  });
+
+  playSound("sonicboom");
+}
+
 
   // === Separation: Avoid clustering with nearby allies/opponents
   const others =
