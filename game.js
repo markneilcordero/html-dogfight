@@ -1222,17 +1222,6 @@ function renderWorld() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  if (player.boosting) {
-    ctx.save();
-    ctx.shadowColor = "yellow";
-    ctx.shadowBlur = 25;
-    ctx.beginPath();
-    ctx.arc(player.x - camera.x, player.y - camera.y, 35, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255, 255, 0, 0.2)";
-    ctx.fill();
-    ctx.restore();
-  }
-
   // Draw player
   ctx.save();
   ctx.translate(player.x - camera.x, player.y - camera.y);
@@ -1408,9 +1397,13 @@ function updateEngineTrail(plane) {
 }
 
 function drawAllEngineTrails() {
-  drawEngineTrailFor(player, "white");
-  allies.forEach((a) => drawEngineTrailFor(a, "white"));
-  enemies.forEach((e) => drawEngineTrailFor(e, "white"));
+  drawEngineTrailFor(player, player.boosting ? "#ffffcc" : "white"); // pale yellow-white if boosting
+  allies.forEach((a) =>
+    drawEngineTrailFor(a, a.boosting ? "#ffffcc" : "white")
+  );
+  enemies.forEach((e) =>
+    drawEngineTrailFor(e, e.boosting ? "#ffffcc" : "white")
+  );
 }
 
 function drawEngineTrailFor(plane, color = "white") {
@@ -1420,8 +1413,13 @@ function drawEngineTrailFor(plane, color = "white") {
     const screenY = t.y - camera.y;
 
     ctx.save();
-    ctx.globalAlpha = t.alpha * 0.2;
+    ctx.globalAlpha = t.alpha * 0.6;
     ctx.fillStyle = color;
+
+    // ✨ Apply stronger glow only when not plain white
+    ctx.shadowColor = color;
+    ctx.shadowBlur = color !== "white" ? 12 : 6;
+
     ctx.beginPath();
     ctx.arc(screenX, screenY, 4, 0, Math.PI * 2);
     ctx.fill();
@@ -1622,14 +1620,14 @@ function updateExplosions() {
 function updateSonicBooms() {
   for (let i = sonicBooms.length - 1; i >= 0; i--) {
     const boom = sonicBooms[i];
-    boom.radius += 10; // expand ring
-    boom.alpha *= 0.92; // fade out
-
+    boom.radius += 8;        // slower expansion
+    boom.alpha *= 0.92;      // slower fade
     if (boom.alpha < 0.05) {
-      sonicBooms.splice(i, 1); // remove faded out ring
+      sonicBooms.splice(i, 1);
     }
   }
 }
+
 
 function renderExplosions() {
   explosions.forEach((e) => {
@@ -1654,22 +1652,46 @@ function renderExplosions() {
 }
 
 function renderSonicBooms() {
-  ctx.save();
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
-  ctx.shadowColor = "white";
-  ctx.shadowBlur = 10;
-
   for (const boom of sonicBooms) {
-    ctx.globalAlpha = boom.alpha;
+    const x = boom.x - camera.x;
+    const y = boom.y - camera.y;
+
+    const coneLength = 120;
+    const coneWidth = 80;
+
+    // 🔺 Draw sonic shock cone (like in the photo)
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(player.angle); // face direction of player
+
+    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, coneLength);
+    gradient.addColorStop(0, `rgba(255, 255, 255, ${boom.alpha * 0.3})`);
+    gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
+
+    ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.arc(boom.x - camera.x, boom.y - camera.y, boom.radius, 0, Math.PI * 2);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(coneLength, -coneWidth / 2);
+    ctx.lineTo(coneLength, coneWidth / 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Optional: ring for extra flair
+    ctx.save();
+    ctx.globalAlpha = boom.alpha * 0.3;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${boom.alpha})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, boom.radius, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.restore();
   }
 
-  ctx.restore();
   ctx.globalAlpha = 1.0;
 }
+
+
 
 // ======================
 // [8] Render HUD
