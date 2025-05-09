@@ -1194,25 +1194,31 @@ function updateAllyBullets() {
 
       // 🔁 Respawn after delay
       setTimeout(() => {
-        allies.push({
-          x: Math.random() * WORLD_WIDTH,
-          y: Math.random() * WORLD_HEIGHT,
-          angle: Math.random() * Math.PI * 2,
-          speed: 2.5,
-          health: ALLY_HEALTH,
-          cooldown: 0,
-          missileCooldown: 0,
-          image: allyImage,
-          flareCooldown: 0,
-          throttle: 1.0,
-          throttleTarget: 1.0,
-          width: ALLY_SIZE,
-          height: ALLY_SIZE,
-          orbitAngle: Math.random() * Math.PI * 2,
-          orbitDistance: 250 + Math.random() * 100,
-          orbitSpeed: 0.01 + Math.random() * 0.01,
-        });
-      }, 2000); // 2-second delay
+        if (allies.length < ALLY_COUNT) {
+          allies.push({
+            x: Math.random() * WORLD_WIDTH,
+            y: Math.random() * WORLD_HEIGHT,
+            angle: Math.random() * Math.PI * 2,
+            speed: 2.5,
+            health: ALLY_HEALTH,
+            cooldown: 0,
+            missileCooldown: 0,
+            image: allyImage,
+            flareCooldown: 0,
+            throttle: 1.0,
+            throttleTarget: 1.0,
+            width: ALLY_SIZE,
+            height: ALLY_SIZE,
+            orbitAngle: Math.random() * Math.PI * 2,
+            orbitDistance: 250 + Math.random() * 100,
+            orbitSpeed: 0.01 + Math.random() * 0.01,
+            boosting: false,
+            boostTimer: 0,
+            boostDuration: 120,
+            boostMultiplier: 1.5,
+          });
+        }
+      }, 2000);
     }
   }
 }
@@ -1806,9 +1812,8 @@ function update() {
   updateExplosions();
   updateCamera();
 
-  if (enemiesRemaining <= 0) {
-    enemiesRemaining = ENEMY_COUNT;
-    for (let i = 0; i < ENEMY_COUNT; i++) {
+  if (enemiesRemaining <= 0 && enemies.length < ENEMY_COUNT) {
+    for (let i = enemies.length; i < ENEMY_COUNT; i++) {
       enemies.push({
         x: 200 + Math.random() * 100,
         y: 200 + Math.random() * 100,
@@ -1826,8 +1831,13 @@ function update() {
         orbitSpeed: 0.01 + Math.random() * 0.01,
         throttle: 1.0,
         throttleTarget: 1.0,
+        boosting: false,
+        boostTimer: 0,
+        boostDuration: 120,
+        boostMultiplier: 1.5,
       });
     }
+    enemiesRemaining = enemies.length;
   }
 
   // === Update Patrol Center Every Few Seconds ===

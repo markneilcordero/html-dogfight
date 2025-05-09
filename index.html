@@ -258,8 +258,8 @@ button,
 <!-- Replace inline style with class -->
 <div id="settingsModal" class="modal">
   <h3>Game Settings</h3>
-  <label>Allies: <input id="allyCountInput" type="number" min="0" max="20" value="4" /></label><br><br>
-  <label>Enemies: <input id="enemyCountInput" type="number" min="0" max="20" value="5" /></label><br><br>
+  <label>Allies: <input id="allyCountInput" type="number" min="0" max="2" value="2" /></label><br><br>
+  <label>Enemies: <input id="enemyCountInput" type="number" min="0" max="3" value="3" /></label><br><br>
   <div class="modal-buttons">
     <button id="applySettingsBtn">Apply</button>
     <button id="closeSettingsBtn">Close</button>
@@ -279,8 +279,13 @@ document.getElementById("closeSettingsBtn").addEventListener("click", () => {
 });
 
 document.getElementById("applySettingsBtn").addEventListener("click", () => {
-  const newAllyCount = parseInt(document.getElementById("allyCountInput").value, 10);
-  const newEnemyCount = parseInt(document.getElementById("enemyCountInput").value, 10);
+  let newAllyCount = parseInt(document.getElementById("allyCountInput").value, 10);
+let newEnemyCount = parseInt(document.getElementById("enemyCountInput").value, 10);
+
+// ✅ Enforce max limits
+newAllyCount = Math.min(newAllyCount, 2);
+newEnemyCount = Math.min(newEnemyCount, 3);
+
 
   // Clear existing
   allies.length = 0;
