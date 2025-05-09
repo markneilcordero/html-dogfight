@@ -222,6 +222,10 @@ const player = {
   orbitAngle: Math.random() * Math.PI * 2, // ✅ Add this
   orbitDistance: 300, // ✅ Add this
   orbitSpeed: 0.015, // ✅ Add this
+  boosting: false,
+  boostTimer: 0,
+  boostDuration: 120, // frames (2 seconds at 60fps)
+  boostMultiplier: 1.5,
 };
 
 let kills = 0;
@@ -320,6 +324,10 @@ for (let i = 0; i < ENEMY_COUNT; i++) {
     orbitAngle: Math.random() * Math.PI * 2,
     orbitDistance: 250 + Math.random() * 100,
     orbitSpeed: 0.01 + Math.random() * 0.01,
+    boosting: false,
+    boostTimer: 0,
+    boostDuration: 120,
+    boostMultiplier: 1.5,
   });
 }
 
@@ -341,6 +349,10 @@ for (let i = 0; i < ALLY_COUNT; i++) {
     orbitAngle: Math.random() * Math.PI * 2,
     orbitDistance: 250 + Math.random() * 100,
     orbitSpeed: 0.01 + Math.random() * 0.01,
+    boosting: false,
+    boostTimer: 0,
+    boostDuration: 120,
+    boostMultiplier: 1.5,
   });
 }
 
@@ -373,6 +385,14 @@ window.addEventListener("keydown", (e) => {
     autopilotEnabled = !autopilotEnabled;
   }
 });
+
+window.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === "b") {
+    player.boosting = true;
+    player.boostTimer = player.boostDuration;
+  }
+});
+
 
 document
   .getElementById("fireBtn")
@@ -676,6 +696,22 @@ function runAutopilot(entity, targetList, ownerType = "player") {
   entity.speed =
     MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * entity.throttle;
 
+  if (entity.boosting && entity.boostTimer > 0) {
+  entity.speed *= entity.boostMultiplier;
+  entity.boostTimer--;
+  if (entity.boostTimer <= 0) entity.boosting = false;
+}
+
+// Optional AI logic to auto-trigger boost if being chased
+const shouldBoost =
+  missiles.find((m) => m.target === entity) ||
+  Math.random() < 0.001; // rare random boost
+if (!entity.boosting && shouldBoost) {
+  entity.boosting = true;
+  entity.boostTimer = entity.boostDuration;
+}
+
+
   // === Separation: Avoid clustering with nearby allies/opponents
   const others =
     ownerType === "ally" ? allies : ownerType === "enemy" ? enemies : [];
@@ -851,8 +887,15 @@ function updatePlayer() {
   player.throttle = clamp(player.throttle, 0.2, 1.0);
 
   // 🟡 Apply throttle to speed
-  player.speed =
-    MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * player.throttle;
+  let baseSpeed = MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * player.throttle;
+if (player.boosting && player.boostTimer > 0) {
+  player.speed = baseSpeed * player.boostMultiplier;
+  player.boostTimer--;
+  if (player.boostTimer <= 0) player.boosting = false;
+} else {
+  player.speed = baseSpeed;
+}
+
 
   // Move
   player.x += Math.cos(player.angle) * player.speed;
@@ -1170,6 +1213,18 @@ function renderWorld() {
     ctx.fillStyle = "#111";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
+
+  if (player.boosting) {
+  ctx.save();
+  ctx.shadowColor = "yellow";
+  ctx.shadowBlur = 25;
+  ctx.beginPath();
+  ctx.arc(player.x - camera.x, player.y - camera.y, 35, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255, 255, 0, 0.2)";
+  ctx.fill();
+  ctx.restore();
+}
+
 
   // Draw player
   ctx.save();
