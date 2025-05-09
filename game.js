@@ -573,6 +573,7 @@ function fireBullet({
     life: life,
     trailHistory: [],
   });
+  playSound("shoot");
 }
 
 function fireMissile() {
@@ -1658,6 +1659,7 @@ function renderEnemyBullets() {
 
 function spawnExplosion(x, y, size = 1.0) {
   explosions.push({ x, y, timer: EXPLOSION_DURATION, size });
+  playSound("explosion");
 }
 
 function dropFlareFromPlayer() {
