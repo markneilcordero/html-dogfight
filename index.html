@@ -103,6 +103,69 @@ button,
   touch-action: none;
 }
 
+.modal {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 90%;
+  max-width: 320px;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.95);
+  padding: 20px;
+  border-radius: 12px;
+  z-index: 9999;
+  color: white;
+  font-family: sans-serif;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+}
+
+.modal label {
+  display: flex;
+  justify-content: space-between;
+  margin: 12px 0;
+  font-size: 16px;
+}
+
+.modal input {
+  width: 60px;
+  padding: 4px;
+  font-size: 16px;
+}
+
+.modal-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.modal-buttons button {
+  padding: 10px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#applySettingsBtn {
+  background: lime;
+  color: black;
+}
+
+#closeSettingsBtn {
+  background: red;
+  color: white;
+}
+
+@media (min-width: 600px) {
+  .modal-buttons {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+
     </style>
   </head>
   <body>
@@ -192,25 +255,17 @@ button,
 
 
 <!-- Settings Modal -->
-<div id="settingsModal" style="
-  display: none;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0,0,0,0.95);
-  padding: 20px;
-  border-radius: 12px;
-  z-index: 9999;
-  color: white;
-  font-family: sans-serif;
-">
+<!-- Replace inline style with class -->
+<div id="settingsModal" class="modal">
   <h3>Game Settings</h3>
   <label>Allies: <input id="allyCountInput" type="number" min="0" max="20" value="4" /></label><br><br>
   <label>Enemies: <input id="enemyCountInput" type="number" min="0" max="20" value="5" /></label><br><br>
-  <button id="applySettingsBtn" style="padding: 8px 16px; background: lime; border: none; border-radius: 6px; cursor: pointer;">Apply</button>
-  <button id="closeSettingsBtn" style="padding: 8px 16px; background: red; border: none; border-radius: 6px; cursor: pointer; margin-left: 10px;">Close</button>
+  <div class="modal-buttons">
+    <button id="applySettingsBtn">Apply</button>
+    <button id="closeSettingsBtn">Close</button>
+  </div>
 </div>
+
 
 
     <script src="game.js"></script>
