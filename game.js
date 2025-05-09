@@ -493,10 +493,33 @@ function setupUI() {
   upBtn.addEventListener("touchend", stopThrottle);
   downBtn.addEventListener("touchend", stopThrottle);
 
+  let fireInterval = null;
   document.getElementById("fireBtn").addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    shootBullet(); // or keys[" "] = true
-  });
+  e.preventDefault();
+  if (fireInterval) return;
+
+  fireInterval = setInterval(() => {
+    if (shootCooldown <= 0) {
+      fireBullet({
+        origin: player,
+        angle: player.angle,
+        speed: BULLET_SPEED,
+        life: BULLET_LIFESPAN,
+        targetArray: bullets,
+        spread: PLAYER_BULLET_SPREAD,
+        offset: 30,
+      });
+      shootCooldown = 10;
+    }
+  }, 100); // fire every 100ms (adjust for faster/slower shooting)
+});
+
+document.getElementById("fireBtn").addEventListener("touchend", (e) => {
+  e.preventDefault();
+  clearInterval(fireInterval);
+  fireInterval = null;
+});
+
 
   document.getElementById("missileBtn").addEventListener("touchstart", (e) => {
     e.preventDefault();
