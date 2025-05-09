@@ -186,11 +186,11 @@ const skyImage = loadImage("images/sky.jpg");
 // [3.1] Load Sounds
 // ======================
 const sounds = {
-  shoot: new Audio("sounds/shoot.wav"),
+  shoot: new Audio("sounds/shoot.mp3"),
   explosion: new Audio("sounds/explosion.wav"),
-  missile: new Audio("sounds/missile.wav"),
-  flare: new Audio("sounds/flare.wav"),
-  sonicboom: new Audio("sounds/sonicboom.wav"),
+  missile: new Audio("sounds/missile.mp3"),
+  flare: new Audio("sounds/flares.mp3"),
+  sonicboom: new Audio("sounds/sonicboom.mp3"),
 };
 
 function playSound(name) {
@@ -232,6 +232,7 @@ const player = {
 let kills = 0;
 let score = 0;
 let isPaused = false;
+let isGameOver = false;
 
 const bullets = [];
 const BULLET_SPEED = 12;
@@ -399,6 +400,7 @@ window.addEventListener("keydown", (e) => {
       y: player.y,
       radius: 0,
       alpha: 1.0,
+      angle: player.angle,
     });
     playSound("sonicboom");
   }
@@ -1661,11 +1663,11 @@ function renderSonicBooms() {
 
     // 🔺 Draw sonic shock cone (like in the photo)
     ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(player.angle); // face direction of player
+    ctx.translate(x + Math.cos(boom.angle) * 25, y + Math.sin(boom.angle) * 25);
+    ctx.rotate(boom.angle || 0);// face direction of player
 
     const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, coneLength);
-    gradient.addColorStop(0, `rgba(255, 255, 255, ${boom.alpha * 0.3})`);
+    gradient.addColorStop(0, `rgba(255, 255, 255, ${boom.alpha * 0.6})`);
     gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
 
     ctx.fillStyle = gradient;
