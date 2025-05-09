@@ -256,7 +256,7 @@ let flareCooldown = 0;
 const FLARE_COOLDOWN_MAX = 300; // ~5 seconds @ 60 FPS
 
 const enemies = [];
-const ENEMY_COUNT = 5;
+const ENEMY_COUNT = 2;
 const ENEMY_SIZE = 50;
 const ENEMY_HEALTH = 50;
 
@@ -268,7 +268,7 @@ const ENEMY_FIRE_COOLDOWN = 10;
 const ENEMY_BULLET_SPEED = 12;
 
 const allies = [];
-const ALLY_COUNT = 4;
+const ALLY_COUNT = 1;
 const ALLY_SIZE = 50;
 const ALLY_HEALTH = 100;
 const allyBullets = [];
