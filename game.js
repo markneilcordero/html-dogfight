@@ -391,7 +391,7 @@ window.addEventListener("keydown", (e) => {
 });
 
 window.addEventListener("keydown", (e) => {
-  if (e.key.toLowerCase() === "b" && !player.boosting) {
+  if (e.key.toLowerCase() === "b" && !player.boosting && player.throttle >= 0.99) {
     player.boosting = true;
     player.boostTimer = player.boostDuration;
 
@@ -755,21 +755,22 @@ function runAutopilot(entity, targetList, ownerType = "player") {
   // Optional AI logic to auto-trigger boost if being chased
   const shouldBoost =
     missiles.find((m) => m.target === entity) || Math.random() < 0.001; // rare random boost
-  if (!entity.boosting && shouldBoost) {
-    entity.boosting = true;
-    entity.boostTimer = entity.boostDuration;
+  if (!entity.boosting && shouldBoost && entity.throttle >= 0.99) {
+  entity.boosting = true;
+  entity.boostTimer = entity.boostDuration;
 
-    // Add sonic boom when boosting starts
-    sonicBooms.push({
-      x: entity.x,
-      y: entity.y,
-      radius: 0,
-      alpha: 1.0,
-      angle: entity.angle,
-    });
+  sonicBooms.push({
+    x: entity.x,
+    y: entity.y,
+    radius: 0,
+    alpha: 1.0,
+    angle: entity.angle,
+  });
 
-    playSound("sonicboom");
-  }
+  playSound("sonicboom");
+}
+
+
 
   // === Separation: Avoid clustering with nearby allies/opponents
   const others =
@@ -1715,7 +1716,7 @@ function renderSonicBooms() {
     ctx.rotate((boom.angle || 0) + Math.PI); // 🔄 Correct the cone direction
 
     const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, coneLength);
-    gradient.addColorStop(0, `rgba(255, 255, 255, ${boom.alpha * 0.6})`);
+    gradient.addColorStop(0, `rgba(255, 255, 255, ${boom.alpha * 1.0})`);
     gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
 
     ctx.fillStyle = gradient;
