@@ -391,7 +391,11 @@ window.addEventListener("keydown", (e) => {
 });
 
 window.addEventListener("keydown", (e) => {
-  if (e.key.toLowerCase() === "b" && !player.boosting && player.throttle >= 0.99) {
+  if (
+    e.key.toLowerCase() === "b" &&
+    !player.boosting &&
+    player.throttle >= 0.99
+  ) {
     player.boosting = true;
     player.boostTimer = player.boostDuration;
 
@@ -757,21 +761,19 @@ function runAutopilot(entity, targetList, ownerType = "player") {
   const shouldBoost =
     missiles.find((m) => m.target === entity) || Math.random() < 0.001; // rare random boost
   if (!entity.boosting && shouldBoost && entity.throttle >= 0.99) {
-  entity.boosting = true;
-  entity.boostTimer = entity.boostDuration;
+    entity.boosting = true;
+    entity.boostTimer = entity.boostDuration;
 
-  sonicBooms.push({
-    x: entity.x,
-    y: entity.y,
-    radius: 0,
-    alpha: 1.0,
-    angle: entity.angle,
-  });
+    sonicBooms.push({
+      x: entity.x,
+      y: entity.y,
+      radius: 0,
+      alpha: 1.0,
+      angle: entity.angle,
+    });
 
-  playSound("sonicboom");
-}
-
-
+    playSound("sonicboom");
+  }
 
   // === Separation: Avoid clustering with nearby allies/opponents
   const others =
@@ -961,7 +963,7 @@ function updatePlayer() {
   }
 
   avoidMapEdges(player);
-  
+
   // Move
   player.x += Math.cos(player.angle) * player.speed;
   player.y += Math.sin(player.angle) * player.speed;
@@ -1805,19 +1807,25 @@ function update() {
   updateCamera();
 
   if (enemiesRemaining <= 0) {
-    level++;
-    enemiesRemaining = ENEMY_COUNT + level * 2;
-
-    for (let i = 0; i < enemiesRemaining; i++) {
+    enemiesRemaining = ENEMY_COUNT;
+    for (let i = 0; i < ENEMY_COUNT; i++) {
       enemies.push({
-        x: Math.random() * WORLD_WIDTH,
-        y: Math.random() * WORLD_HEIGHT,
+        x: 200 + Math.random() * 100,
+        y: 200 + Math.random() * 100,
         angle: Math.random() * Math.PI * 2,
-        speed: 2 + level * 0.2,
-        health: ENEMY_HEALTH + level * 10,
+        speed: 2,
+        health: ENEMY_HEALTH,
         turnTimer: Math.floor(Math.random() * 60),
         image: enemyImage,
+        flareCooldown: 0,
         missileCooldown: 0,
+        width: ENEMY_SIZE,
+        height: ENEMY_SIZE,
+        orbitAngle: Math.random() * Math.PI * 2,
+        orbitDistance: 250 + Math.random() * 100,
+        orbitSpeed: 0.01 + Math.random() * 0.01,
+        throttle: 1.0,
+        throttleTarget: 1.0,
       });
     }
   }
