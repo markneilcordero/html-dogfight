@@ -591,7 +591,7 @@ function fireMissile() {
         target,
         ownerType: "player",
       });
-      missileCooldown = 600; // 🔁 adjust cooldown as needed
+      missileCooldown = 180; // 🔁 adjust cooldown as needed
     }
   }
 }
@@ -999,7 +999,7 @@ function updatePlayer() {
         target,
         ownerType: "player",
       });
-      missileCooldown = 600;
+      missileCooldown = 180;
     }
   }
   if (missileCooldown > 0) missileCooldown--;
