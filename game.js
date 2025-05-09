@@ -1020,15 +1020,16 @@ function updatePlayerJoystick() {
     // Smoothly rotate toward the joystick direction
     player.angle += clamp(diff, -0.08, 0.08);
 
-    // Apply throttle based on joystick forward push
+    // Apply throttle based on joystick push strength
     player.throttleTarget = clamp(magnitude, 0.2, 1.0);
   } else {
     // No strong input? Idle
     player.throttleTarget = 0.2;
   }
-  // === Boost via joystick if full throttle forward
+
+  // === Boost via joystick if full strength in any direction
   if (
-    joyY < -0.95 && // joystick pushed almost fully forward (up direction)
+    magnitude > 0.95 &&
     !player.boosting &&
     player.throttle >= 0.99
   ) {
@@ -1042,9 +1043,11 @@ function updatePlayerJoystick() {
       alpha: 1.0,
       angle: player.angle,
     });
+
     playSound("sonicboom");
   }
 }
+
 
 function updateBullets() {
   for (let i = bullets.length - 1; i >= 0; i--) {
