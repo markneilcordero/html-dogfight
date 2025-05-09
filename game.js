@@ -821,6 +821,8 @@ function runAutopilot(entity, targetList, ownerType = "player") {
     }
   }
 
+  avoidMapEdges(entity);
+
   entity.x += Math.cos(entity.angle) * entity.speed;
   entity.y += Math.sin(entity.angle) * entity.speed;
   entity.x = clamp(entity.x, 0, WORLD_WIDTH);
@@ -957,6 +959,8 @@ function updatePlayer() {
     player.speed = baseSpeed;
   }
 
+  avoidMapEdges(player);
+  
   // Move
   player.x += Math.cos(player.angle) * player.speed;
   player.y += Math.sin(player.angle) * player.speed;
