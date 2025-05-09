@@ -190,6 +190,7 @@ const sounds = {
   explosion: new Audio("sounds/explosion.wav"),
   missile: new Audio("sounds/missile.wav"),
   flare: new Audio("sounds/flare.wav"),
+  sonicboom: new Audio("sounds/sonicboom.wav"),
 };
 
 function playSound(name) {
@@ -278,6 +279,8 @@ const FLARE_DURATION = 90;
 
 const explosions = [];
 const EXPLOSION_DURATION = 30;
+
+let sonicBooms = [];
 
 const wingTrails = [];
 
@@ -387,12 +390,19 @@ window.addEventListener("keydown", (e) => {
 });
 
 window.addEventListener("keydown", (e) => {
-  if (e.key.toLowerCase() === "b") {
+  if (e.key.toLowerCase() === "b" && !player.boosting) {
     player.boosting = true;
     player.boostTimer = player.boostDuration;
+
+    sonicBooms.push({
+      x: player.x,
+      y: player.y,
+      radius: 0,
+      alpha: 1.0,
+    });
+    playSound("sonicboom");
   }
 });
-
 
 document
   .getElementById("fireBtn")
@@ -697,20 +707,18 @@ function runAutopilot(entity, targetList, ownerType = "player") {
     MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * entity.throttle;
 
   if (entity.boosting && entity.boostTimer > 0) {
-  entity.speed *= entity.boostMultiplier;
-  entity.boostTimer--;
-  if (entity.boostTimer <= 0) entity.boosting = false;
-}
+    entity.speed *= entity.boostMultiplier;
+    entity.boostTimer--;
+    if (entity.boostTimer <= 0) entity.boosting = false;
+  }
 
-// Optional AI logic to auto-trigger boost if being chased
-const shouldBoost =
-  missiles.find((m) => m.target === entity) ||
-  Math.random() < 0.001; // rare random boost
-if (!entity.boosting && shouldBoost) {
-  entity.boosting = true;
-  entity.boostTimer = entity.boostDuration;
-}
-
+  // Optional AI logic to auto-trigger boost if being chased
+  const shouldBoost =
+    missiles.find((m) => m.target === entity) || Math.random() < 0.001; // rare random boost
+  if (!entity.boosting && shouldBoost) {
+    entity.boosting = true;
+    entity.boostTimer = entity.boostDuration;
+  }
 
   // === Separation: Avoid clustering with nearby allies/opponents
   const others =
@@ -887,15 +895,15 @@ function updatePlayer() {
   player.throttle = clamp(player.throttle, 0.2, 1.0);
 
   // 🟡 Apply throttle to speed
-  let baseSpeed = MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * player.throttle;
-if (player.boosting && player.boostTimer > 0) {
-  player.speed = baseSpeed * player.boostMultiplier;
-  player.boostTimer--;
-  if (player.boostTimer <= 0) player.boosting = false;
-} else {
-  player.speed = baseSpeed;
-}
-
+  let baseSpeed =
+    MIN_PLANE_SPEED + (MAX_PLANE_SPEED - MIN_PLANE_SPEED) * player.throttle;
+  if (player.boosting && player.boostTimer > 0) {
+    player.speed = baseSpeed * player.boostMultiplier;
+    player.boostTimer--;
+    if (player.boostTimer <= 0) player.boosting = false;
+  } else {
+    player.speed = baseSpeed;
+  }
 
   // Move
   player.x += Math.cos(player.angle) * player.speed;
@@ -1215,16 +1223,15 @@ function renderWorld() {
   }
 
   if (player.boosting) {
-  ctx.save();
-  ctx.shadowColor = "yellow";
-  ctx.shadowBlur = 25;
-  ctx.beginPath();
-  ctx.arc(player.x - camera.x, player.y - camera.y, 35, 0, Math.PI * 2);
-  ctx.fillStyle = "rgba(255, 255, 0, 0.2)";
-  ctx.fill();
-  ctx.restore();
-}
-
+    ctx.save();
+    ctx.shadowColor = "yellow";
+    ctx.shadowBlur = 25;
+    ctx.beginPath();
+    ctx.arc(player.x - camera.x, player.y - camera.y, 35, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255, 255, 0, 0.2)";
+    ctx.fill();
+    ctx.restore();
+  }
 
   // Draw player
   ctx.save();
@@ -1612,6 +1619,18 @@ function updateExplosions() {
   }
 }
 
+function updateSonicBooms() {
+  for (let i = sonicBooms.length - 1; i >= 0; i--) {
+    const boom = sonicBooms[i];
+    boom.radius += 10; // expand ring
+    boom.alpha *= 0.92; // fade out
+
+    if (boom.alpha < 0.05) {
+      sonicBooms.splice(i, 1); // remove faded out ring
+    }
+  }
+}
+
 function renderExplosions() {
   explosions.forEach((e) => {
     const alpha = e.timer / EXPLOSION_DURATION;
@@ -1632,6 +1651,24 @@ function renderExplosions() {
     ctx.globalAlpha = 1;
     ctx.restore();
   });
+}
+
+function renderSonicBooms() {
+  ctx.save();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.shadowColor = "white";
+  ctx.shadowBlur = 10;
+
+  for (const boom of sonicBooms) {
+    ctx.globalAlpha = boom.alpha;
+    ctx.beginPath();
+    ctx.arc(boom.x - camera.x, boom.y - camera.y, boom.radius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+  ctx.globalAlpha = 1.0;
 }
 
 // ======================
@@ -1686,6 +1723,7 @@ function update() {
   updateAllies();
   updateEnemies();
   updateFlares();
+  updateSonicBooms();
   updateExplosions();
   updateCamera();
 
