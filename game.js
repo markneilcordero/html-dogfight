@@ -1076,27 +1076,27 @@ function updateBullets() {
       spawnExplosion(deadEnemy.x, deadEnemy.y);
 
       // 🔁 Respawn after delay
-      setTimeout(() => {
-        enemies.push({
-          x: Math.random() * WORLD_WIDTH,
-          y: Math.random() * WORLD_HEIGHT,
-          angle: Math.random() * Math.PI * 2,
-          speed: 2 + level * 0.2,
-          health: ENEMY_HEALTH + level * 10,
-          turnTimer: Math.floor(Math.random() * 60),
-          image: enemyImage,
-          flareCooldown: 0,
-          missileCooldown: 0,
-          width: ENEMY_SIZE,
-          height: ENEMY_SIZE,
-          orbitAngle: Math.random() * Math.PI * 2,
-          orbitDistance: 250 + Math.random() * 100,
-          orbitSpeed: 0.01 + Math.random() * 0.01,
-          throttle: 1.0,
-          throttleTarget: 1.0,
-        });
-        enemiesRemaining++;
-      }, 2000); // 2-second delay
+      // setTimeout(() => {
+      //   enemies.push({
+      //     x: Math.random() * WORLD_WIDTH,
+      //     y: Math.random() * WORLD_HEIGHT,
+      //     angle: Math.random() * Math.PI * 2,
+      //     speed: 2 + level * 0.2,
+      //     health: ENEMY_HEALTH + level * 10,
+      //     turnTimer: Math.floor(Math.random() * 60),
+      //     image: enemyImage,
+      //     flareCooldown: 0,
+      //     missileCooldown: 0,
+      //     width: ENEMY_SIZE,
+      //     height: ENEMY_SIZE,
+      //     orbitAngle: Math.random() * Math.PI * 2,
+      //     orbitDistance: 250 + Math.random() * 100,
+      //     orbitSpeed: 0.01 + Math.random() * 0.01,
+      //     throttle: 1.0,
+      //     throttleTarget: 1.0,
+      //   });
+      //   enemiesRemaining++;
+      // }, 2000);
     }
   }
 }
