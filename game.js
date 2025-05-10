@@ -250,7 +250,7 @@ const MISSILE_RANGE = 900;
 const MISSILE_CONE = Math.PI / 6; // ~30°
 const MISSILE_DAMAGE = 50;
 let missileCooldown = 0;
-const MISSILE_LIFESPAN = 180; // Change this value to increase/decrease
+const MISSILE_LIFESPAN = 400; // Change this value to increase/decrease
 
 let flareCooldown = 0;
 const FLARE_COOLDOWN_MAX = 300; // ~5 seconds @ 60 FPS
@@ -670,7 +670,7 @@ function updateMissile(m, index) {
   m.trailHistory.forEach((p) => (p.alpha *= 0.95));
 
   m.lifetime--;
-  
+
   // === Impact
   let dist = Infinity;
   if (
