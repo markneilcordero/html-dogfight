@@ -669,6 +669,8 @@ function updateMissile(m, index) {
   if (m.trailHistory.length > 20) m.trailHistory.shift();
   m.trailHistory.forEach((p) => (p.alpha *= 0.95));
 
+  m.lifetime--;
+  
   // === Impact
   let dist = Infinity;
   if (
