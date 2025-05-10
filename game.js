@@ -911,7 +911,7 @@ function runAutopilot(entity, targetList, ownerType = "player") {
   }
 
   // === Drop flare if missile is near and cooldown expired
-  const MISSILE_DANGER_RADIUS = 300;
+  const MISSILE_DANGER_RADIUS = 150;
   const incomingMissile = missiles.find(
     (m) =>
       m.target === entity &&
