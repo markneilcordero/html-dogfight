@@ -89,7 +89,7 @@ function createFlare(fromPlane) {
       ownerType, // ✅ Add owner type
     });
 
-    playSound("flare");
+    playSound("flare", ownerType); // 🟢 Only play flare sound if from player;
     pairsEmitted++;
   }, 100);
 }
@@ -204,7 +204,9 @@ const sounds = {
   sonicboom: new Audio("sounds/sonicboom.mp3"),
 };
 
-function playSound(name) {
+function playSound(name, ownerType = "player") {
+  if (ownerType !== "player") return; // 🔇 Suppress sound unless it's from the player
+
   const sfx = sounds[name].cloneNode(); // allow overlapping
   sfx.volume = 0.5;
   sfx.play();
@@ -417,7 +419,7 @@ window.addEventListener("keydown", (e) => {
       alpha: 1.0,
       angle: player.angle,
     });
-    playSound("sonicboom");
+    playSound("sonicboom", "player");
   }
 });
 
@@ -588,7 +590,16 @@ function fireBullet({
     life: life,
     trailHistory: [],
   });
-  playSound("shoot");
+  const originType =
+    origin === player
+      ? "player"
+      : allies.includes(origin)
+      ? "ally"
+      : enemies.includes(origin)
+      ? "enemy"
+      : "unknown";
+
+  playSound("shoot", originType); // 🟢 Pass ownerType
 }
 
 function fireMissile() {
@@ -617,7 +628,7 @@ function createMissile({ x, y, angle, target, ownerType }) {
     trailHistory: [],
     lifetime: MISSILE_LIFESPAN,
   });
-  playSound("missile");
+  playSound("missile", ownerType);
 }
 
 function isInMissileCone(source, target) {
@@ -828,7 +839,7 @@ function runAutopilot(entity, targetList, ownerType = "player") {
       angle: entity.angle,
     });
 
-    playSound("sonicboom");
+    playSound("sonicboom", ownerType);
   }
 
   // === Separation: Avoid clustering with nearby allies/opponents
@@ -1100,7 +1111,7 @@ function updatePlayerJoystick() {
       angle: player.angle,
     });
 
-    playSound("sonicboom");
+    playSound("sonicboom", "player");
   }
 }
 
@@ -1743,9 +1754,9 @@ function renderEnemyBullets() {
   enemyBullets.forEach(renderBulletImage);
 }
 
-function spawnExplosion(x, y, size = 1.0) {
+function spawnExplosion(x, y, size = 1.0, ownerType = "player") {
   explosions.push({ x, y, timer: EXPLOSION_DURATION, size });
-  playSound("explosion");
+  playSound("explosion", ownerType); // 🟢 Optional control
 }
 
 function dropFlareFromPlayer() {
