@@ -1422,7 +1422,7 @@ function renderBulletTrail(trail) {
     const p1 = trail[i];
     const p2 = trail[i + 1];
     ctx.beginPath();
-    ctx.strokeStyle = `rgba(255, 255, 255, ${p1.alpha})`; // white
+    ctx.strokeStyle = `rgba(255, 0, 0, ${p1.alpha})`; // white
     ctx.lineWidth = 0.1;
     ctx.moveTo(p1.x - camera.x, p1.y - camera.y);
     ctx.lineTo(p2.x - camera.x, p2.y - camera.y);
