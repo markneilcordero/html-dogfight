@@ -26,6 +26,9 @@ resizeCanvas();
 const WORLD_WIDTH = 4000;
 const WORLD_HEIGHT = 4000;
 
+const ORBIT_DISTANCE = 600;
+const ORBIT_SPEED = 0.002;
+
 let patrolCenter = {
   x: WORLD_WIDTH / 2,
   y: WORLD_HEIGHT / 2,
@@ -140,7 +143,7 @@ function orbitAroundTarget(flyer, target) {
   while (diff > Math.PI) diff -= 2 * Math.PI;
   while (diff < -Math.PI) diff += 2 * Math.PI;
 
-  flyer.angle += clamp(diff, -0.05, 0.05); // turning speed
+  flyer.angle += clamp(diff, -0.015, 0.015); // was 0.02 or 0.05
 }
 
 function rotateToward(entity, targetAngle, turnSpeed = 0.05) {
@@ -229,8 +232,8 @@ const player = {
   throttle: 1.0,
   throttleTarget: 1.0,
   orbitAngle: Math.random() * Math.PI * 2, // ✅ Add this
-  orbitDistance: 300, // ✅ Add this
-  orbitSpeed: 0.015, // ✅ Add this
+  orbitDistance: ORBIT_DISTANCE,
+  orbitSpeed: ORBIT_SPEED,
   boosting: false,
   boostTimer: 0,
   boostDuration: 120, // frames (2 seconds at 60fps)
@@ -334,8 +337,8 @@ for (let i = 0; i < ENEMY_COUNT; i++) {
     width: ENEMY_SIZE,
     height: ENEMY_SIZE,
     orbitAngle: Math.random() * Math.PI * 2,
-    orbitDistance: 250 + Math.random() * 100,
-    orbitSpeed: 0.01 + Math.random() * 0.01,
+    orbitDistance: ORBIT_DISTANCE,
+    orbitSpeed: ORBIT_SPEED,
     boosting: false,
     boostTimer: 0,
     boostDuration: 120,
@@ -359,8 +362,8 @@ for (let i = 0; i < ALLY_COUNT; i++) {
     width: ALLY_SIZE,
     height: ALLY_SIZE,
     orbitAngle: Math.random() * Math.PI * 2,
-    orbitDistance: 250 + Math.random() * 100,
-    orbitSpeed: 0.01 + Math.random() * 0.01,
+    orbitDistance: ORBIT_DISTANCE,
+    orbitSpeed: ORBIT_SPEED,
     boosting: false,
     boostTimer: 0,
     boostDuration: 120,
@@ -1285,8 +1288,8 @@ function updateAllyBullets() {
             width: ALLY_SIZE,
             height: ALLY_SIZE,
             orbitAngle: Math.random() * Math.PI * 2,
-            orbitDistance: 250 + Math.random() * 100,
-            orbitSpeed: 0.01 + Math.random() * 0.01,
+            orbitDistance: ORBIT_DISTANCE,
+            orbitSpeed: ORBIT_SPEED,
             boosting: false,
             boostTimer: 0,
             boostDuration: 120,
@@ -1902,8 +1905,8 @@ function update() {
         width: ENEMY_SIZE,
         height: ENEMY_SIZE,
         orbitAngle: Math.random() * Math.PI * 2,
-        orbitDistance: 250 + Math.random() * 100,
-        orbitSpeed: 0.01 + Math.random() * 0.01,
+        orbitDistance: ORBIT_DISTANCE,
+        orbitSpeed: ORBIT_SPEED,
         throttle: 1.0,
         throttleTarget: 1.0,
         boosting: false,
@@ -2078,8 +2081,8 @@ function restartGame() {
       width: ENEMY_SIZE,
       height: ENEMY_SIZE,
       orbitAngle: Math.random() * Math.PI * 2,
-      orbitDistance: 250 + Math.random() * 100,
-      orbitSpeed: 0.01 + Math.random() * 0.01,
+      orbitDistance: ORBIT_DISTANCE,
+      orbitSpeed: ORBIT_SPEED,
       throttle: 1.0,
       throttleTarget: 1.0,
     });
@@ -2104,8 +2107,8 @@ function restartGame() {
       width: ALLY_SIZE,
       height: ALLY_SIZE,
       orbitAngle: Math.random() * Math.PI * 2,
-      orbitDistance: 250 + Math.random() * 100,
-      orbitSpeed: 0.01 + Math.random() * 0.01,
+      orbitDistance: ORBIT_DISTANCE,
+      orbitSpeed: ORBIT_SPEED,
     });
   }
 }
