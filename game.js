@@ -43,8 +43,8 @@ function createFlare(fromPlane) {
   if (!fromPlane || typeof fromPlane.x !== "number" || fromPlane.health <= 0)
     return;
   const rearAngle = fromPlane.angle + Math.PI;
-  const pairSpread = 0.4;
-  const speed = 3;
+  const pairSpread = 0.6;
+  const speed = 4;
   const flareSize = 7;
   const flareCount = 10;
   let pairsEmitted = 0;
@@ -248,7 +248,7 @@ let isPaused = false;
 let isGameOver = false;
 
 const bullets = [];
-const BULLET_SPEED = 12;
+const BULLET_SPEED = 14;
 const BULLET_LIFESPAN = 100; // ~1 second @ 60fps
 const BULLET_SIZE = 10;
 let shootCooldown = 0;
@@ -256,8 +256,8 @@ let shootCooldown = 0;
 const trails = [];
 
 const missiles = [];
-const MISSILE_SPEED = 6;
-const MISSILE_TURN_RATE = 0.02;
+const MISSILE_SPEED = 8;
+const MISSILE_TURN_RATE = 0.03;
 const MISSILE_SIZE = 30;
 const MISSILE_RANGE = 900;
 const MISSILE_CONE = Math.PI / 6; // ~30°
