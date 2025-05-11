@@ -250,7 +250,7 @@ let isGameOver = false;
 const bullets = [];
 const BULLET_SPEED = 14;
 const BULLET_LIFESPAN = 100; // ~1 second @ 60fps
-const BULLET_SIZE = 10;
+const BULLET_SIZE = 9;
 let shootCooldown = 0;
 
 const trails = [];
