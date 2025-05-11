@@ -690,9 +690,48 @@ function updateMissile(m, index) {
     dist = Math.hypot(m.x - target.x, m.y - target.y);
   }
 
-  if (dist < 40 || m.lifetime <= 0) {
+  // if (dist < 40 || m.lifetime <= 0) {
+  //   if (target && typeof target.health === "number") {
+  //     // Apply damage only if target is valid and opposite type
+  //     const isFriendlyFire =
+  //       (m.ownerType === "player" && target === player) ||
+  //       (m.ownerType === "enemy" && enemies.includes(target)) ||
+  //       (m.ownerType === "ally" && allies.includes(target));
+  //     if (!isFriendlyFire) {
+  //       let damage = 0;
+  //       if (m.ownerType === "player") damage = PLAYER_MISSILE_DAMAGE;
+  //       else if (m.ownerType === "ally") damage = ALLY_MISSILE_DAMAGE;
+  //       else if (m.ownerType === "enemy") damage = ENEMY_MISSILE_DAMAGE;
+
+  //       target.health = Math.max(0, target.health - damage);
+
+  //       if (typeof target.health === "number" && target.health <= 0) {
+  //         spawnExplosion(target.x, target.y);
+
+  //         if (m.ownerType === "player" && enemies.includes(target)) {
+  //           kills++;
+  //         }
+
+  //         if (target === player) {
+  //           player.x = SPAWN_PLAYER_X;
+  //           player.y = SPAWN_PLAYER_Y;
+  //           player.health = 100;
+
+  //           // Clear missiles still targeting the player
+  //           for (let i = missiles.length - 1; i >= 0; i--) {
+  //             if (missiles[i].target === player) {
+  //               missiles.splice(i, 1);
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  //   spawnExplosion(m.x, m.y);
+  //   missiles.splice(index, 1);
+  // }
+  if (dist < 40) {
     if (target && typeof target.health === "number") {
-      // Apply damage only if target is valid and opposite type
       const isFriendlyFire =
         (m.ownerType === "player" && target === player) ||
         (m.ownerType === "enemy" && enemies.includes(target)) ||
@@ -727,6 +766,10 @@ function updateMissile(m, index) {
         }
       }
     }
+    spawnExplosion(m.x, m.y);
+    missiles.splice(index, 1);
+  } else if (m.lifetime <= 0) {
+    // Only explode visually, no damage
     spawnExplosion(m.x, m.y);
     missiles.splice(index, 1);
   }
