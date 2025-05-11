@@ -515,7 +515,7 @@ function setupUI() {
         });
         shootCooldown = 10;
       }
-    }, 100); // fire every 100ms (adjust for faster/slower shooting)
+    }, 50); // fire every 100ms (adjust for faster/slower shooting)
   });
 
   document.getElementById("fireBtn").addEventListener("touchend", (e) => {
@@ -1096,6 +1096,7 @@ function updateBullets() {
       const deadEnemy = enemies.splice(i, 1)[0];
       enemiesRemaining--;
       score += 100;
+      kills++;
       spawnExplosion(deadEnemy.x, deadEnemy.y);
 
       // 🔁 Respawn after delay
