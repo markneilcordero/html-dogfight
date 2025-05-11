@@ -91,8 +91,16 @@ function createFlare(fromPlane) {
   }, 100);
 }
 
-function getLockedTarget(source, targets) {
+function getLockedTarget(source, targets, sourceType = "unknown") {
   for (const t of targets) {
+    if (
+      (sourceType === "ally" && t === player) || // ⛔ prevent allies from targeting player
+      (sourceType === "enemy" && enemies.includes(t)) || // ⛔ prevent enemies from targeting themselves
+      (sourceType === "player" && t === player) // ⛔ prevent player self-target
+    ) {
+      continue;
+    }
+
     const dx = t.x - source.x;
     const dy = t.y - source.y;
     const dist = Math.hypot(dx, dy);
@@ -101,7 +109,6 @@ function getLockedTarget(source, targets) {
     const angleToTarget = Math.atan2(dy, dx);
     let diff = angleToTarget - source.angle;
 
-    // Normalize angle difference to [-PI, PI]
     while (diff > Math.PI) diff -= 2 * Math.PI;
     while (diff < -Math.PI) diff += 2 * Math.PI;
 
@@ -111,6 +118,7 @@ function getLockedTarget(source, targets) {
   }
   return null;
 }
+
 
 function orbitAroundTarget(flyer, target) {
   if (!flyer || !target) return;
@@ -582,7 +590,7 @@ function fireBullet({
 
 function fireMissile() {
   if (missileCooldown <= 0) {
-    const target = getLockedTarget(player, enemies);
+    const target = getLockedTarget(player, enemies, "player");
     if (target) {
       createMissile({
         x: player.x,
@@ -725,7 +733,7 @@ function updateMissile(m, index) {
 }
 
 function runAutopilot(entity, targetList, ownerType = "player") {
-  const target = getLockedTarget(entity, targetList);
+  const target = getLockedTarget(entity, targetList, ownerType);
 
   // === Aggressive: Chase directly or orbit closely
   if (target) {
@@ -992,7 +1000,7 @@ function updatePlayer() {
 
   // Missile
   if ((keys["g"] || keys["G"]) && missileCooldown <= 0) {
-    const target = getLockedTarget(player, enemies);
+    const target = getLockedTarget(player, enemies, "player");
     if (target) {
       createMissile({
         x: player.x,
@@ -1412,7 +1420,7 @@ function renderMissileLockLines() {
   ctx.shadowBlur = 10;
 
   // === PLAYER Lock Line + Lock Emoji
-  const playerTarget = getLockedTarget(player, enemies);
+  const playerTarget = getLockedTarget(player, enemies, "player");
   if (playerTarget) {
     ctx.globalAlpha = 0.3;
     ctx.strokeStyle = "lime";
@@ -1427,7 +1435,7 @@ function renderMissileLockLines() {
 
   // === ALLY Lock Lines + Lock Emoji
   allies.forEach((ally) => {
-    const allyTarget = getLockedTarget(ally, enemies);
+    const allyTarget = getLockedTarget(ally, enemies, "ally");
     if (allyTarget) {
       ctx.globalAlpha = 0.3;
       ctx.strokeStyle = "cyan";
@@ -1443,7 +1451,7 @@ function renderMissileLockLines() {
 
   // === ENEMY Lock Lines + Lock Emoji
   enemies.forEach((enemy) => {
-    const enemyTarget = getLockedTarget(enemy, [player, ...allies]);
+    const enemyTarget = getLockedTarget(enemy, [player, ...allies], "enemy");
     if (enemyTarget) {
       ctx.globalAlpha = 0.3;
       ctx.strokeStyle = "red";
