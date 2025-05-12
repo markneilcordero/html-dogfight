@@ -198,7 +198,7 @@ const skyImage = loadImage("images/sky.jpg");
 // ======================
 const sounds = {
   shoot: new Audio("sounds/shoot.mp3"),
-  explosion: new Audio("sounds/explosion.wav"),
+  explosion: new Audio("sounds/explosion.mp3"),
   missile: new Audio("sounds/missile.mp3"),
   flare: new Audio("sounds/flares.mp3"),
   sonicboom: new Audio("sounds/sonicboom.mp3"),
