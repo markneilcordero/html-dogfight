@@ -242,6 +242,10 @@ const player = {
   boostMultiplier: 1.5,
 };
 
+let playerDead = false;
+let playerRespawnTimer = 0;
+const PLAYER_RESPAWN_DELAY = 180; // 2 seconds (60 fps)
+
 let kills = 0;
 let score = 0;
 let isPaused = false;
@@ -766,9 +770,9 @@ function updateMissile(m, index) {
           }
 
           if (target === player) {
-            player.x = SPAWN_PLAYER_X;
-            player.y = SPAWN_PLAYER_Y;
-            player.health = 100;
+            spawnExplosion(player.x, player.y);
+            playerDead = true;
+            playerRespawnTimer = PLAYER_RESPAWN_DELAY;
 
             // Clear missiles still targeting the player
             for (let i = missiles.length - 1; i >= 0; i--) {
@@ -1219,9 +1223,9 @@ function updateEnemyBullets() {
       player.health = Math.max(0, player.health - ENEMY_BULLET_DAMAGE);
       spawnExplosion(b.x, b.y, 0.4);
       if (player.health <= 0) {
-        player.x = SPAWN_PLAYER_X;
-        player.y = SPAWN_PLAYER_Y;
-        player.health = 100;
+        spawnExplosion(player.x, player.y);
+        playerDead = true;
+        playerRespawnTimer = PLAYER_RESPAWN_DELAY;
       }
 
       enemyBullets.splice(i, 1);
@@ -1888,6 +1892,16 @@ let lastFrameTime = performance.now();
 // [9] Game Loop
 // ======================
 function update() {
+  if (playerDead) {
+    playerRespawnTimer--;
+    if (playerRespawnTimer <= 0) {
+      player.x = SPAWN_PLAYER_X;
+      player.y = SPAWN_PLAYER_Y;
+      player.health = 100;
+      playerDead = false;
+    }
+  }
+
   if (isPaused) return;
   updatePlayer();
   updateBullets();
