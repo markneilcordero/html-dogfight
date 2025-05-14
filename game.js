@@ -403,6 +403,14 @@ window.addEventListener("keydown", (e) => {
 window.addEventListener("keydown", (e) => {
   if (e.key.toLowerCase() === "j") {
     autopilotEnabled = !autopilotEnabled;
+    // 🛑 Bonus Safety Check: Reset joystick if autopilot is turned off
+    if (!autopilotEnabled && document.getElementById("thumb")) {
+      const thumb = document.getElementById("thumb");
+      thumb.style.left = "30px";
+      thumb.style.top = "30px";
+      joyX = 0;
+      joyY = 0;
+    }
   }
 });
 
