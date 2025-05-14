@@ -997,6 +997,8 @@ function runAutopilot(entity, targetList, ownerType = "player") {
 }
 
 function updatePlayer() {
+  if (playerDead) return;
+  
   if (autopilotEnabled) {
     runAutopilot(player, enemies, "player");
     updateWingTrails(player);
