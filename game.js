@@ -122,7 +122,6 @@ function getLockedTarget(source, targets, sourceType = "unknown") {
   return null;
 }
 
-
 function orbitAroundTarget(flyer, target) {
   if (!flyer || !target) return;
 
@@ -994,11 +993,30 @@ function runAutopilot(entity, targetList, ownerType = "player") {
     entity.flareCooldown = FLARE_COOLDOWN_MAX;
     playSound("flare");
   }
+
+  // === Update joystick to match autopilot (only if it's the player)
+  if (entity === player && document.getElementById("thumb")) {
+    const joystick = document.getElementById("joystick");
+    const thumb = document.getElementById("thumb");
+
+    const angle = player.angle;
+    const strength = player.throttleTarget; // simulate how strong the joystick should be
+
+    // Convert angle to joystick displacement
+    const dx = Math.cos(angle) * strength * 30; // max distance 30px
+    const dy = Math.sin(angle) * strength * 30;
+
+    thumb.style.left = `${30 + dx}px`;
+    thumb.style.top = `${30 + dy}px`;
+
+    joyX = dx / 40; // normalize to [-1, 1] range like original
+    joyY = dy / 40;
+  }
 }
 
 function updatePlayer() {
   if (playerDead) return;
-  
+
   if (autopilotEnabled) {
     runAutopilot(player, enemies, "player");
     updateWingTrails(player);
@@ -1101,11 +1119,7 @@ function updatePlayerJoystick() {
   }
 
   // === Boost via joystick if full strength in any direction
-  if (
-    magnitude > 0.95 &&
-    !player.boosting &&
-    player.throttle >= 0.99
-  ) {
+  if (magnitude > 0.95 && !player.boosting && player.throttle >= 0.99) {
     player.boosting = true;
     player.boostTimer = player.boostDuration;
 
@@ -1120,7 +1134,6 @@ function updatePlayerJoystick() {
     playSound("sonicboom", "player");
   }
 }
-
 
 function updateBullets() {
   for (let i = bullets.length - 1; i >= 0; i--) {
