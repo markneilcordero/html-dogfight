@@ -886,15 +886,30 @@ function runAutopilot(entity, targetList, ownerType = "player") {
       while (rearDiff < -Math.PI) rearDiff += 2 * Math.PI;
 
       // If we're inside the other plane's rear cone, back off
+      // if (Math.abs(rearDiff) < REAR_AVOID_ANGLE) {
+      //   // Steer slightly away from the target's rear
+      //   const avoidAngle = Math.atan2(dy, dx) + Math.PI; // move opposite of other
+      //   entity.angle += clamp(avoidAngle - entity.angle, -0.05, 0.05);
+      // }
       if (Math.abs(rearDiff) < REAR_AVOID_ANGLE) {
-        // Steer slightly away from the target's rear
-        const avoidAngle = Math.atan2(dy, dx) + Math.PI; // move opposite of other
-        entity.angle += clamp(avoidAngle - entity.angle, -0.05, 0.05);
+        const avoidAngle = Math.atan2(dy, dx) + Math.PI;
+        const steer = clamp(avoidAngle - entity.angle, -0.12, 0.12);
+        entity.angle += steer;
+
+        // 🛑 Temporarily override orbit behavior to break pursuit lock
+        entity.orbitDistance = 300 + Math.random() * 200;
+        entity.orbitAngle += 0.1;
       }
+
     }
   }
 
   avoidMapEdges(entity);
+
+  const allPlanes = [player, ...allies, ...enemies];
+  applyPlaneSeparation(entity, allPlanes);
+  applyDirectionalAvoidance(entity, allPlanes);
+
 
   entity.x += Math.cos(entity.angle) * entity.speed;
   entity.y += Math.sin(entity.angle) * entity.speed;
@@ -1013,6 +1028,57 @@ function runAutopilot(entity, targetList, ownerType = "player") {
     joyY = dy / 40;
   }
 }
+
+function applyPlaneSeparation(entity, others, separationDistance = 40, pushStrength = 0.1) {
+  let totalRepelX = 0;
+  let totalRepelY = 0;
+
+  for (const other of others) {
+    if (other === entity || other.health <= 0) continue;
+
+    const dx = entity.x - other.x;
+    const dy = entity.y - other.y;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist < separationDistance && dist > 0.001) {
+      const overlap = separationDistance - dist;
+      const repelX = (dx / dist) * overlap;
+      const repelY = (dy / dist) * overlap;
+
+      totalRepelX += repelX;
+      totalRepelY += repelY;
+    }
+  }
+
+  entity.x += totalRepelX * pushStrength;
+  entity.y += totalRepelY * pushStrength;
+}
+
+function applyDirectionalAvoidance(entity, others, rearDist = 80, sidePush = 0.2) {
+  for (const other of others) {
+    if (other === entity || other.health <= 0) continue;
+
+    const dx = entity.x - other.x;
+    const dy = entity.y - other.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > rearDist) continue;
+
+    const angleToEntity = Math.atan2(dy, dx);
+    let diff = angleToEntity - other.angle;
+
+    while (diff > Math.PI) diff -= 2 * Math.PI;
+    while (diff < -Math.PI) diff += 2 * Math.PI;
+
+    // Plane is behind the other plane
+    if (Math.abs(diff) < Math.PI / 3) {
+      // Push sideways instead of back
+      const perpAngle = other.angle + Math.PI / 2; // perpendicular
+      entity.x += Math.cos(perpAngle) * sidePush;
+      entity.y += Math.sin(perpAngle) * sidePush;
+    }
+  }
+}
+
 
 function updatePlayer() {
   if (playerDead) return;
