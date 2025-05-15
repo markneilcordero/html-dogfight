@@ -436,12 +436,9 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
-document
-  .getElementById("fireBtn")
-  .addEventListener("touchstart", () => (keys[" "] = true));
-document
-  .getElementById("fireBtn")
-  .addEventListener("touchend", () => (keys[" "] = false));
+document.getElementById("fireBtn").addEventListener("touchstart", () => (keys["f"] = true));
+document.getElementById("fireBtn").addEventListener("touchend", () => (keys["f"] = false));
+
 document
   .getElementById("missileBtn")
   .addEventListener("touchstart", () => (keys["m"] = true));
