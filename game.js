@@ -1258,7 +1258,6 @@ function updateBullets() {
   for (let i = enemies.length - 1; i >= 0; i--) {
     if (enemies[i].health <= 0) {
       const deadEnemy = enemies.splice(i, 1)[0];
-      enemiesRemaining--;
       score += 100;
       kills++;
       spawnExplosion(deadEnemy.x, deadEnemy.y);
@@ -2010,7 +2009,7 @@ function update() {
   updateExplosions();
   updateCamera();
 
-  if (enemiesRemaining <= 0 && enemies.length < ENEMY_COUNT) {
+  if (enemies.length < ENEMY_COUNT) {
     for (let i = enemies.length; i < ENEMY_COUNT; i++) {
       enemies.push({
         x: 200 + Math.random() * 100,
