@@ -104,6 +104,8 @@ function getLockedTarget(source, targets, sourceType = "unknown") {
       continue;
     }
 
+    if (typeof t.health === "number" && t.health <= 0) continue;
+
     const dx = t.x - source.x;
     const dy = t.y - source.y;
     const dist = Math.hypot(dx, dy);
@@ -801,7 +803,11 @@ function updateMissile(m, index) {
 }
 
 function runAutopilot(entity, targetList, ownerType = "player") {
-  const target = getLockedTarget(entity, targetList, ownerType);
+  // const target = getLockedTarget(entity, targetList, ownerType);
+  const aliveTargets = targetList.filter(t => !t.health || t.health > 0);
+  const target = getLockedTarget(entity, aliveTargets, ownerType);
+
+  if (playerDead && target === player) return; // ⛔ Skip firing at dead player
 
   // === Aggressive: Chase directly or orbit closely
   if (target) {
