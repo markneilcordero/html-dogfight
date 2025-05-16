@@ -536,7 +536,7 @@ function setupUI() {
           spread: PLAYER_BULLET_SPREAD,
           offset: 30,
         });
-        shootCooldown = 10;
+        shootCooldown = 5;
       }
     }, 50); // fire every 100ms (adjust for faster/slower shooting)
   });
