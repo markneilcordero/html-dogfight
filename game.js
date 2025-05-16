@@ -673,13 +673,27 @@ function updateMissile(m, index) {
   });
 
   if (possibleFlares.length > 0) {
+  const switchChance = 0.3; // 30% chance to switch to flare
+
+  if (Math.random() < switchChance) {
     possibleFlares.sort((a, b) => {
       const da = Math.hypot(a.x - m.x, a.y - m.y);
       const db = Math.hypot(b.x - m.x, b.y - m.y);
       return da - db;
     });
-    target = possibleFlares[0];
+      target = possibleFlares[0]; // Switch only if lucky
+    }
   }
+
+
+  // if (possibleFlares.length > 0) {
+  //   possibleFlares.sort((a, b) => {
+  //     const da = Math.hypot(a.x - m.x, a.y - m.y);
+  //     const db = Math.hypot(b.x - m.x, b.y - m.y);
+  //     return da - db;
+  //   });
+  //   target = possibleFlares[0];
+  // }
 
   // === Homing Movement
   if (target) {
