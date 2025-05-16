@@ -673,7 +673,7 @@ function updateMissile(m, index) {
   });
 
   if (possibleFlares.length > 0) {
-  const switchChance = 0.3; // 30% chance to switch to flare
+  const switchChance = 0.1; // 30% chance to switch to flare
 
   if (Math.random() < switchChance) {
     possibleFlares.sort((a, b) => {
