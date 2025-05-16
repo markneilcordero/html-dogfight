@@ -1556,14 +1556,56 @@ function renderFlareTrail(trail) {
 }
 
 function drawLockEmoji(source, target, color = "white") {
+  // ctx.save();
+  // ctx.font = "20px sans-serif";
+  // ctx.textAlign = "center";
+  // ctx.fillStyle = color;
+  // ctx.shadowColor = color;
+  // ctx.shadowBlur = 6;
+  // ctx.fillText("🔒", target.x - camera.x, target.y - camera.y - 70);
+  // ctx.restore();
+}
+
+function drawWarningText(plane, text, color = "red") {
+  if (!plane || plane.health <= 0) return;
+
   ctx.save();
-  ctx.font = "20px sans-serif";
-  ctx.textAlign = "center";
+  ctx.font = "bold 16px Arial";
   ctx.fillStyle = color;
   ctx.shadowColor = color;
   ctx.shadowBlur = 6;
-  ctx.fillText("🔒", target.x - camera.x, target.y - camera.y - 40);
+  ctx.textAlign = "center";
+  ctx.fillText(
+    text,
+    plane.x - camera.x,
+    plane.y - camera.y - plane.height / 2 - 20
+  );
   ctx.restore();
+}
+
+function isMissileLockedOn(plane) {
+  return missiles.some((m) => m.target === plane);
+}
+
+function isPlaneTargetedByAny(plane) {
+  const threats = [player, ...allies, ...enemies];
+  return threats.some((shooter) => {
+    if (shooter.health <= 0 || shooter === plane) return false;
+
+    const shooterType = shooter === player
+      ? "player"
+      : allies.includes(shooter)
+      ? "ally"
+      : enemies.includes(shooter)
+      ? "enemy"
+      : "unknown";
+
+    const targets = shooterType === "enemy"
+      ? [player, ...allies]
+      : enemies;
+
+    return getLockedTarget(shooter, targets, shooterType) === plane;
+  });
 }
 
 function renderMissileLockLines() {
@@ -2136,6 +2178,25 @@ function drawOffscreenIndicators() {
   }
 }
 
+function renderLockWarnings() {
+  const planes = [player, ...allies, ...enemies];
+
+  planes.forEach((plane) => {
+    if (plane.health <= 0) return;
+
+    const isEnemy = enemies.includes(plane);
+    const lockColor = isEnemy ? "red" : "orange";
+    const warnColor = isEnemy ? "red" : "yellow";
+
+    if (isMissileLockedOn(plane)) {
+      drawWarningText(plane, "🚨 MISSILE LOCKED", lockColor);
+    } else if (isPlaneTargetedByAny(plane)) {
+      drawWarningText(plane, "⚠️ LOCK ON WARNING", warnColor);
+    }
+  });
+}
+
+
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   renderWorld();
@@ -2154,6 +2215,7 @@ function render() {
   renderHUD();
   renderRadar();
   drawOffscreenIndicators();
+  renderLockWarnings();
 }
 
 function restartGame() {
