@@ -2204,7 +2204,7 @@ function render() {
   drawAllEngineTrails();
   renderAllies();
   renderEnemies();
-  renderMissileLockLines(); // ✅ Add this
+  // renderMissileLockLines();
   renderSonicBooms();
   renderFlares();
   renderExplosions(); // BOOM
