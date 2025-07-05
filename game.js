@@ -217,7 +217,7 @@ function playSound(name, ownerType = "player") {
 // [4] Player
 // ======================
 
-const MIN_PLANE_SPEED = 3;
+const MIN_PLANE_SPEED = 5;
 const MAX_PLANE_SPEED = 5;
 
 const player = {
